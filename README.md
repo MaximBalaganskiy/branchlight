@@ -69,7 +69,7 @@ Branch switching currently requires a clean working tree. Clicking a branch name
 
 ## Preview scope
 
-Clone or create a repository from the repository menu or welcome screen. Right-click a local branch to rename/delete it or set its upstream. The Remotes dialog supports a separate push URL, pruning on fetch, and fetching one remote.
+Clone or create a repository from the repository menu or welcome screen. Right-click a local branch to rename/delete it or set its upstream. Manage remotes directly in the reference tree: the Remotes section has an add button, and each remote has a context/actions menu for fetch, edit, and confirmed removal. Configured remotes remain visible before their first fetch. The edit form supports a separate push URL and pruning on fetch.
 
 Right-click a commit to cherry-pick, revert, reset the current branch, or rebase onto it. Merge commits require selecting a mainline parent for cherry-pick/revert. Reset offers soft, mixed, and explicitly confirmed hard modes; hard reset refuses untracked files and overlapping ignored files. History operations check the current branch and HEAD again before applying changes.
 

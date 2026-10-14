@@ -23,19 +23,24 @@
     <worktree-sidebar></worktree-sidebar>
     <ui-tree class="border-0! rounded-none! p-0!" items.bind="nodes" value.bind="selectedNode" value-field="id" label-field="name" label="Repository references" toggle-on-parent-click tree-select.trigger="selectNode($event.detail)" tree-expand.trigger="rememberExpansion($event.detail, true)" tree-collapse.trigger="rememberExpansion($event.detail, false)">
       <template au-slot="item">
-        <div ui-context-menu.bind="$host.item.branch ? branchMenu : null" contextmenu.trigger="contextBranch = $host.item.branch" class="branch-item group flex min-h-[var(--ui-icon-button-small-size)] min-w-0 items-center gap-2" title.bind="$host.item.branch ? $host.item.branch.name : $host.item.name">
+        <div ui-context-menu.bind="$host.item.remote || $host.item.id === 'section:remote' ? remoteMenu : $host.item.branch ? branchMenu : null" contextmenu.trigger="setContext($host.item)" class="branch-item group flex min-h-[var(--ui-icon-button-small-size)] min-w-0 items-center gap-2" data-reference-id.bind="$host.item.id" title.bind="$host.item.remote ? $host.item.remote.name + ' — ' + $host.item.remote.url : $host.item.branch ? $host.item.branch.name : $host.item.name">
           <span if.bind="$host.item.branch?.kind === 'local'" class="branch-dot size-1.5 shrink-0 rounded-full border border-ink-500 ${$host.item.branch.name === workspace.snapshot.branch ? 'current' : ''}"></span>
           <span if.bind="$host.item.branch && $host.item.branch.kind !== 'local'" class="shrink-0 text-ink-500">${$host.item.branch.kind === 'tag' ? '◇' : '⑂'}</span>
           <span class="branch-name min-w-0 flex-1 truncate ${$host.item.branch ? '' : 'font-medium'}">${$host.item.name}</span>
           <small if.bind="!$host.item.branch" class="shrink-0 text-xs text-ink-500">${$host.item.count}</small>
           <small if.bind="$host.item.branch?.tracking" class="shrink-0 text-[9px] text-ink-500">${$host.item.branch.tracking}</small>
+          <button ui-icon-button size="small" class="shrink-0" if.bind="$host.item.id === 'section:remote'" click.trigger="remoteAction('add', $event)" keydown.trigger="$event.stopPropagation()" disabled.bind="workspace.busy" title="Add remote" aria-label="Add remote">+</button>
+          <button ui-icon-button size="small" class="shrink-0 opacity-0 focus:opacity-100 group-hover:opacity-100" if.bind="$host.item.remote" click.trigger="showRemoteMenu($host.item, $event)" keydown.trigger="$event.stopPropagation()" disabled.bind="workspace.busy" title="Remote actions" aria-label="Actions for remote ${$host.item.name}" aria-haspopup="menu">⋯</button>
           <button ui-icon-button size="small" class="checkout shrink-0 text-ink-500 opacity-0 focus:opacity-100 group-hover:opacity-100" if.bind="$host.item.branch?.kind === 'local' && $host.item.branch.name !== workspace.snapshot.branch" disabled.bind="workspace.busy" click.trigger="checkout($host.item, $event)" keydown.trigger="$event.stopPropagation()" title="Switch to ${$host.item.branch.name}" aria-label="Switch to ${$host.item.branch.name}">↪</button>
         </div>
       </template>
     </ui-tree>
     <div class="px-3 py-2 text-sm text-ink-500" if.bind="!nodes.length">No matching branches or tags</div>
+    <div if.bind="remotesError" class="grid gap-2 px-2 py-2 text-xs text-danger-text">
+      <p role="alert" class="break-words">${remotesError}</p>
+      <button ui-button click.trigger="loadRemotes()" disabled.bind="remotesLoading">Retry remotes</button>
+    </div>
   </div>
-  <button ui-button class="my-2 w-full shrink-0 text-sm!" click.trigger="manageRemotes()">Manage remotes</button>
   <div class="sidebar-bottom shrink-0 border-t border-card-border px-2.5 pt-3 text-[9px] tracking-widest text-ink-500">
     <span class="status-dot mr-1 inline-block size-[5px] shrink-0 rounded-full bg-success-border"></span>
     LOCAL WORKSPACE
@@ -55,5 +60,14 @@
     <ui-list-item value="rename" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Rename branch…</ui-list-item>
     <ui-list-item value="upstream" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Set upstream…</ui-list-item>
     <ui-list-item value="delete" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || !!workspace.snapshot.operation || contextBranch.name === workspace.snapshot.branch">Delete branch…</ui-list-item>
+  </ui-list>
+</ui-menu>
+
+<ui-menu component.ref="remoteMenu" close-on-select menu-select.trigger="remoteAction($event.detail)">
+  <ui-list>
+    <ui-list-item value="add" disabled.bind="workspace.busy">Add remote…</ui-list-item>
+    <ui-list-item value="fetch" if.bind="contextRemote" disabled.bind="workspace.busy">Fetch remote</ui-list-item>
+    <ui-list-item value="edit" if.bind="contextRemote" disabled.bind="workspace.busy">Edit remote…</ui-list-item>
+    <ui-list-item value="remove" if.bind="contextRemote" disabled.bind="workspace.busy">Remove remote…</ui-list-item>
   </ui-list>
 </ui-menu>

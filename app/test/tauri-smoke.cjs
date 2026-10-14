@@ -137,21 +137,18 @@ const { git } = require('./support/git.cjs');
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     await page.getByRole('region', { name: 'Notifications' }).getByRole('button', { name: 'Dismiss' }).click();
-    await page.getByRole('button', { name: 'Remotes', exact: true }).click();
+    await page.getByRole('button', { name: 'Add remote', exact: true }).click();
     const remotes = page.getByRole('dialog');
     await remotes.getByRole('textbox', { name: 'Remote name', exact: true }).fill('origin');
     await remotes.getByRole('textbox', { name: 'Remote URL', exact: true }).fill('https://example.invalid/first.git');
     await remotes.getByRole('button', { name: 'Create remote', exact: true }).click();
-    await remotes.getByRole('button', { name: 'Edit remote origin', exact: true }).waitFor();
+    await remotes.waitFor({ state: 'hidden' });
+    await page.getByRole('button', { name: 'Actions for remote origin', exact: true }).click();
+    await page.getByRole('option', { name: 'Edit remote…', exact: true }).click();
     await remotes.getByRole('textbox', { name: 'Remote URL', exact: true }).fill('https://example.invalid/second.git');
     await remotes.getByRole('button', { name: 'Save remote', exact: true }).click();
-    await remotes
-      .getByRole('button', { name: 'Edit remote origin', exact: true })
-      .getByText('https://example.invalid/second.git')
-      .waitFor();
-    assert.equal((await git(repo, ['remote', 'get-url', 'origin'])).stdout.trim(), 'https://example.invalid/second.git');
-    await remotes.getByRole('button', { name: 'Close', exact: true }).click();
     await remotes.waitFor({ state: 'hidden' });
+    assert.equal((await git(repo, ['remote', 'get-url', 'origin'])).stdout.trim(), 'https://example.invalid/second.git');
     await page.getByRole('tab', { name: 'Commit details', exact: true }).click();
     await page.getByRole('tab', { name: 'Commit details', exact: true }).press('ArrowRight');
     assert.equal(await page.getByRole('tab', { name: 'Command log', exact: true }).getAttribute('aria-selected'), 'true');

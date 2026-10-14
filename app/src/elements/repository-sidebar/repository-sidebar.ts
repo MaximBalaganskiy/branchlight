@@ -3,6 +3,7 @@ import { WorkspaceService } from '../../services/workspace-service';
 import { buildBranchTree } from '../../services/branch-tree';
 import type { BranchTreeNode } from '../../interfaces/branch-tree-node';
 import type { Branch } from '../../interfaces/branch';
+import type { Remote } from '../../interfaces/remote';
 import type { UiMenu } from '@aurelia-ui-toolkits/headless';
 import './repository-sidebar.css';
 
@@ -11,10 +12,68 @@ export class RepositorySidebar {
   private element = resolve(INode) as HTMLElement;
   private expansion = new Map<string, boolean>();
   private repository = '';
+  private unsubscribe?: () => void;
+  private remoteGeneration = 0;
+  private remotes: Remote[] = [];
+  remotesError = '';
+  remotesLoading = false;
   selectedNode = '';
   nodes: BranchTreeNode[] = [];
   branchMenu!: UiMenu;
   contextBranch: Branch | null = null;
+  remoteMenu!: UiMenu;
+  contextRemote: Remote | null = null;
+
+  setContext(node: BranchTreeNode) {
+    this.contextBranch = node.branch ?? null;
+    this.contextRemote = node.remote ?? null;
+  }
+
+  async loadRemotes() {
+    const generation = ++this.remoteGeneration;
+    const repository = this.workspace.repo;
+    this.remotesLoading = true;
+    try {
+      const remotes = await this.workspace.client.remotes();
+      if (generation === this.remoteGeneration && repository === this.workspace.repo) {
+        this.remotesError = '';
+        if (JSON.stringify(remotes) !== JSON.stringify(this.remotes)) {
+          this.remotes = remotes;
+          this.rebuildTree();
+        }
+      }
+    } catch (error) {
+      if (generation === this.remoteGeneration && repository === this.workspace.repo) {
+        this.remotesError = error instanceof Error ? error.message : String(error);
+      }
+    } finally {
+      if (generation === this.remoteGeneration) {
+        this.remotesLoading = false;
+      }
+    }
+  }
+
+  showRemoteMenu(node: BranchTreeNode, event: Event) {
+    event.stopPropagation();
+    this.contextRemote = node.remote ?? null;
+    this.remoteMenu.anchor = event.currentTarget as HTMLElement;
+    this.remoteMenu.tabReference = event.currentTarget as HTMLElement;
+    this.remoteMenu.open = true;
+  }
+
+  async remoteAction(action: string, event?: Event) {
+    event?.stopPropagation();
+    if (this.workspace.busy) {
+      return;
+    }
+    if (action === 'fetch' && this.contextRemote) {
+      await this.workspace.action('remote-fetch', { name: this.contextRemote.name });
+    } else if (action === 'add' || this.contextRemote) {
+      this.element.dispatchEvent(
+        new CustomEvent('remote-action', { detail: { action, remote: action === 'add' ? null : this.contextRemote }, bubbles: true })
+      );
+    }
+  }
 
   async branchAction(action: string) {
     const branch = this.contextBranch;
@@ -46,6 +105,13 @@ export class RepositorySidebar {
 
   binding() {
     this.rebuildTree();
+    this.unsubscribe = this.workspace.subscribe(() => void this.loadRemotes());
+    void this.loadRemotes();
+  }
+
+  unbinding() {
+    this.unsubscribe?.();
+    ++this.remoteGeneration;
   }
 
   @watch('workspace.snapshot')
@@ -54,8 +120,10 @@ export class RepositorySidebar {
       this.repository = this.workspace.repo;
       this.expansion.clear();
       this.selectedNode = '';
+      this.remotes = [];
+      this.contextRemote = null;
     }
-    this.nodes = buildBranchTree(this.workspace.snapshot?.branches ?? [], this.branchSearch, this.expansion);
+    this.nodes = buildBranchTree(this.workspace.snapshot?.branches ?? [], this.branchSearch, this.expansion, this.remotes);
   }
 
   rememberExpansion(node: BranchTreeNode, expanded: boolean) {
@@ -75,9 +143,5 @@ export class RepositorySidebar {
     if (node.branch) {
       void this.workspace.action('checkout', { name: node.branch.name });
     }
-  }
-
-  manageRemotes() {
-    this.element.dispatchEvent(new CustomEvent('manage-remotes', { bubbles: true }));
   }
 }

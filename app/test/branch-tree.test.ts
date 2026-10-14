@@ -46,3 +46,26 @@ test('search reveals matching paths without overwriting collapsed folder state',
   assert.equal(restored.children[0].expanded, false);
   assert.deepEqual(buildBranchTree(branches, 'missing'), []);
 });
+
+test('shows unfetched remotes and groups branches under the longest configured remote name', () => {
+  const remotes = ['origin', 'team', 'team/upstream'].map(name => ({ name, url: `/repos/${name}`, pushUrl: '', prune: false }));
+  const branches = [branch('team/upstream/feat/search', 'remote'), branch('team/main', 'remote')];
+  const [, section] = buildBranchTree(branches, '', new Map(), remotes);
+  assert.equal(section.count, 3);
+  assert.deepEqual(
+    section.children.map(node => node.name),
+    ['origin', 'team', 'team/upstream']
+  );
+  assert.equal(section.children[0].remote, remotes[0]);
+  assert.equal(section.children[0].count, 0);
+  assert.equal(section.children[1].children[0].branch, branches[1]);
+  assert.equal(section.children[2].children[0].children[0].branch, branches[0]);
+  const [filtered] = buildBranchTree(branches, 'origin', new Map(), remotes);
+  assert.equal(filtered.children[0].remote, remotes[0]);
+  const [byBranch] = buildBranchTree(branches, 'feat/search', new Map(), remotes);
+  assert.deepEqual(
+    byBranch.children.map(node => node.name),
+    ['team/upstream']
+  );
+  assert.deepEqual(buildBranchTree(branches, 'missing', new Map(), remotes), []);
+});

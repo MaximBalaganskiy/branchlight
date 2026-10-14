@@ -92,21 +92,56 @@ const path = require('node:path');
     assert.equal(await dropdown.getAttribute('aria-expanded'), 'false');
     assert.equal(await page.getByRole('button', { name: 'Updated snapshot', exact: true }).count(), 1);
 
-    await page.getByRole('button', { name: 'Remotes', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'Remotes', exact: true }).count(), 0);
+    assert.equal(await page.getByRole('button', { name: 'Manage remotes', exact: true }).count(), 0);
+    const remoteNode = page.locator('[data-reference-id="folder:remote:origin/"]');
+    await remoteNode.getByRole('button', { name: 'Actions for remote origin', exact: true }).waitFor();
+    await remoteNode.click({ button: 'right' });
+    await page.getByRole('option', { name: 'Remove remote…', exact: true }).click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByRole('button', { name: 'Remove remote', exact: true }).click();
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     assert.equal((await git(repo, ['remote'])).stdout.trim(), 'origin');
-    await dialog.getByRole('button', { name: 'Remove remote', exact: true }).click();
+    await remoteNode.click({ button: 'right' });
+    await page.getByRole('option', { name: 'Remove remote…', exact: true }).click();
     await dialog.getByRole('button', { name: 'Remove origin', exact: true }).click();
-    await dialog.getByText('Add a remote to fetch, pull, and push.', { exact: true }).waitFor();
+    await dialog.waitFor({ state: 'hidden' });
+    await remoteNode.waitFor({ state: 'hidden' });
     assert.equal((await git(repo, ['remote'])).stdout.trim(), '');
     assert.equal((await git(repo, ['rev-parse', 'HEAD'])).stdout.trim(), beforeHead);
     assert.equal(await fs.readFile(path.join(repo, 'src', 'sample.ts'), 'utf8'), 'Working copy must not appear in commit preview.\n');
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Add remote', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await dialog.getByRole('textbox', { name: 'Remote name', exact: true }).fill('bad name');
+    await dialog.getByRole('textbox', { name: 'Remote URL', exact: true }).fill(other);
+    await dialog.getByRole('button', { name: 'Create remote', exact: true }).click();
+    await dialog.getByRole('alert').waitFor();
+    await dialog.getByRole('textbox', { name: 'Remote name', exact: true }).fill('upstream');
+    await dialog.getByRole('textbox', { name: 'Remote URL', exact: true }).press('Enter');
+    await dialog.waitFor({ state: 'hidden' });
+    const upstream = page.locator('[data-reference-id="folder:remote:upstream/"]');
+    await upstream.waitFor();
+    assert.equal((await git(repo, ['for-each-ref', '--format=%(refname)', 'refs/remotes/upstream'])).stdout.trim(), '');
+    await page.getByRole('textbox', { name: 'Find a branch', exact: true }).fill('upstream');
+    await upstream.waitFor();
+    await page.getByRole('textbox', { name: 'Find a branch', exact: true }).fill('');
+    await page.getByRole('button', { name: 'Actions for remote upstream', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('option', { name: 'Edit remote…', exact: true }).click();
+    assert.equal(await dialog.getByRole('textbox', { name: 'Remote name', exact: true }).inputValue(), 'upstream');
+    await dialog.getByRole('textbox', { name: 'Push URL (optional)', exact: true }).fill(repo);
+    await dialog.getByRole('button', { name: 'Save remote', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    assert.equal(
+      (await git(repo, ['remote', 'get-url', '--push', 'upstream'])).stdout.trim().replaceAll('\\', '/'),
+      repo.replaceAll('\\', '/')
+    );
+    await upstream.click({ button: 'right' });
+    await page.getByRole('option', { name: 'Fetch remote', exact: true }).click();
+    await page.locator('[data-reference-id="refs/remotes/upstream/main"]').waitFor();
+    await page.screenshot({ path: path.resolve('test-results/remotes-tree.png') });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: historical file tree, highlighted contents, empty/binary previews, recent repository switching, missing repository recovery, and confirmed remote removal.'
+      'PASS: historical file tree, highlighted contents, empty/binary previews, repository switching/recovery, remote tree CRUD, unfetched remotes, keyboard actions, validation, and fetch.'
     );
   } catch (error) {
     console.log('Renderer errors:', errors);

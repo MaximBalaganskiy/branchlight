@@ -4,7 +4,7 @@ import { WorkspaceService } from '../../services/workspace-service';
 import { buildGraph } from '../../services/graph-layout';
 import { AppearanceService } from '../../services/appearance-service';
 import { NewBranchDialog } from './new-branch-dialog/new-branch-dialog';
-import { RemotesDialog } from './remotes-dialog/remotes-dialog';
+import { RemoteDialog } from './remote-dialog/remote-dialog';
 import { NewWorktreeDialog } from './new-worktree-dialog/new-worktree-dialog';
 import { ActionDialog } from './action-dialog/action-dialog';
 import { PublishDialog } from './publish-dialog/publish-dialog';
@@ -19,6 +19,7 @@ import type { CommandEntry } from '../../interfaces/command-entry';
 import type { GraphRow } from '../../interfaces/graph-row';
 import type { Snapshot } from '../../interfaces/snapshot';
 import type { Worktree } from '../../interfaces/worktree';
+import type { Remote } from '../../interfaces/remote';
 import './history.css';
 import './details.css';
 import './commit-details.css';
@@ -291,9 +292,23 @@ export class History {
     }
   }
 
-  async manageRemotes() {
+  async remoteAction(detail: { action: string; remote: Remote | null }) {
     try {
-      await this.dialogs.open({ component: RemotesDialog });
+      if (detail.action === 'add' || detail.action === 'edit') {
+        await this.dialogs.open({ component: RemoteDialog, model: detail.remote });
+      } else if (detail.action === 'remove' && detail.remote) {
+        await this.dialogs.open({
+          component: ActionDialog,
+          model: {
+            title: 'Remove remote',
+            description: `Remove ${detail.remote.name} and its remote-tracking branches from this repository? The server repository and local branches will remain.`,
+            action: 'remote-remove',
+            payload: { name: detail.remote.name },
+            confirm: `Remove ${detail.remote.name}`,
+            danger: true
+          }
+        });
+      }
     } catch (error) {
       this.workspace.fail(error);
     }

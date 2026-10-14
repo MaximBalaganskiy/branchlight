@@ -86,15 +86,17 @@ const os = require('node:os');
     await dialog.waitFor({ state: 'hidden' });
     assert.equal((await git(repo, ['rev-parse', '--abbrev-ref', '@{upstream}'])).stdout.trim(), 'origin/main');
 
-    await page.getByRole('button', { name: 'Remotes', exact: true }).click();
+    await page.getByRole('button', { name: 'Actions for remote origin', exact: true }).click();
+    await page.getByRole('option', { name: 'Edit remote…', exact: true }).click();
     await dialog.getByRole('textbox', { name: 'Push URL (optional)', exact: true }).fill(repo);
     await dialog.getByRole('checkbox', { name: 'Prune deleted remote branches when fetching', exact: true }).first().press('Space');
     await dialog.getByRole('button', { name: 'Save remote', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
     await page.getByText('Remote updated', { exact: true }).waitFor();
     assert.equal((await git(repo, ['config', '--get', 'remote.origin.prune'])).stdout.trim(), 'true');
-    await dialog.getByRole('button', { name: 'Fetch remote', exact: true }).click();
+    await page.getByRole('button', { name: 'Actions for remote origin', exact: true }).click();
+    await page.getByRole('option', { name: 'Fetch remote', exact: true }).click();
     await page.getByText('Remote fetched', { exact: true }).waitFor();
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 
     await commitMenu('Add two', 'Revert commit…');
     await dialog.getByRole('button', { name: 'Revert commit', exact: true }).click();

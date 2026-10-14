@@ -1,0 +1,14 @@
+<template class="w-[600px] max-w-[90vw] max-h-[90vh] overflow-auto p-6">
+  <h2 class="mb-5 text-xl!">${editing ? 'Edit remote ' + name : 'Add remote'}</h2>
+  <form class="grid gap-4" submit.trigger:prevent="save()">
+    <ui-input label="Remote name" value.bind="name" readonly.bind="editing" disabled.bind="workspace.busy" required></ui-input>
+    <ui-input label="Remote URL" value.bind="url" disabled.bind="workspace.busy" required></ui-input>
+    <ui-input label="Push URL (optional)" value.bind="pushUrl" disabled.bind="workspace.busy" helper-text="Leave empty to use the remote URL for pushes."></ui-input>
+    <ui-checkbox checked.bind="prune" disabled.bind="workspace.busy">Prune deleted remote branches when fetching</ui-checkbox>
+    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <div class="mt-2 flex justify-end gap-2">
+      <button ui-button type="button" click.trigger="cancel()" disabled.bind="workspace.busy">Cancel</button>
+      <button ui-button primary type="submit" disabled.bind="workspace.busy || !name.trim() || !url.trim()">${editing ? 'Save remote' : 'Create remote'}</button>
+    </div>
+  </form>
+</template>
