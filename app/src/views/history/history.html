@@ -1,5 +1,6 @@
 <import from="../../elements/diff-view/diff-view"></import>
 <import from="../../elements/repository-sidebar/repository-sidebar"></import>
+<import from="./commit-files/commit-files"></import>
 <div class="toolbar flex min-h-10 shrink-0 items-center gap-2 border-b border-card-border bg-card px-2.5">
   <div class="toolbar-group flex gap-1">
     <button ui-button click.trigger="workspace.action('fetch')" disabled.bind="workspace.busy">↓ Fetch</button>
@@ -70,6 +71,7 @@
             Changes
             <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${detail ? detail.files.length : 0}</span>
           </ui-tab>
+          <ui-tab value="files">Files</ui-tab>
           <ui-tab value="message">Commit details</ui-tab>
           <ui-tab value="log">Command log</ui-tab>
         </ui-tabs>
@@ -97,6 +99,7 @@
           <diff-view file-path.bind="selectedFile" text.bind="diff" is-loading.bind="diffLoading"></diff-view>
         </div>
       </div>
+      <commit-files if.bind="tab === 'files' && selected" hash.bind="selected.hash" repository.bind="workspace.repo"></commit-files>
       <div class="commit-message overflow-auto p-6" if.bind="tab === 'message' && selected">
         <span class="eyebrow text-[10px] font-semibold tracking-widest text-accent">COMMIT ${short(selected.hash)}</span>
         <h2>${selected.subject}</h2>

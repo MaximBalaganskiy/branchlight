@@ -319,6 +319,15 @@ impl GitService {
       .try_lock()
       .map_err(|_| "Another Git operation is running for this repository.")?;
     match action {
+      "remote-remove" => {
+        let name = payload
+          .name
+          .as_deref()
+          .filter(|name| !name.is_empty() && !name.starts_with('-'))
+          .ok_or("Select a remote.")?;
+        self.run(repo, &["check-ref-format", &format!("refs/remotes/{name}/HEAD")], false)?;
+        self.run(repo, &["remote", "remove", "--", name], false)?;
+      }
       "remote-add" | "remote-edit" => {
         let name = payload
           .name

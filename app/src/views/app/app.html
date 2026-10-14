@@ -1,12 +1,14 @@
 <import from="../history/history"></import>
 <import from="../commit/commit"></import>
 <import from="../welcome/welcome"></import>
+<import from="../../elements/repository-switcher/repository-switcher"></import>
 
 <div class="app-shell flex h-dvh flex-col overflow-hidden">
-  <header class="topbar flex h-11 shrink-0 items-center gap-3 border-b border-card-border bg-card-muted px-3">
+  <header class="topbar flex min-h-11 shrink-0 items-center gap-3 border-b border-card-border bg-card-muted px-3 py-1">
     <strong class="app-name text-xs font-medium text-ink-500">Branchlight</strong>
+    <repository-switcher if.bind="workspace.mode === 'browse'"></repository-switcher>
     <div class="topbar-context flex items-center gap-4" if.bind="workspace.snapshot">
-      <strong title.bind="workspace.repo">${workspace.snapshot.name}</strong>
+      <strong if.bind="workspace.mode === 'commit'" title.bind="workspace.repo">${workspace.snapshot.name}</strong>
       <span class="branch-pill rounded bg-info-bg px-2 py-1 text-xs whitespace-nowrap text-info-text">${workspace.snapshot.branch}</span>
     </div>
     <div class="spacer flex-1"></div>
@@ -16,11 +18,7 @@
       </svg>
     </button>
     <button ui-icon-button click.trigger="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">◐</button>
-    <button ui-button class="gap-2" if.bind="workspace.mode === 'browse'" click.trigger="workspace.open()" disabled.bind="workspace.busy">
-      Open repository
-      <kbd>Ctrl O</kbd>
-    </button>
-    <button ui-button else click.trigger="workspace.refresh()" disabled.bind="workspace.busy">Refresh</button>
+    <button ui-button if.bind="workspace.mode === 'commit'" click.trigger="workspace.refresh()" disabled.bind="workspace.busy">Refresh</button>
   </header>
 
   <welcome if.bind="!workspace.snapshot"></welcome>

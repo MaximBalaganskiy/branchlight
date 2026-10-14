@@ -4,6 +4,8 @@ import type { DiffRequest } from './diff-request';
 import type { CommandEntry } from './command-entry';
 import type { BootstrapState } from './bootstrap-state';
 import type { Remote } from './remote';
+import type { TreeEntry } from './tree-entry';
+import type { FilePreview } from './file-preview';
 
 export interface GitClient {
   bootstrap(): Promise<BootstrapState>;
@@ -11,6 +13,8 @@ export interface GitClient {
   snapshot(limit: number): Promise<Snapshot>;
   remotes(): Promise<Remote[]>;
   detail(hash: string): Promise<Detail>;
+  commitTree(hash: string): Promise<TreeEntry[]>;
+  commitFile(hash: string, path: string): Promise<FilePreview>;
   diff(request: DiffRequest): Promise<string>;
   mutate(action: string, payload?: Record<string, unknown>): Promise<boolean>;
   log(): Promise<CommandEntry[]>;

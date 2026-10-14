@@ -1,3 +1,4 @@
+use crate::models::{file_preview::FilePreview, tree_entry::TreeEntry};
 use crate::{
   app_state::AppState,
   models::{
@@ -11,6 +12,27 @@ use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
+
+#[tauri::command]
+pub async fn commit_tree(app: AppHandle, window: WebviewWindow, hash: String) -> Result<Vec<TreeEntry>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.commit_tree(&repo, &hash))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn commit_file(
+  app: AppHandle,
+  window: WebviewWindow,
+  hash: String,
+  path: String,
+) -> Result<FilePreview, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.commit_file(&repo, &hash, &path))
+    .await
+    .map_err(|error| error.to_string())?
+}
 
 #[tauri::command]
 pub fn bootstrap(app: AppHandle, window: WebviewWindow) -> Result<Value, String> {

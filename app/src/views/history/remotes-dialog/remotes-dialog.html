@@ -10,11 +10,24 @@
     </button>
   </div>
   <p class="mb-4 text-sm text-ink-500" if.bind="!remotes.length">${loading ? 'Loading remotes…' : 'Add a remote to fetch, pull, and push.'}</p>
-  <form class="grid gap-4" submit.trigger:prevent="save()">
+  <div if.bind="confirmingRemoval" class="grid gap-4">
+    <p>
+      Remove remote
+      <strong>${name}</strong>
+      and its remote-tracking branches from this repository? The server repository and local branches will remain.
+    </p>
+    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <div class="flex justify-end gap-2">
+      <button ui-button click.trigger="confirmingRemoval = false" disabled.bind="workspace.busy">Cancel</button>
+      <button ui-button danger click.trigger="remove()" disabled.bind="workspace.busy">Remove ${name}</button>
+    </div>
+  </div>
+  <form else class="grid gap-4" submit.trigger:prevent="save()">
     <ui-input label="Remote name" value.bind="name" readonly.bind="editing" disabled.bind="loading || workspace.busy" required></ui-input>
     <ui-input label="Remote URL" value.bind="url" disabled.bind="loading || workspace.busy" required></ui-input>
     <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
     <div class="mt-2 flex justify-end gap-2">
+      <button ui-button danger outlined type="button" class="mr-auto" if.bind="editing" click.trigger="confirmingRemoval = true" disabled.bind="loading || workspace.busy">Remove remote</button>
       <button ui-button type="button" click.trigger="close()" disabled.bind="workspace.busy">Close</button>
       <button ui-button primary type="submit" disabled.bind="loading || workspace.busy || !name.trim() || !url.trim()">${editing ? 'Save remote' : 'Create remote'}</button>
     </div>

@@ -28,6 +28,8 @@ pub fn run() {
       commands::open_repository,
       commands::snapshot,
       commands::detail,
+      commands::commit_tree,
+      commands::commit_file,
       commands::diff,
       commands::mutate,
       commands::remotes,

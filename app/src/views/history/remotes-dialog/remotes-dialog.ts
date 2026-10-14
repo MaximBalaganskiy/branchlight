@@ -8,6 +8,7 @@ export class RemotesDialog {
   private dialog = resolve(IDialogController);
   remotes: Remote[] = [];
   editing = false;
+  confirmingRemoval = false;
   loading = true;
   name = '';
   url = '';
@@ -27,6 +28,7 @@ export class RemotesDialog {
   }
 
   edit(remote: Remote) {
+    this.confirmingRemoval = false;
     this.editing = true;
     this.name = remote.name;
     this.url = remote.url;
@@ -34,6 +36,7 @@ export class RemotesDialog {
   }
 
   add() {
+    this.confirmingRemoval = false;
     this.editing = false;
     this.name = '';
     this.url = '';
@@ -48,6 +51,26 @@ export class RemotesDialog {
       this.editing = true;
       try {
         this.remotes = await this.workspace.client.remotes();
+      } catch (error) {
+        this.error = String(error);
+      }
+    } else {
+      this.error = this.workspace.lastError;
+    }
+  }
+
+  async remove() {
+    if (!this.editing || !this.confirmingRemoval) {
+      return;
+    }
+    this.error = '';
+    if (await this.workspace.action('remote-remove', { name: this.name })) {
+      this.add();
+      try {
+        this.remotes = await this.workspace.client.remotes();
+        if (this.remotes[0]) {
+          this.edit(this.remotes[0]);
+        }
       } catch (error) {
         this.error = String(error);
       }

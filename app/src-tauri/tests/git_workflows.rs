@@ -351,6 +351,95 @@ fn add_and_edit_remote_urls_preserve_other_settings() {
     )
     .is_err());
   assert_eq!(service.remotes(repo).unwrap().len(), 1);
+  commit(&service, repo, "keep.txt", "keep\n", "Local commit");
+  let head = service.snapshot(repo, 300).unwrap().head;
+  service
+    .run(repo, &["update-ref", "refs/remotes/origin/main", &head], false)
+    .unwrap();
+  mutate(&service, repo, "remote-remove", serde_json::json!({ "name": "origin" }));
+  assert!(service.remotes(repo).unwrap().is_empty());
+  assert_eq!(service.snapshot(repo, 300).unwrap().head, head);
+  assert_eq!(fs::read_to_string(repo.join("keep.txt")).unwrap(), "keep\n");
+  assert!(!service
+    .run(repo, &["show-ref", "--verify", "refs/remotes/origin/main"], true)
+    .unwrap()
+    .status
+    .success());
+}
+
+#[test]
+fn commit_file_tree_reads_historical_blobs_and_handles_non_text_entries() {
+  let (temp, service) = repository();
+  let repo = temp.path();
+  fs::create_dir(repo.join("src")).unwrap();
+  commit(
+    &service,
+    repo,
+    "src/file with spaces.ts",
+    "export const version = 1;\n",
+    "Initial files",
+  );
+  let first = service.snapshot(repo, 300).unwrap().head;
+  fs::write(repo.join("empty.txt"), "").unwrap();
+  fs::write(repo.join("binary.bin"), [0, 1, 2]).unwrap();
+  fs::write(repo.join("large.txt"), vec![b'x'; 2 * 1024 * 1024 + 1]).unwrap();
+  service.run(repo, &["add", "--all"], false).unwrap();
+  service
+    .run(
+      repo,
+      &[
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        &format!("160000,{first},dependency"),
+      ],
+      false,
+    )
+    .unwrap();
+  commit(
+    &service,
+    repo,
+    "src/file with spaces.ts",
+    "export const version = 2;\n",
+    "Update files",
+  );
+  let second = service.snapshot(repo, 300).unwrap().head;
+  fs::write(repo.join("src/file with spaces.ts"), "working copy\n").unwrap();
+  assert_eq!(service.commit_tree(repo, &first).unwrap().len(), 1);
+  assert_eq!(service.commit_tree(repo, &second).unwrap().len(), 5);
+  assert_eq!(
+    service
+      .commit_file(repo, &first, "src/file with spaces.ts")
+      .unwrap()
+      .text,
+    "export const version = 1;\n"
+  );
+  assert_eq!(
+    service
+      .commit_file(repo, &second, "src/file with spaces.ts")
+      .unwrap()
+      .text,
+    "export const version = 2;\n"
+  );
+  assert!(service.commit_file(repo, &second, "empty.txt").unwrap().text.is_empty());
+  assert!(service
+    .commit_file(repo, &second, "binary.bin")
+    .unwrap()
+    .message
+    .contains("Binary"));
+  assert!(service
+    .commit_file(repo, &second, "large.txt")
+    .unwrap()
+    .message
+    .contains("2 MiB"));
+  assert!(service
+    .commit_file(repo, &second, "dependency")
+    .unwrap()
+    .message
+    .contains(&first));
+  assert!(service.commit_file(repo, &first, "missing.txt").is_err());
+  assert!(service.commit_file(repo, &first, "../outside").is_err());
+  assert!(service.commit_tree(repo, "--all").is_err());
 }
 
 #[test]

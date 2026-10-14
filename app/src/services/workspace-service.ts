@@ -150,7 +150,8 @@ export class WorkspaceService {
         checkout: 'Branch switched',
         branch: 'Branch created',
         'remote-add': 'Remote added',
-        'remote-edit': 'Remote updated'
+        'remote-edit': 'Remote updated',
+        'remote-remove': 'Remote removed'
       };
       void this.toasts.success(messages[action] || 'Done');
       return true;

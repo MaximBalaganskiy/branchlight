@@ -15,7 +15,7 @@ Development requires Node 24+, Rust, and the [Tauri platform prerequisites](http
 
 The Windows executable embeds the bundled, minified UI and uses the shared WebView2 runtime. The NSIS installer downloads WebView2 if it is missing. Neither Node nor Git is bundled. Linux uses WebKitGTK; build Linux packages on Linux with `npm --prefix app run pack:linux`. Linux packaging and desktop behavior have not yet been validated.
 
-Measured Windows x64 release (14 October 2026): **3.46 MiB** executable, **1.38 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
+Measured Windows x64 release (14 October 2026): **3.49 MiB** executable, **1.39 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
 
 ## Included
 
@@ -23,9 +23,11 @@ Measured Windows x64 release (14 October 2026): **3.46 MiB** executable, **1.38 
 - Local branches, remote branches, tags, commit search, and paginated history (up to 100,000 commits). Selecting an unloaded branch tip automatically expands history and scrolls to it.
 - Headless reference tree groups slash-separated branch and tag names into folders, with remotes grouped by name. Arrow keys navigate the tree; search reveals matching paths and clearing it restores collapsed folders.
 - Changed files, syntax-highlighted unified diffs using Lowlight/highlight.js, full commit messages, and a Git command log.
+- Files tab with the complete selected commit's file tree and highlighted historical contents, including unchanged files. Binary files and submodule pointers show an explanatory preview; text previews are limited to 2 MiB and 12,000 lines.
 - A separate native desktop window for staging, unstaging, reviewing, and committing whole files.
 - Commit drafts saved per repository; changes synchronize between open windows.
-- Create and switch local branches, add remotes and edit their URLs, fetch, fast-forward pull, and push to an existing upstream.
+- Create and switch local branches, add/edit/remove remotes, fetch, fast-forward pull, and push to an existing upstream. Remote removal confirms the name and removes its local tracking references without deleting the server repository.
+- Compact repository-name menu in the top bar switches between recent repositories and opens new ones. Full paths distinguish identical folder names.
 - Resizable panes, light/dark themes, Normal/Compact density, recent repositories, and keyboard shortcuts. Normal density is the default; appearance choices are saved and synchronized between windows.
 
 | Shortcut | Action |

@@ -1,0 +1,19 @@
+<template class="block min-w-0 max-w-[32vw]">
+  <button ui-button ref="anchor" class="max-w-full gap-2 border-0! bg-transparent! text-left font-medium!" click.trigger="open = !open" keydown.trigger="openWithKeyboard($event)" disabled.bind="workspace.busy" aria-label="Repository menu" aria-haspopup="menu" aria-expanded.bind="open" title.bind="workspace.repo">
+    <span class="truncate">${workspace.snapshot.name || 'Open repository'}</span>
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" class="shrink-0 text-ink-500" aria-hidden="true"><path d="m 4 6 4 4 4 -4"></path></svg>
+  </button>
+  <ui-menu open.bind="open" anchor.bind="anchor" tab-reference.bind="anchor" close-on-select menu-select.trigger="switchRepository($event.detail)">
+    <ui-list selected.to-view="workspace.repo" aria-label="Repositories">
+      <ui-list-item repeat.for="repository of repositories; key: path" value.bind="repository.path" disabled.bind="workspace.busy">
+        ${repository.name}
+        <span au-slot="secondary" class="block max-w-[65vw] truncate" title.bind="repository.path">${repository.path}</span>
+        <span au-slot="trailing" if.bind="repository.path === workspace.repo" aria-label="Current repository">✓</span>
+      </ui-list-item>
+      <ui-list-item value="" disabled.bind="workspace.busy" class="border-t border-card-border">
+        Open repository…
+        <kbd au-slot="trailing">Ctrl O</kbd>
+      </ui-list-item>
+    </ui-list>
+  </ui-menu>
+</template>

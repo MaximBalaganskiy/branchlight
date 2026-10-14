@@ -7,8 +7,18 @@ import type { Detail } from '../interfaces/detail';
 import type { DiffRequest } from '../interfaces/diff-request';
 import type { CommandEntry } from '../interfaces/command-entry';
 import type { Remote } from '../interfaces/remote';
+import type { TreeEntry } from '../interfaces/tree-entry';
+import type { FilePreview } from '../interfaces/file-preview';
 
 export class TauriGitClient implements GitClient {
+  commitTree(hash: string) {
+    return invoke<TreeEntry[]>('commit_tree', { hash });
+  }
+
+  commitFile(hash: string, path: string) {
+    return invoke<FilePreview>('commit_file', { hash, path });
+  }
+
   remotes() {
     return invoke<Remote[]>('remotes');
   }

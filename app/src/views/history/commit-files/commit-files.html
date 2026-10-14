@@ -1,0 +1,28 @@
+<template class="flex min-h-0 flex-1">
+  <div class="w-[280px] min-w-0 shrink-0 overflow-auto">
+    <div class="px-3 py-2 text-xs text-ink-500">Files at this commit · ${fileCount}</div>
+    <div if.bind="treeLoading" class="p-4 text-sm text-ink-500">Loading files…</div>
+    <ui-alert if.bind="error" tone="danger">${error}</ui-alert>
+    <ui-tree if.bind="!treeLoading && !error" class="border-0! rounded-none!" items.bind="nodes" value.bind="selectedNode" value-field="path" label-field="name" label="Commit files" toggle-on-parent-click tree-select.trigger="selectFile($event.detail)">
+      <template au-slot="item">
+        <span class="block truncate" title.bind="$host.item.path">${$host.item.name}${$host.item.entry?.kind === 'commit' ? ' (submodule)' : ''}</span>
+      </template>
+    </ui-tree>
+    <div if.bind="!treeLoading && !error && !fileCount" class="p-4 text-sm text-ink-500">This commit has no files.</div>
+  </div>
+  <ui-splitter direction="horizontal" size="280" min.bind="150" max.bind="650" storage-key="commit-files" aria-label="Resize commit file tree"></ui-splitter>
+  <section class="flex min-h-0 min-w-0 flex-1 flex-col bg-canvas">
+    <div class="min-h-8 shrink-0 truncate border-b border-card-border px-3 py-1 text-sm" title.bind="selectedPath">${selectedPath || 'File contents'}</div>
+    <div class="min-h-0 flex-1 overflow-auto">
+      <div if.bind="fileLoading" class="p-8 text-center text-sm text-ink-500">Loading file…</div>
+      <div if.bind="!fileLoading && (!selectedPath || message)" class="p-8 text-center text-sm text-ink-500">${message || 'Select a file to view its contents at this commit.'}</div>
+      <div if.bind="!fileLoading && lines.length" class="file-content min-w-max py-2 text-xs leading-[21px]" tabindex="0" aria-label="File contents">
+        <div repeat.for="line of lines" class="flex min-h-[21px] whitespace-pre">
+          <span class="w-12 shrink-0 pr-3 text-right font-mono text-ink-500 select-none">${$index + 1}</span>
+          <code class="pr-4 [tab-size:4]" innerhtml.bind="line"></code>
+        </div>
+        <p if.bind="truncated" class="p-4 text-ink-500">Preview limited to 12,000 lines.</p>
+      </div>
+    </div>
+  </section>
+</template>
