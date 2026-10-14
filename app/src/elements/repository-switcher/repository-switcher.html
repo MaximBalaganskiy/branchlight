@@ -14,6 +14,8 @@
         Open repository…
         <kbd au-slot="trailing">Ctrl O</kbd>
       </ui-list-item>
+      <ui-list-item value=":clone" disabled.bind="workspace.busy">Clone repository…</ui-list-item>
+      <ui-list-item value=":init" disabled.bind="workspace.busy">Create repository…</ui-list-item>
     </ui-list>
   </ui-menu>
 </template>

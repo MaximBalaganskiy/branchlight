@@ -14,4 +14,11 @@ pub struct Mutation {
   pub lines: Option<Vec<usize>>,
   pub staged: Option<bool>,
   pub include_untracked: Option<bool>,
+  pub expected_head: Option<String>,
+  pub expected_branch: Option<String>,
+  pub force: Option<bool>,
+  pub mainline: Option<usize>,
+  pub plan: Option<Vec<super::rebase_step::RebaseStep>>,
+  pub push_url: Option<String>,
+  pub prune: Option<bool>,
 }

@@ -9,6 +9,8 @@ import { WorktreesDialog } from './worktrees-dialog/worktrees-dialog';
 import { ActionDialog } from './action-dialog/action-dialog';
 import { PublishDialog } from './publish-dialog/publish-dialog';
 import { StashesDialog } from './stashes-dialog/stashes-dialog';
+import { BranchDialog } from './branch-dialog/branch-dialog';
+import { HistoryOperationDialog } from './history-operation-dialog/history-operation-dialog';
 import type { UiMenu } from '@aurelia-ui-toolkits/headless';
 import type { Commit } from '../../interfaces/commit';
 import type { Branch } from '../../interfaces/branch';
@@ -68,6 +70,11 @@ export class History {
       await this.createBranch(commit.hash);
     } else if (action === 'merge') {
       await this.mergeReference(commit.hash, commit.subject);
+    } else if (['cherry-pick', 'revert', 'reset', 'rebase', 'rebase-plan'].includes(action)) {
+      await this.dialogs.open({
+        component: HistoryOperationDialog,
+        model: { action, reference: commit.hash, label: commit.subject, parents: commit.parents }
+      });
     } else if (action === 'checkout') {
       await this.dialogs.open({
         component: ActionDialog,
@@ -87,6 +94,13 @@ export class History {
       await this.mergeReference(detail.branch.fullName, detail.branch.name);
     } else if (detail.action === 'branch') {
       await this.createBranch(detail.branch.hash);
+    } else if (['rename', 'delete', 'upstream'].includes(detail.action)) {
+      await this.dialogs.open({ component: BranchDialog, model: detail });
+    } else if (detail.action === 'rebase' || detail.action === 'rebase-plan') {
+      await this.dialogs.open({
+        component: HistoryOperationDialog,
+        model: { action: detail.action, reference: detail.branch.hash, label: detail.branch.name }
+      });
     }
   }
 
@@ -148,6 +162,15 @@ export class History {
     this.lastSnapshot = snapshot;
     this.rows = buildGraph(snapshot.commits, this.appearance.rowHeight);
     const commit = snapshot.commits.find(item => item.hash === this.selected?.hash) ?? snapshot.commits[0];
+    if (!commit) {
+      ++this.detailGeneration;
+      ++this.diffGeneration;
+      this.selected = null;
+      this.detail = null;
+      this.selectedFile = '';
+      this.diff = '';
+      this.diffLoading = false;
+    }
     if (commit && commit.hash !== this.selected?.hash) {
       void this.selectCommit(commit);
     }

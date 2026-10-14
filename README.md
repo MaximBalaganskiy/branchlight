@@ -54,7 +54,13 @@ Branch switching currently requires a clean working tree. Clicking a branch name
 
 ## Preview scope
 
-This is an initial usable version, not full GitExtensions parity. Clone/init UI, rebase/cherry-pick/revert controls, interactive rebase, general reset, branch rename/delete, and advanced remote configuration are not implemented. Conflict resolution is a whole-file text editor and side selection, without a visual hunk-by-hunk merge editor. Partial staging is unavailable for truncated previews. Use the terminal or another client for unsupported operations. Untracked text previews are limited to 1 MB; rendered diffs are limited to 12,000 lines. Repository changes are refreshed on focus, after an app operation, and every eight seconds while focused.
+Clone or create a repository from the repository menu or welcome screen. Right-click a local branch to rename/delete it or set its upstream. The Remotes dialog supports a separate push URL, pruning on fetch, and fetching one remote.
+
+Right-click a commit to cherry-pick, revert, reset the current branch, or rebase onto it. Merge commits require selecting a mainline parent for cherry-pick/revert. Reset offers soft, mixed, and explicitly confirmed hard modes; hard reset refuses untracked files and overlapping ignored files. History operations check the current branch and HEAD again before applying changes.
+
+Ordinary rebase preserves merges. **Edit rebase plan from here** opens a linear history plan, oldest first, with reorder, pick, drop, squash, and fixup controls. Squash combines the existing messages; fixup keeps the preceding message. A conflicted cherry-pick, revert, or rebase opens the commit window, with Continue, Skip, and Abort controls. Git retains the original commit message when continuing, and the window closes when the operation completes. During rebase, “Ours” is the new base plus commits already replayed; “Theirs” is the commit being replayed.
+
+This is an initial usable version, not full GitExtensions parity. Editable rebase plans do not yet support reword/edit/break or merge topology editing. Tag management, reflog browsing, submodule management, and Git LFS controls remain outside the UI. Conflict resolution is a whole-file text editor and side selection, without a visual hunk-by-hunk merge editor. Partial staging is unavailable for truncated previews. Use the terminal or another client for unsupported operations. Untracked text previews are limited to 1 MB; rendered diffs are limited to 12,000 lines. Repository changes are refreshed on focus, after an app operation, and every eight seconds while focused.
 
 ## Development
 

@@ -1,0 +1,53 @@
+<template class="history-operation-dialog w-[720px] max-w-[90vw] max-h-[90vh] overflow-auto p-6">
+  <h2 class="mb-4 text-xl!">${title}</h2>
+  <p class="mb-4 break-words text-sm">
+    Current branch:
+    <strong>${branch}</strong>
+    · ${head.slice(0, 8)}
+    <br />
+    Selected:
+    <strong>${model.label}</strong>
+    · ${model.reference.slice(0, 8)}
+  </p>
+  <div class="grid min-w-0 gap-4">
+    <p if.bind="model.action === 'cherry-pick'" class="text-sm text-ink-500">Apply this commit's changes as a new commit on ${branch}. Your working directory must be clean.</p>
+    <p if.bind="model.action === 'revert'" class="text-sm text-ink-500">Create a new commit that reverses this commit's changes. Your working directory must be clean.</p>
+    <ui-select if.bind="parents.length > 1 && (model.action === 'cherry-pick' || model.action === 'revert')" label="Mainline parent" items.bind="parents" value.bind="mainline" value-field="value" label-field="label" disabled.bind="workspace.busy">
+      <ui-list><ui-list-item repeat.for="parent of $host.items" value.bind="parent">${parent.label}</ui-list-item></ui-list>
+    </ui-select>
+    <p if.bind="parents.length > 1 && (model.action === 'cherry-pick' || model.action === 'revert')" class="text-sm text-ink-500">Changes are calculated relative to the selected parent of this merge commit.</p>
+    <div if.bind="model.action === 'reset'" class="grid gap-4">
+      <ui-select label="Reset mode" items.bind="modes" value.bind="mode" value-field="value" label-field="label" disabled.bind="workspace.busy">
+        <ui-list><ui-list-item repeat.for="item of $host.items" value.bind="item">${item.label}</ui-list-item></ui-list>
+      </ui-select>
+      <p class="text-sm text-warning-text">Move ${branch} to the selected commit. Later commits leave this branch's history; other branches stay where they are.</p>
+      <ui-checkbox if.bind="mode === 'hard'" checked.bind="discard" disabled.bind="workspace.busy">Discard all staged and unstaged tracked changes</ui-checkbox>
+      <p if.bind="mode === 'hard'" class="text-sm text-warning-text">Uncommitted changes cannot be recovered from the reflog. Stash untracked files before a hard reset.</p>
+    </div>
+    <p if.bind="model.action === 'rebase' || model.action === 'rebase-plan'" class="text-sm text-warning-text">Replay ${branch}'s commits onto the selected base. Commit hashes change; coordinate before rewriting published history. The working directory must be clean.</p>
+    <p if.bind="model.action === 'rebase'" class="text-sm text-ink-500">Merge commits are preserved.</p>
+    <div if.bind="model.action === 'rebase-plan'" class="grid gap-2">
+      <p class="text-sm text-ink-500">Oldest first. Squash combines messages; fixup keeps the preceding message. Move commits with the arrow buttons.</p>
+      <p if.bind="!plan.length" role="status">${loading ? 'Loading plan…' : 'No commits to replay.'}</p>
+      <div repeat.for="step of plan; key: hash" class="flex min-w-0 items-center gap-2 rounded border border-card-border p-2">
+        <div class="w-40 min-w-0 shrink-0">
+          <ui-select label="Action for ${step.hash.slice(0, 8)}" items.bind="actions" value.bind="step.action" disabled.bind="workspace.busy">
+            <ui-list><ui-list-item repeat.for="action of $host.items" value.bind="action">${action}</ui-list-item></ui-list>
+          </ui-select>
+        </div>
+        <div class="min-w-0 flex-1">
+          <code class="text-xs text-ink-500">${step.hash.slice(0, 8)}</code>
+          <div class="truncate" title.bind="step.subject">${step.subject}</div>
+        </div>
+        <button ui-icon-button click.trigger="move($index, -1)" disabled.bind="workspace.busy || $first" aria-label="Move ${step.subject} earlier">↑</button>
+        <button ui-icon-button click.trigger="move($index, 1)" disabled.bind="workspace.busy || $last" aria-label="Move ${step.subject} later">↓</button>
+      </div>
+    </div>
+    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <div class="flex justify-end gap-2">
+      <button ui-button click.trigger="cancel()" disabled.bind="workspace.busy">Cancel</button>
+      <button ui-button if.bind="workspace.snapshot.operation" click.trigger="resolve()" disabled.bind="workspace.busy">Open operation in progress</button>
+      <button ui-button primary if.bind="!workspace.snapshot.operation" click.trigger="confirm()" disabled.bind="workspace.busy || loading || (model.action === 'reset' && mode === 'hard' && !discard) || (model.action === 'rebase-plan' && !plan.length)">${workspace.busy ? 'Working…' : model.action === 'rebase-plan' ? 'Apply rebase plan' : title}</button>
+    </div>
+  </div>
+</template>

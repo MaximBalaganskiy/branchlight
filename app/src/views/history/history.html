@@ -19,6 +19,10 @@
     <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${workspace.snapshot.files.length}</span>
   </button>
 </div>
+<div if.bind="workspace.snapshot.operation" class="flex shrink-0 items-center gap-3 bg-warning-bg px-4 py-2 text-sm text-warning-text">
+  <span class="flex-1">${workspace.snapshot.operation} in progress</span>
+  <button ui-button click.trigger="workspace.openCommit()">Review and continue…</button>
+</div>
 <div class="workspace flex min-h-0 flex-1">
   <repository-sidebar branch-action.trigger="branchAction($event.detail)" branch-selected.trigger="focusBranch($event.detail)" manage-remotes.trigger="manageRemotes()"></repository-sidebar>
   <ui-splitter direction="horizontal" size="220" min.bind="160" max.bind="400" storage-key="sidebar" aria-label="Resize branches sidebar"></ui-splitter>
@@ -137,5 +141,10 @@
     <ui-list-item value="branch" disabled.bind="workspace.busy">Create branch here…</ui-list-item>
     <ui-list-item value="checkout" disabled.bind="workspace.busy">Check out commit…</ui-list-item>
     <ui-list-item value="merge" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Merge into current branch…</ui-list-item>
+    <ui-list-item value="cherry-pick" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Cherry-pick commit…</ui-list-item>
+    <ui-list-item value="revert" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Revert commit…</ui-list-item>
+    <ui-list-item value="reset" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Reset current branch here…</ui-list-item>
+    <ui-list-item value="rebase" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Rebase current branch onto here…</ui-list-item>
+    <ui-list-item value="rebase-plan" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Edit rebase plan from here…</ui-list-item>
   </ui-list>
 </ui-menu>

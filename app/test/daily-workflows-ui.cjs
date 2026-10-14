@@ -42,6 +42,8 @@ const path = require('node:path');
   try {
     await page.getByRole('button', { name: '↑ Push', exact: true }).click();
     const publishing = page.getByRole('dialog');
+    await publishing.getByRole('button', { name: 'Remote', exact: true }).click();
+    await page.getByRole('option', { name: 'origin', exact: true }).click();
     await publishing.getByRole('textbox', { name: 'Remote branch', exact: true }).fill('published-main');
     await publishing.getByRole('button', { name: 'Publish branch', exact: true }).click();
     await publishing.waitFor({ state: 'hidden' });
@@ -101,6 +103,8 @@ const path = require('node:path');
     await stashes.getByRole('button', { name: 'Pop', exact: true }).waitFor();
     assert.equal((await git(repo, ['status', '--porcelain'])).stdout, '');
     await stashes.locator('.diff-code').getByText('+untracked', { exact: true }).waitFor();
+    await stashes.getByRole('button', { name: 'Saved stash', exact: true }).click();
+    await page.getByRole('option').filter({ hasText: 'UI stash' }).click();
     await page.screenshot({ path: path.resolve('test-results/stashes.png') });
     await stashes.getByRole('button', { name: 'Pop', exact: true }).click();
     await stashes.getByText('No saved stashes.', { exact: true }).waitFor();

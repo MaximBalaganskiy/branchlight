@@ -2,7 +2,9 @@
   <h2 class="mb-4 text-xl!">Publish branch</h2>
   <p class="mb-4 text-sm text-ink-500">Push ${source} and configure its upstream for future pulls and pushes.</p>
   <form class="grid gap-4" submit.trigger:prevent="publish()">
-    <ui-select label="Remote" items.bind="remotes" value.bind="remote" value-field="name" label-field="name" disabled.bind="workspace.busy"></ui-select>
+    <ui-select label="Remote" items.bind="remotes" value.bind="remote" value-field="name" label-field="name" disabled.bind="workspace.busy">
+      <ui-list><ui-list-item repeat.for="remote of $host.items" value.bind="remote">${remote.name}</ui-list-item></ui-list>
+    </ui-select>
     <ui-input label="Remote branch" value.bind="branch" disabled.bind="workspace.busy" required></ui-input>
     <p if.bind="!remotes.length" class="text-sm text-ink-500">Add a remote in the Remotes dialog first.</p>
     <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>

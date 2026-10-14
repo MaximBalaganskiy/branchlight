@@ -10,8 +10,11 @@
   <span class="branch-pill rounded bg-info-bg px-2 py-1 text-xs whitespace-nowrap text-info-text">⑂ ${workspace.snapshot.branch}</span>
 </div>
 <div class="operation-banner flex shrink-0 items-center gap-3 bg-warning-bg px-5 py-2 text-xs text-warning-text" if.bind="workspace.snapshot.operation">
-  <span class="flex-1">${workspace.snapshot.operation} in progress. Resolve remaining conflicts, review the staged result, then commit.</span>
+  <span class="flex-1">${workspace.snapshot.operation} in progress. ${replaying ? 'Resolve and stage conflicts, then continue. Git keeps the original commit message. Skip if the current commit is empty or unwanted.' : 'Resolve remaining conflicts, review the staged result, then commit.'}</span>
   <button ui-button if.bind="workspace.snapshot.operation === 'Merge'" click.trigger="abortMerge()" disabled.bind="workspace.busy">Abort merge…</button>
+  <button ui-button if.bind="replaying" click.trigger="controlOperation('abort')" disabled.bind="workspace.busy">Abort…</button>
+  <button ui-button if.bind="replaying" click.trigger="controlOperation('skip')" disabled.bind="workspace.busy">Skip commit…</button>
+  <button ui-button primary if.bind="replaying" click.trigger="continueOperation()" disabled.bind="!canContinue">Continue ${workspace.snapshot.operation.toLowerCase()}</button>
 </div>
 <div class="commit-workspace flex min-h-0 flex-1 bg-card">
   <aside ref="stagingPane" class="staging-sidebar flex w-[330px] min-h-0 shrink-0 flex-col bg-card-muted">
@@ -72,8 +75,8 @@
       </div>
       <diff-view file-path.bind="workingFile ? workingFile.path : ''" text.bind="diff" is-loading.bind="diffLoading" selectable.bind="canStageSelection" staged.bind="workingStaged" disabled.bind="workspace.busy" stage-selection.trigger="stageSelection($event.detail)"></diff-view>
     </div>
-    <ui-splitter direction="vertical" target="next" size.bind="messageHeight" min.bind="180" max.bind="messageMax" storage-key="commit-message" aria-label="Resize diff and commit message"></ui-splitter>
-    <section class="message-composer flex min-h-0 shrink-0 flex-col overflow-auto bg-card p-3">
+    <ui-splitter show.bind="!replaying" direction="vertical" target="next" size.bind="messageHeight" min.bind="180" max.bind="messageMax" storage-key="commit-message" aria-label="Resize diff and commit message"></ui-splitter>
+    <section show.bind="!replaying" class="message-composer flex min-h-0 shrink-0 flex-col overflow-auto bg-card p-3">
       <message-picker class="shrink-0" message.bind="message" message-chosen.trigger="message = $event.detail"></message-picker>
       <div class="mb-2 flex shrink-0 flex-wrap items-center gap-2">
         <button ui-button click.trigger="toggleAmend()" disabled.bind="workspace.busy || !workspace.snapshot.head || !!workspace.snapshot.operation">${amendHead ? 'Cancel amend' : 'Amend last commit…'}</button>

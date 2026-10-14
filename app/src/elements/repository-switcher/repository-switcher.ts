@@ -1,8 +1,11 @@
 import { resolve } from 'aurelia';
+import { IDialogService } from '@aurelia/dialog';
+import { RepositoryDialog } from '../../views/welcome/repository-dialog/repository-dialog';
 import { WorkspaceService } from '../../services/workspace-service';
 
 export class RepositorySwitcher {
   readonly workspace = resolve(WorkspaceService);
+  private dialogs = resolve(IDialogService);
   anchor!: HTMLElement;
   open = false;
 
@@ -19,6 +22,10 @@ export class RepositorySwitcher {
   }
 
   async switchRepository(path: string) {
+    if (path === ':clone' || path === ':init') {
+      await this.dialogs.open({ component: RepositoryDialog, model: path.slice(1) });
+      return;
+    }
     if (path !== this.workspace.repo || !path) {
       await this.workspace.open(path || undefined);
     }

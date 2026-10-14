@@ -69,6 +69,51 @@ export class Commit {
       }
     });
   }
+
+  get replaying() {
+    return !!this.workspace.snapshot?.operation && this.workspace.snapshot.operation !== 'Merge';
+  }
+
+  get canContinue() {
+    return !this.workspace.busy && !this.workspace.snapshot?.files.some(file => file.conflict);
+  }
+
+  async continueOperation() {
+    if (await this.workspace.action('operation-continue', { choice: this.workspace.snapshot?.operation })) {
+      await this.closeCompletedOperation();
+    }
+  }
+
+  async controlOperation(control: 'skip' | 'abort') {
+    const operation = this.workspace.snapshot?.operation ?? '';
+    const result = await this.dialogs.open({
+      component: ActionDialog,
+      model: {
+        title: `${control === 'skip' ? 'Skip commit' : 'Abort operation'}`,
+        description:
+          control === 'skip'
+            ? `Skip the current ${operation.toLowerCase()} commit and discard its in-progress changes?`
+            : `Abort ${operation.toLowerCase()} and restore the state before it started? In-progress resolutions will be discarded.`,
+        action: `operation-${control}`,
+        payload: { choice: operation },
+        confirm: control === 'skip' ? 'Skip commit' : 'Abort operation',
+        danger: true
+      }
+    });
+    if ((await result.dialog.closed).status === 'ok') {
+      await this.closeCompletedOperation();
+    }
+  }
+
+  async closeCompletedOperation() {
+    if (!this.workspace.snapshot?.operation) {
+      try {
+        await getCurrentWindow().close();
+      } catch (error) {
+        this.workspace.fail(error);
+      }
+    }
+  }
   get unstaged() {
     return this.workspace.snapshot?.files.filter(file => file.unstaged) ?? [];
   }
@@ -84,6 +129,7 @@ export class Commit {
   get canCommit() {
     return (
       !this.workspace.busy &&
+      !this.replaying &&
       !!this.message.trim() &&
       (this.staged.length > 0 || !!this.amendHead || this.workspace.snapshot?.operation === 'Merge') &&
       !this.workspace.snapshot?.files.some(file => file.conflict)

@@ -10,8 +10,13 @@ import type { Worktree } from './worktree';
 import type { ConflictContent } from './conflict-content';
 import type { MessageOptions } from './message-options';
 import type { Stash } from './stash';
+import type { RebaseStep } from './rebase-step';
+import type { RepositoryRequest } from './repository-request';
 
 export interface GitClient {
+  createRepository(request: RepositoryRequest): Promise<string>;
+  chooseDirectory(): Promise<string | null>;
+  rebasePlan(reference: string): Promise<RebaseStep[]>;
   stashes(): Promise<Stash[]>;
   stashDiff(hash: string): Promise<string>;
   worktrees(): Promise<Worktree[]>;

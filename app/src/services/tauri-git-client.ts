@@ -13,8 +13,22 @@ import type { Worktree } from '../interfaces/worktree';
 import type { ConflictContent } from '../interfaces/conflict-content';
 import type { MessageOptions } from '../interfaces/message-options';
 import type { Stash } from '../interfaces/stash';
+import type { RebaseStep } from '../interfaces/rebase-step';
+import type { RepositoryRequest } from '../interfaces/repository-request';
 
 export class TauriGitClient implements GitClient {
+  createRepository(request: RepositoryRequest) {
+    return invoke<string>('create_repository', { request });
+  }
+
+  chooseDirectory() {
+    return invoke<string | null>('choose_directory');
+  }
+
+  rebasePlan(reference: string) {
+    return invoke<RebaseStep[]>('rebase_plan', { reference });
+  }
+
   stashes() {
     return invoke<Stash[]>('stashes');
   }

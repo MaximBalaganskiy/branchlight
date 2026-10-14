@@ -1,0 +1,18 @@
+<template class="w-[560px] max-w-[90vw] max-h-[90vh] overflow-auto p-6">
+  <h2 class="mb-4 text-xl!">${mode === 'clone' ? 'Clone repository' : 'Create repository'}</h2>
+  <form class="grid gap-4" submit.trigger:prevent="create()">
+    <ui-input if.bind="mode === 'clone'" label="Repository URL or local path" value.bind="url" disabled.bind="working" required></ui-input>
+    <div class="flex items-center gap-2">
+      <ui-input class="min-w-0 flex-1" label="Destination folder" value.bind="directory" disabled.bind="working" required></ui-input>
+      <button ui-button type="button" click.trigger="browse()" disabled.bind="working">Browse…</button>
+    </div>
+    <p class="text-sm text-ink-500">${mode === 'clone' ? 'Choose a new or empty folder. Authentication uses your configured Git credential helper or SSH agent.' : 'Existing files are kept. Choose a folder outside another Git repository.'}</p>
+    <ui-input if.bind="mode === 'init'" label="Initial branch" value.bind="branch" disabled.bind="working" required></ui-input>
+    <p if.bind="working" role="status" class="text-sm text-ink-500">${mode === 'clone' ? 'Cloning repository… This can take a few minutes.' : 'Creating repository…'}</p>
+    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <div class="flex justify-end gap-2">
+      <button ui-button type="button" click.trigger="cancel()" disabled.bind="working">Cancel</button>
+      <button ui-button primary type="submit" disabled.bind="working || !directory.trim() || (mode === 'clone' ? !url.trim() : !branch.trim())">${mode === 'clone' ? 'Clone and open' : 'Create and open'}</button>
+    </div>
+  </form>
+</template>

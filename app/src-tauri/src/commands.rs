@@ -15,6 +15,52 @@ use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
+pub async fn create_repository(
+  app: AppHandle,
+  window: WebviewWindow,
+  request: crate::models::repository_request::RepositoryRequest,
+) -> Result<String, String> {
+  if app.state::<AppState>().context(window.label())?.mode != "browse" {
+    return Err("Create repositories from the main window.".into());
+  }
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.create_repository(&request))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn choose_directory(app: AppHandle) -> Result<Option<String>, String> {
+  tauri::async_runtime::spawn_blocking(move || {
+    app
+      .dialog()
+      .file()
+      .set_title("Choose a destination folder")
+      .blocking_pick_folder()
+      .map(|path| {
+        path
+          .into_path()
+          .map(|path| path.to_string_lossy().into_owned())
+          .map_err(|error| error.to_string())
+      })
+      .transpose()
+  })
+  .await
+  .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn rebase_plan(
+  app: AppHandle,
+  window: WebviewWindow,
+  reference: String,
+) -> Result<Vec<crate::models::rebase_step::RebaseStep>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.rebase_plan(&repo, &reference))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
 pub async fn stashes(app: AppHandle, window: WebviewWindow) -> Result<Vec<crate::models::stash::Stash>, String> {
   let repo = app.state::<AppState>().repo(window.label())?;
   tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.stashes(&repo))

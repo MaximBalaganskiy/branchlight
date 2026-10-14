@@ -143,6 +143,7 @@ impl GitService {
   pub(super) fn workflow_action(&self, repo: &Path, action: &str, payload: &Mutation) -> Result<(), String> {
     match action {
       "merge" | "checkout-detached" => {
+        self.require_idle(repo)?;
         let output = self.run(repo, &["status", "--porcelain=v1", "-z"], false)?;
         if !parsers::status(&String::from_utf8_lossy(&output.stdout)).is_empty() {
           return Err("Commit or stash changes before starting this operation.".into());

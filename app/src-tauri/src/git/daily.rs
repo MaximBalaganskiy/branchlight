@@ -55,8 +55,8 @@ impl GitService {
       .ok_or("This stash no longer exists. Refresh the list.".into())
   }
 
-  fn require_idle(&self, repo: &Path) -> Result<(), String> {
-    if !self.snapshot(repo, 1)?.operation.is_empty() {
+  pub(super) fn require_idle(&self, repo: &Path) -> Result<(), String> {
+    if !self.operation(repo)?.is_empty() {
       return Err("Finish or abort the current Git operation first.".into());
     }
     Ok(())

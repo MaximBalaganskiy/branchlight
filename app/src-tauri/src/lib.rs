@@ -34,6 +34,9 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       commands::bootstrap,
       commands::open_repository,
+      commands::create_repository,
+      commands::choose_directory,
+      commands::rebase_plan,
       commands::snapshot,
       commands::detail,
       commands::commit_tree,

@@ -1,4 +1,4 @@
-<template class="w-[600px] max-w-[90vw] p-6">
+<template class="w-[600px] max-w-[90vw] max-h-[90vh] overflow-auto p-6">
   <header class="mb-5 flex items-center justify-between gap-4">
     <h2 class="text-xl!">Remotes</h2>
     <button ui-button click.trigger="add()" disabled.bind="loading || workspace.busy">Add remote</button>
@@ -25,10 +25,13 @@
   <form else class="grid gap-4" submit.trigger:prevent="save()">
     <ui-input label="Remote name" value.bind="name" readonly.bind="editing" disabled.bind="loading || workspace.busy" required></ui-input>
     <ui-input label="Remote URL" value.bind="url" disabled.bind="loading || workspace.busy" required></ui-input>
+    <ui-input label="Push URL (optional)" value.bind="pushUrl" disabled.bind="loading || workspace.busy" helper-text="Leave empty to use the remote URL for pushes."></ui-input>
+    <ui-checkbox checked.bind="prune" disabled.bind="loading || workspace.busy">Prune deleted remote branches when fetching</ui-checkbox>
     <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
     <div class="mt-2 flex justify-end gap-2">
       <button ui-button danger outlined type="button" class="mr-auto" if.bind="editing" click.trigger="confirmingRemoval = true" disabled.bind="loading || workspace.busy">Remove remote</button>
       <button ui-button type="button" click.trigger="close()" disabled.bind="workspace.busy">Close</button>
+      <button ui-button type="button" if.bind="editing" click.trigger="fetch()" disabled.bind="loading || workspace.busy">Fetch remote</button>
       <button ui-button primary type="submit" disabled.bind="loading || workspace.busy || !name.trim() || !url.trim()">${editing ? 'Save remote' : 'Create remote'}</button>
     </div>
   </form>

@@ -77,7 +77,7 @@ impl GitService {
     Ok(output)
   }
 
-  fn text(&self, repo: &Path, args: &[&str]) -> Result<String, String> {
+  pub(super) fn text(&self, repo: &Path, args: &[&str]) -> Result<String, String> {
     Ok(String::from_utf8_lossy(&self.run(repo, args, false)?.stdout).into_owned())
   }
 
@@ -115,7 +115,23 @@ impl GitService {
         }
       }
     }
-    Ok(remotes.into_iter().map(|(name, url)| Remote { name, url }).collect())
+    remotes
+      .into_iter()
+      .map(|(name, url)| {
+        let push = self.run(repo, &["config", "--get", &format!("remote.{name}.pushurl")], true)?;
+        let prune = self.run(
+          repo,
+          &["config", "--type=bool", "--get", &format!("remote.{name}.prune")],
+          true,
+        )?;
+        Ok(Remote {
+          name,
+          url,
+          push_url: String::from_utf8_lossy(&push.stdout).trim().into(),
+          prune: String::from_utf8_lossy(&prune.stdout).trim() == "true",
+        })
+      })
+      .collect()
   }
 
   pub fn snapshot(&self, repo: &Path, limit: usize) -> Result<Snapshot, String> {
@@ -188,19 +204,7 @@ impl GitService {
     }
     let has_more = commits.len() > limit;
     commits.truncate(limit);
-    let git_dir = self.text(repo, &["rev-parse", "--absolute-git-dir"])?;
-    let operation = [
-      ("MERGE_HEAD", "Merge"),
-      ("CHERRY_PICK_HEAD", "Cherry-pick"),
-      ("REVERT_HEAD", "Revert"),
-      ("rebase-merge", "Rebase"),
-      ("rebase-apply", "Rebase"),
-    ]
-    .iter()
-    .rev()
-    .find(|(file, _)| Path::new(git_dir.trim()).join(file).exists())
-    .map(|(_, name)| *name)
-    .unwrap_or("");
+    let operation = self.operation(repo)?;
     Ok(Snapshot {
       path: repo.to_string_lossy().into_owned(),
       name: repo.file_name().unwrap_or_default().to_string_lossy().into_owned(),
@@ -218,7 +222,7 @@ impl GitService {
       branches,
       commits,
       has_more,
-      operation: operation.into(),
+      operation,
     })
   }
 
@@ -344,6 +348,10 @@ impl GitService {
       .try_lock()
       .map_err(|_| "Another Git operation is running for this repository.")?;
     match action {
+      "branch-rename" | "branch-delete" | "branch-upstream" | "reset" | "cherry-pick" | "revert" | "rebase"
+      | "rebase-plan" | "operation-continue" | "operation-skip" | "operation-abort" => {
+        self.history_action(repo, action, payload)?;
+      }
       "publish" | "stash-save" | "stash-apply" | "stash-pop" | "stash-drop" | "amend" | "undo-commit"
       | "partial-stage" => {
         self.daily_action(repo, action, payload)?;
@@ -374,7 +382,43 @@ impl GitService {
         } else {
           vec!["remote", "set-url", "--", name, url.trim()]
         };
+        if payload
+          .push_url
+          .as_deref()
+          .is_some_and(|url| url.contains(['\0', '\r', '\n']))
+        {
+          return Err("Enter a valid push URL.".into());
+        }
         self.run(repo, &args, false)?;
+        if let Some(push_url) = &payload.push_url {
+          let key = format!("remote.{name}.pushurl");
+          if push_url.trim().is_empty() {
+            let output = self.run(repo, &["config", "--unset-all", &key], true)?;
+            if !output.status.success() && output.status.code() != Some(5) {
+              return Err(String::from_utf8_lossy(&output.stderr).into());
+            }
+          } else {
+            self.run(repo, &["config", "--replace-all", &key, push_url.trim()], false)?;
+          }
+        }
+        if let Some(prune) = payload.prune {
+          self.run(
+            repo,
+            &[
+              "config",
+              &format!("remote.{name}.prune"),
+              if prune { "true" } else { "false" },
+            ],
+            false,
+          )?;
+        }
+      }
+      "remote-fetch" => {
+        let name = payload.name.as_deref().ok_or("Select a remote.")?;
+        if !self.remotes(repo)?.iter().any(|remote| remote.name == name) {
+          return Err("Select an existing remote.".into());
+        }
+        self.run(repo, &["fetch", "--", name], false)?;
       }
       "stage" | "unstage" => {
         let paths = payload
@@ -403,6 +447,10 @@ impl GitService {
         self.workflow_action(repo, action, payload)?;
       }
       "commit" => {
+        let operation = self.operation(repo)?;
+        if !operation.is_empty() && operation != "Merge" {
+          return Err("Use Continue to finish the current operation.".into());
+        }
         let message = payload
           .message
           .as_ref()
@@ -422,6 +470,7 @@ impl GitService {
         self.run(repo, &["commit", "-m", message], false)?;
       }
       "checkout" | "branch" => {
+        self.require_idle(repo)?;
         let name = payload
           .name
           .as_ref()

@@ -1,7 +1,10 @@
 mod daily;
+mod history;
 pub mod parsers;
 mod partial;
 pub mod process;
+mod repositories;
+pub mod sequence_editor;
 pub mod service;
 mod tree;
 pub mod validation;

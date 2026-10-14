@@ -12,6 +12,8 @@ export class RemotesDialog {
   loading = true;
   name = '';
   url = '';
+  pushUrl = '';
+  prune = false;
   error = '';
 
   async binding() {
@@ -32,6 +34,8 @@ export class RemotesDialog {
     this.editing = true;
     this.name = remote.name;
     this.url = remote.url;
+    this.pushUrl = remote.pushUrl;
+    this.prune = remote.prune;
     this.error = '';
   }
 
@@ -40,13 +44,21 @@ export class RemotesDialog {
     this.editing = false;
     this.name = '';
     this.url = '';
+    this.pushUrl = '';
+    this.prune = false;
     this.error = '';
   }
 
   async save() {
     this.error = '';
     const name = this.name.trim();
-    if (await this.workspace.action(this.editing ? 'remote-edit' : 'remote-add', { name, url: this.url.trim() })) {
+    if (
+      await this.workspace.action(
+        this.editing ? 'remote-edit' : 'remote-add',
+        { name, url: this.url.trim(), push_url: this.pushUrl.trim(), prune: this.prune },
+        false
+      )
+    ) {
       this.name = name;
       this.editing = true;
       try {
@@ -81,5 +93,16 @@ export class RemotesDialog {
 
   close() {
     return this.dialog.ok();
+  }
+
+  async fetch() {
+    this.error = '';
+    if (!(await this.workspace.action('remote-fetch', { name: this.name }, false))) {
+      this.error = this.workspace.lastError;
+    }
+  }
+
+  canDeactivate() {
+    return !this.workspace.busy;
   }
 }

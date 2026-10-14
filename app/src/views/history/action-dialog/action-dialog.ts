@@ -27,4 +27,8 @@ export class ActionDialog {
   cancel() {
     return this.dialog.cancel();
   }
+
+  canDeactivate() {
+    return !this.workspace.busy;
+  }
 }

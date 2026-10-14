@@ -17,6 +17,8 @@ pub fn execute_with_input(repo: &Path, args: &[&str], input: Option<&[u8]>) -> R
     .env("GIT_TERMINAL_PROMPT", "0")
     .env("GCM_INTERACTIVE", "never")
     .env("GIT_OPTIONAL_LOCKS", "0")
+    .env("GIT_EDITOR", "true")
+    .env_remove("GIT_SEQUENCE_EDITOR")
     .stdin(if input.is_some() { Stdio::piped() } else { Stdio::null() })
     .stdout(Stdio::piped())
     .stderr(Stdio::piped());

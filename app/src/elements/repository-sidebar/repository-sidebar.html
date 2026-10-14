@@ -48,5 +48,10 @@
     <ui-list-item value="checkout" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || contextBranch.name === workspace.snapshot.branch">Check out branch</ui-list-item>
     <ui-list-item value="branch" disabled.bind="workspace.busy">Create branch from here…</ui-list-item>
     <ui-list-item value="merge" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Merge into current branch…</ui-list-item>
+    <ui-list-item value="rebase" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Rebase current branch onto here…</ui-list-item>
+    <ui-list-item value="rebase-plan" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Edit rebase plan from here…</ui-list-item>
+    <ui-list-item value="rename" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Rename branch…</ui-list-item>
+    <ui-list-item value="upstream" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Set upstream…</ui-list-item>
+    <ui-list-item value="delete" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || !!workspace.snapshot.operation || contextBranch.name === workspace.snapshot.branch">Delete branch…</ui-list-item>
   </ui-list>
 </ui-menu>
