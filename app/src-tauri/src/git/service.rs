@@ -370,6 +370,9 @@ impl GitService {
         args.extend(paths.iter().map(String::as_str));
         self.run(repo, &args, false)?;
       }
+      "merge" | "merge-abort" | "resolve" | "ignore" | "worktree-add" | "worktree-remove" | "checkout-detached" => {
+        self.workflow_action(repo, action, payload)?;
+      }
       "commit" => {
         let message = payload
           .message
@@ -378,6 +381,11 @@ impl GitService {
           .ok_or("Enter a commit message.")?;
         let staged = self.run(repo, &["diff", "--cached", "--quiet"], true)?;
         match staged.status.code() {
+          Some(0)
+            if self
+              .run(repo, &["rev-parse", "--verify", "MERGE_HEAD"], true)?
+              .status
+              .success() => {}
           Some(0) => return Err("Stage changes before committing.".into()),
           Some(1) => {}
           _ => return Err("Could not inspect staged changes.".into()),
@@ -394,11 +402,21 @@ impl GitService {
         if !parsers::status(&self.text(repo, &["status", "--porcelain=v1", "-z"])?).is_empty() {
           return Err("Commit or stash your changes before switching branches.".into());
         }
-        let args = if action == "branch" {
+        let reference = payload
+          .reference
+          .as_deref()
+          .map(|reference| self.resolve_reference(repo, reference))
+          .transpose()?;
+        let mut args = if action == "branch" {
           vec!["switch", "-c", name]
         } else {
           vec!["switch", name]
         };
+        if action == "branch" {
+          if let Some(reference) = &reference {
+            args.push(reference);
+          }
+        }
         self.run(repo, &args, false)?;
       }
       "fetch" => {

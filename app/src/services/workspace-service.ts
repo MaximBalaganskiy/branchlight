@@ -64,6 +64,7 @@ export class WorkspaceService {
     }
 
     this.busy = true;
+    this.lastError = '';
     try {
       const repo = await this.client.open(directory);
       if (!repo) {
@@ -130,7 +131,7 @@ export class WorkspaceService {
     }
   }
 
-  async action(action: string, payload: Record<string, unknown> = {}) {
+  async action(action: string, payload: Record<string, unknown> = {}, notifyErrors = true) {
     if (this.busy) {
       return false;
     }
@@ -151,12 +152,23 @@ export class WorkspaceService {
         branch: 'Branch created',
         'remote-add': 'Remote added',
         'remote-edit': 'Remote updated',
-        'remote-remove': 'Remote removed'
+        'remote-remove': 'Remote removed',
+        merge: this.snapshot?.operation === 'Merge' ? 'Merge prepared — review the result in the commit window' : 'Already up to date',
+        'merge-abort': 'Merge aborted',
+        resolve: 'File resolved and staged',
+        ignore: 'Added to .gitignore',
+        'worktree-add': 'Worktree created',
+        'worktree-remove': 'Worktree removed',
+        'checkout-detached': 'Commit checked out in detached HEAD mode'
       };
       void this.toasts.success(messages[action] || 'Done');
       return true;
     } catch (error) {
-      this.fail(error);
+      if (notifyErrors) {
+        this.fail(error);
+      } else {
+        this.lastError = error instanceof Error ? error.message : String(error);
+      }
       await this.refresh();
       return false;
     } finally {

@@ -1,0 +1,30 @@
+<template class="block">
+  <div class="mb-2 flex items-center gap-2">
+    <button ui-button ref="anchor" click.trigger="show()" aria-haspopup="menu" aria-expanded.bind="open" disabled.bind="workspace.busy">Previous messages &amp; templates ▾</button>
+    <button ui-button click.trigger="saving = !saving" disabled.bind="workspace.busy || !message.trim()">Save as template</button>
+  </div>
+  <form if.bind="saving" class="mb-2 flex items-center gap-2" submit.trigger:prevent="saveTemplate()">
+    <ui-input label="Template name" value.bind="name" required></ui-input>
+    <button ui-button type="submit" disabled.bind="!name.trim()">Save template</button>
+    <button ui-button type="button" click.trigger="saving = false">Cancel</button>
+  </form>
+  <ui-menu open.bind="open" anchor.bind="anchor" tab-reference.bind="anchor" close-on-select menu-select.trigger="choose($event.detail)">
+    <ui-list class="max-h-[50vh] w-[480px] max-w-[80vw] overflow-auto" aria-label="Commit messages and templates">
+      <ui-list-item if.bind="options.suggested" value.bind="options.suggested">Suggested merge message</ui-list-item>
+      <ui-list-item if.bind="options.template" value.bind="options.template">
+        Git commit template
+        <span au-slot="secondary">Configured with commit.template</span>
+      </ui-list-item>
+      <ui-list-item repeat.for="template of templates; key: name" value.bind="template.text">
+        ${template.name}
+        <span au-slot="secondary">Saved template</span>
+        <button au-slot="trailing" ui-icon-button size="small" aria-label="Delete template ${template.name}" click.trigger="removeTemplate(template, $event)" keydown.trigger="$event.stopPropagation()">×</button>
+      </ui-list-item>
+      <ui-list-item repeat.for="message of options.recent" value.bind="message">
+        <span class="block truncate" title.bind="message">${message.split('\n')[0]}</span>
+        <span au-slot="secondary">Previous commit message</span>
+      </ui-list-item>
+      <ui-list-item if.bind="!options.recent.length && !templates.length && !options.template" disabled>No previous messages or templates</ui-list-item>
+    </ui-list>
+  </ui-menu>
+</template>

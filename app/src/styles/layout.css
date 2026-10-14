@@ -5,6 +5,10 @@ body {
   background: var(--color-canvas);
 }
 
+dialog:has(.conflict-editor, .worktree-manager) {
+  max-width: 95vw;
+}
+
 h2 {
   font-size: 13px;
   font-weight: 600;

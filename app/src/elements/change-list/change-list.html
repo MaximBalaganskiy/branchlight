@@ -1,0 +1,28 @@
+<template class="block">
+  <ui-tree if.bind="tree" class="border-0! rounded-none!" items.bind="nodes" value.to-view="selectedPath" value-field="path" label-field="name" label="${staged ? 'Staged' : 'Unstaged'} files" toggle-on-parent-click tree-select.trigger="selectNode($event.detail)">
+    <template au-slot="item">
+      <div class="group flex min-h-[var(--ui-icon-button-small-size)] min-w-0 items-center gap-2" title.bind="$host.item.path" ui-context-menu.bind="$host.item.file ? menu : null" contextmenu.trigger="contextFile = $host.item.file">
+        <span if.bind="$host.item.file" class="font-mono text-xs text-warning-text">${status($host.item.file)}</span>
+        <span class="min-w-0 flex-1 truncate">${$host.item.name}</span>
+        <button ui-icon-button size="small" if.bind="$host.item.file" class="shrink-0 text-accent" click.trigger="action('stage', $host.item.file, $event)" keydown.trigger="$event.stopPropagation()" disabled.bind="workspace.busy || $host.item.file.conflict" aria-label="${staged ? 'Unstage' : 'Stage'} ${$host.item.path}">${staged ? '−' : '+'}</button>
+      </div>
+    </template>
+  </ui-tree>
+  <template else>
+    <div repeat.for="file of files; key: path" class="stage-file flex min-w-0 items-center ${selectedPath === file.path ? 'selected' : ''}" ui-context-menu.bind="menu" contextmenu.trigger="contextFile = file">
+      <button ui-button class="file-item flex! min-h-[26px] min-w-0 w-full items-center justify-start! gap-2 rounded-none! border-0! px-2.5! py-1.5! text-left text-[11px]! leading-normal! font-normal!" click.trigger="action('selected', file)" title.bind="file.path">
+        <span class="file-status min-w-4 text-center font-mono text-[10px] font-bold text-warning-text">${status(file)}</span>
+        <span>${file.path}</span>
+      </button>
+      <button ui-icon-button class="file-action mr-2 text-lg! text-accent!" click.trigger="action('stage', file)" disabled.bind="workspace.busy || file.conflict" title="${staged ? 'Unstage' : 'Stage'} ${file.path}" aria-label="${staged ? 'Unstage' : 'Stage'} ${file.path}">${staged ? '−' : '+'}</button>
+    </div>
+  </template>
+  <ui-menu component.ref="menu" close-on-select menu-select.trigger="action($event.detail)">
+    <ui-list>
+      <ui-list-item value="selected">View changes</ui-list-item>
+      <ui-list-item value="stage" disabled.bind="workspace.busy || contextFile.conflict">${staged ? 'Unstage file' : 'Stage file'}</ui-list-item>
+      <ui-list-item value="resolve" if.bind="contextFile.conflict" disabled.bind="workspace.busy">Resolve conflict…</ui-list-item>
+      <ui-list-item value="ignore" if.bind="contextFile.index === '?'" disabled.bind="workspace.busy">Add file to .gitignore</ui-list-item>
+    </ui-list>
+  </ui-menu>
+</template>

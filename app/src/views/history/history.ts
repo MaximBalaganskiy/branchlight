@@ -5,6 +5,9 @@ import { buildGraph } from '../../services/graph-layout';
 import { AppearanceService } from '../../services/appearance-service';
 import { NewBranchDialog } from './new-branch-dialog/new-branch-dialog';
 import { RemotesDialog } from './remotes-dialog/remotes-dialog';
+import { WorktreesDialog } from './worktrees-dialog/worktrees-dialog';
+import { ActionDialog } from './action-dialog/action-dialog';
+import type { UiMenu } from '@aurelia-ui-toolkits/headless';
 import type { Commit } from '../../interfaces/commit';
 import type { Branch } from '../../interfaces/branch';
 import type { Detail } from '../../interfaces/detail';
@@ -33,11 +36,8 @@ export class History {
   diffLoading = false;
   query = '';
   commandLog: CommandEntry[] = [];
-
-  @watch('appearance.density')
-  densityChanged() {
-    this.rows = buildGraph(this.workspace.snapshot?.commits ?? [], this.appearance.rowHeight);
-  }
+  commitMenu!: UiMenu;
+  contextCommit: Commit | null = null;
 
   @observable
   tab = 'diff';
@@ -45,6 +45,69 @@ export class History {
     if (this.tab === 'log') {
       void this.loadLog();
     }
+  }
+
+  async commitAction(action: string) {
+    const commit = this.contextCommit;
+    if (!commit) {
+      return;
+    }
+    if (action === 'files') {
+      await this.selectCommit(commit);
+      this.tab = 'files';
+    } else if (action === 'copy') {
+      try {
+        await navigator.clipboard.writeText(commit.hash);
+        this.workspace.inform('Commit hash copied');
+      } catch (error) {
+        this.workspace.fail(error);
+      }
+    } else if (action === 'branch') {
+      await this.createBranch(commit.hash);
+    } else if (action === 'merge') {
+      await this.mergeReference(commit.hash, commit.subject);
+    } else if (action === 'checkout') {
+      await this.dialogs.open({
+        component: ActionDialog,
+        model: {
+          title: 'Check out commit',
+          description: `Check out ${commit.hash.slice(0, 8)} in detached HEAD mode? Create a branch before making new commits you want to keep.`,
+          action: 'checkout-detached',
+          payload: { reference: commit.hash },
+          confirm: 'Check out commit'
+        }
+      });
+    }
+  }
+
+  async branchAction(detail: { action: string; branch: Branch }) {
+    if (detail.action === 'merge') {
+      await this.mergeReference(detail.branch.fullName, detail.branch.name);
+    } else if (detail.action === 'branch') {
+      await this.createBranch(detail.branch.hash);
+    }
+  }
+
+  mergeReference(reference: string, label: string) {
+    return this.dialogs.open({
+      component: ActionDialog,
+      model: {
+        title: 'Merge into current branch',
+        description: `Merge ${label} into ${this.workspace.snapshot?.branch}? The merge will pause before creating a commit so you can review changes and resolve conflicts.`,
+        action: 'merge',
+        payload: { reference },
+        confirm: 'Start merge'
+      }
+    });
+  }
+
+  manageWorktrees() {
+    return this.dialogs.open({ component: WorktreesDialog });
+  }
+
+  @watch('appearance.density')
+  densityChanged() {
+    this.rows = buildGraph(this.workspace.snapshot?.commits ?? [], this.appearance.rowHeight);
   }
 
   get matchCount() {
@@ -169,9 +232,9 @@ export class History {
     document.getElementById('commit-' + commit.hash)?.scrollIntoView({ block: 'center' });
   }
 
-  async createBranch() {
+  async createBranch(reference?: string) {
     try {
-      await this.dialogs.open({ component: NewBranchDialog });
+      await this.dialogs.open({ component: NewBranchDialog, model: reference });
     } catch (error) {
       this.workspace.fail(error);
     }

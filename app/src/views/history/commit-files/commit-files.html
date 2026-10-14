@@ -1,6 +1,12 @@
 <template class="flex min-h-0 flex-1">
   <div class="w-[280px] min-w-0 shrink-0 overflow-auto">
     <div class="px-3 py-2 text-xs text-ink-500">Files at this commit · ${fileCount}</div>
+    <ui-input class="m-2" label="Find a file" value.bind="fileQuery">
+      <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="10" cy="10" r="6"></circle>
+        <path d="m 15 15 5 5"></path>
+      </svg>
+    </ui-input>
     <div if.bind="treeLoading" class="p-4 text-sm text-ink-500">Loading files…</div>
     <ui-alert if.bind="error" tone="danger">${error}</ui-alert>
     <ui-tree if.bind="!treeLoading && !error" class="border-0! rounded-none!" items.bind="nodes" value.bind="selectedNode" value-field="path" label-field="name" label="Commit files" toggle-on-parent-click tree-select.trigger="selectFile($event.detail)">
@@ -9,15 +15,26 @@
       </template>
     </ui-tree>
     <div if.bind="!treeLoading && !error && !fileCount" class="p-4 text-sm text-ink-500">This commit has no files.</div>
+    <div if.bind="fileQuery && fileCount && !nodes.length" class="p-4 text-sm text-ink-500">No matching files.</div>
   </div>
   <ui-splitter direction="horizontal" size="280" min.bind="150" max.bind="650" storage-key="commit-files" aria-label="Resize commit file tree"></ui-splitter>
   <section class="flex min-h-0 min-w-0 flex-1 flex-col bg-canvas">
     <div class="min-h-8 shrink-0 truncate border-b border-card-border px-3 py-1 text-sm" title.bind="selectedPath">${selectedPath || 'File contents'}</div>
+    <form if.bind="lines.length" class="flex shrink-0 items-center gap-2 px-3 py-1" submit.trigger:prevent="findInFile()">
+      <ui-input class="w-64" label="Find in file" value.bind="contentQuery">
+        <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="10" cy="10" r="6"></circle>
+          <path d="m 15 15 5 5"></path>
+        </svg>
+      </ui-input>
+      <span class="text-xs text-ink-500" if.bind="contentQuery">${contentMatches.length} matching lines</span>
+      <button ui-icon-button type="submit" title="Next matching line" aria-label="Next matching line" disabled.bind="!contentMatches.length">↓</button>
+    </form>
     <div class="min-h-0 flex-1 overflow-auto">
       <div if.bind="fileLoading" class="p-8 text-center text-sm text-ink-500">Loading file…</div>
       <div if.bind="!fileLoading && (!selectedPath || message)" class="p-8 text-center text-sm text-ink-500">${message || 'Select a file to view its contents at this commit.'}</div>
       <div if.bind="!fileLoading && lines.length" class="file-content min-w-max py-2 text-xs leading-[21px]" tabindex="0" aria-label="File contents">
-        <div repeat.for="line of lines" class="flex min-h-[21px] whitespace-pre">
+        <div repeat.for="line of lines" data-line.bind="$index" class="flex min-h-[21px] whitespace-pre ${matchLine === $index ? 'bg-warning-bg' : ''}">
           <span class="w-12 shrink-0 pr-3 text-right font-mono text-ink-500 select-none">${$index + 1}</span>
           <code class="pr-4 [tab-size:4]" innerhtml.bind="line"></code>
         </div>

@@ -1,0 +1,9 @@
+<template class="w-[480px] max-w-[90vw] p-6">
+  <h2 class="mb-4 text-xl!">${model.title}</h2>
+  <p class="mb-4 whitespace-pre-wrap">${model.description}</p>
+  <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+  <div class="mt-5 flex justify-end gap-2">
+    <button ui-button click.trigger="cancel()" disabled.bind="workspace.busy">Cancel</button>
+    <button ui-button primary.bind="!model.danger" danger.bind="model.danger" click.trigger="confirm()" disabled.bind="workspace.busy">${model.confirm}</button>
+  </div>
+</template>

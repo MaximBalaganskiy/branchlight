@@ -11,12 +11,17 @@
     <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${workspace.snapshot.files.length}</span>
   </button>
   <div class="branch-search my-2">
-    <ui-input value.bind="branchSearch" placeholder="Find a branch…" label="Find a branch" class="search-field"></ui-input>
+    <ui-input value.bind="branchSearch" placeholder="Find a branch…" label="Find a branch" class="search-field">
+      <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="10" cy="10" r="6"></circle>
+        <path d="m 15 15 5 5"></path>
+      </svg>
+    </ui-input>
   </div>
   <div class="branch-lists min-h-0 flex-1 overflow-auto">
     <ui-tree class="border-0! rounded-none! p-0!" items.bind="nodes" value.bind="selectedNode" value-field="id" label-field="name" label="Repository references" toggle-on-parent-click tree-select.trigger="selectNode($event.detail)" tree-expand.trigger="rememberExpansion($event.detail, true)" tree-collapse.trigger="rememberExpansion($event.detail, false)">
       <template au-slot="item">
-        <div class="branch-item group flex min-h-[var(--ui-icon-button-small-size)] min-w-0 items-center gap-2" title.bind="$host.item.branch ? $host.item.branch.name : $host.item.name">
+        <div ui-context-menu.bind="$host.item.branch ? branchMenu : null" contextmenu.trigger="contextBranch = $host.item.branch" class="branch-item group flex min-h-[var(--ui-icon-button-small-size)] min-w-0 items-center gap-2" title.bind="$host.item.branch ? $host.item.branch.name : $host.item.name">
           <span if.bind="$host.item.branch?.kind === 'local'" class="branch-dot size-1.5 shrink-0 rounded-full border border-ink-500 ${$host.item.branch.name === workspace.snapshot.branch ? 'current' : ''}"></span>
           <span if.bind="$host.item.branch && $host.item.branch.kind !== 'local'" class="shrink-0 text-ink-500">${$host.item.branch.kind === 'tag' ? '◇' : '⑂'}</span>
           <span class="branch-name min-w-0 flex-1 truncate ${$host.item.branch ? '' : 'font-medium'}">${$host.item.name}</span>
@@ -35,3 +40,13 @@
     <small title.bind="workspace.repo">${workspace.repo}</small>
   </div>
 </aside>
+
+<ui-menu component.ref="branchMenu" close-on-select menu-select.trigger="branchAction($event.detail)">
+  <ui-list>
+    <ui-list-item value="tip">Go to branch tip</ui-list-item>
+    <ui-list-item value="copy">Copy reference name</ui-list-item>
+    <ui-list-item value="checkout" if.bind="contextBranch.kind === 'local'" disabled.bind="workspace.busy || contextBranch.name === workspace.snapshot.branch">Check out branch</ui-list-item>
+    <ui-list-item value="branch" disabled.bind="workspace.busy">Create branch from here…</ui-list-item>
+    <ui-list-item value="merge" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Merge into current branch…</ui-list-item>
+  </ui-list>
+</ui-menu>

@@ -9,8 +9,22 @@ import type { CommandEntry } from '../interfaces/command-entry';
 import type { Remote } from '../interfaces/remote';
 import type { TreeEntry } from '../interfaces/tree-entry';
 import type { FilePreview } from '../interfaces/file-preview';
+import type { Worktree } from '../interfaces/worktree';
+import type { ConflictContent } from '../interfaces/conflict-content';
+import type { MessageOptions } from '../interfaces/message-options';
 
 export class TauriGitClient implements GitClient {
+  worktrees() {
+    return invoke<Worktree[]>('worktrees');
+  }
+
+  conflictContent(path: string) {
+    return invoke<ConflictContent>('conflict_content', { path });
+  }
+
+  messageOptions() {
+    return invoke<MessageOptions>('message_options');
+  }
   commitTree(hash: string) {
     return invoke<TreeEntry[]>('commit_tree', { hash });
   }

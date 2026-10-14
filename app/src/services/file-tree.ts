@@ -1,7 +1,7 @@
 import type { TreeEntry } from '../interfaces/tree-entry';
 import type { FileTreeNode } from '../interfaces/file-tree-node';
 
-export function buildFileTree(entries: TreeEntry[]): FileTreeNode[] {
+export function buildFileTree(entries: TreeEntry[], expanded = false): FileTreeNode[] {
   const roots: FileTreeNode[] = [];
   const folders = new Map<string, FileTreeNode>();
   for (const entry of entries) {
@@ -12,7 +12,7 @@ export function buildFileTree(entries: TreeEntry[]): FileTreeNode[] {
       path += `${name}/`;
       let folder = folders.get(path);
       if (!folder) {
-        folder = { path, name, expanded: false, children: [] };
+        folder = { path, name, expanded, children: [] };
         folders.set(path, folder);
         children.push(folder);
       }

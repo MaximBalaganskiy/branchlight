@@ -1,0 +1,29 @@
+<template class="conflict-editor flex w-[1100px] min-w-0 max-w-[95vw] max-h-[90vh] flex-col overflow-auto p-5">
+  <h2 class="mb-3 text-xl!">Resolve conflict: ${path}</h2>
+  <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+  <div if.bind="content" class="grid gap-3">
+    <ui-tabs value.bind="tab" class="border-0!">
+      <ui-tab value="sides">Ours / Theirs</ui-tab>
+      <ui-tab value="base">Common ancestor</ui-tab>
+    </ui-tabs>
+    <div if.bind="tab === 'sides'" class="grid grid-cols-2 gap-3">
+      <div>
+        <ui-input textarea readonly label="Ours" value.bind="content.ours" rows="7" class="font-mono"></ui-input>
+        <button ui-button class="mt-2" click.trigger="resolve('ours')" disabled.bind="workspace.busy">Use ours and stage</button>
+      </div>
+      <div>
+        <ui-input textarea readonly label="Theirs" value.bind="content.theirs" rows="7" class="font-mono"></ui-input>
+        <button ui-button class="mt-2" click.trigger="resolve('theirs')" disabled.bind="workspace.busy">Use theirs and stage</button>
+      </div>
+    </div>
+    <ui-input else textarea readonly label="Common ancestor" value.bind="content.base" rows="7" class="font-mono"></ui-input>
+    <ui-input if.bind="content.editable" textarea label="Resolved content" value.bind="result" rows="9" class="font-mono" disabled.bind="workspace.busy"></ui-input>
+    <p else class="text-sm text-ink-500">This file cannot be edited as text here. Choose one side, or resolve it externally and mark it resolved.</p>
+    <p class="text-xs text-ink-500">Choosing a side replaces the entire file. Saving a result stages it for the merge commit.</p>
+  </div>
+  <div class="mt-4 flex justify-end gap-2">
+    <button ui-button click.trigger="close()" disabled.bind="workspace.busy">Close</button>
+    <button ui-button click.trigger="resolve('mark')" disabled.bind="workspace.busy || !content">Mark externally resolved</button>
+    <button ui-button primary if.bind="content.editable" click.trigger="resolve('edit')" disabled.bind="workspace.busy">Save result and stage</button>
+  </div>
+</template>

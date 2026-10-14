@@ -10,6 +10,7 @@
   <span class="toolbar-divider mx-1 h-5 border-l border-card-border"></span>
   <button ui-button click.trigger="createBranch()" disabled.bind="workspace.busy">⑂ New branch</button>
   <button ui-button click.trigger="manageRemotes()" disabled.bind="workspace.busy">Remotes</button>
+  <button ui-button click.trigger="manageWorktrees()">Worktrees</button>
   <div class="spacer flex-1"></div>
   <button ui-icon-button class="text-lg" click.trigger="workspace.refresh()" disabled.bind="workspace.busy || workspace.refreshing" title="Refresh · F5">↻</button>
   <button ui-button primary class="gap-2" click.trigger="workspace.openCommit()" title="Open commit window · Ctrl+K">
@@ -18,7 +19,7 @@
   </button>
 </div>
 <div class="workspace flex min-h-0 flex-1">
-  <repository-sidebar branch-selected.trigger="focusBranch($event.detail)" manage-remotes.trigger="manageRemotes()"></repository-sidebar>
+  <repository-sidebar branch-action.trigger="branchAction($event.detail)" branch-selected.trigger="focusBranch($event.detail)" manage-remotes.trigger="manageRemotes()"></repository-sidebar>
   <ui-splitter direction="horizontal" size="220" min.bind="160" max.bind="400" storage-key="sidebar" aria-label="Resize branches sidebar"></ui-splitter>
   <section class="repository-content flex min-h-0 min-w-0 flex-1 flex-col bg-card">
     <section class="history-panel flex h-[410px] max-h-[calc(100%-180px)] min-h-0 flex-col">
@@ -29,8 +30,12 @@
         </h2>
         <div class="spacer flex-1"></div>
         <form class="history-search flex w-[330px] items-center gap-2 text-ink-500" submit.trigger:prevent="findNext()">
-          <span>⌕</span>
-          <ui-input value.bind="query" placeholder="Find a commit, author or hash…" label="Search commits" class="search-field"></ui-input>
+          <ui-input value.bind="query" placeholder="Find a commit, author or hash…" label="Search commits" class="search-field">
+            <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="10" cy="10" r="6"></circle>
+              <path d="m 15 15 5 5"></path>
+            </svg>
+          </ui-input>
           <small if.bind="query">${matchCount} matches</small>
           <button ui-icon-button type="submit" title="Next match">↵</button>
         </form>
@@ -42,8 +47,8 @@
         <span>SHA</span>
       </div>
       <div class="history-scroll min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
-        <div class="commit-rows" role="list" aria-label="Commit history">
-          <button ui-button repeat.for="row of rows; key: commit.hash" id="commit-${row.commit.hash}" class="commit-row grid! h-[var(--app-row-height)] w-full min-w-[650px] items-center gap-0 rounded-none! border-0! border-l-2! border-transparent! p-0! text-left text-sm! leading-normal! font-normal! transform-none! ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}" click.trigger="selectCommit(row.commit)" aria-label.bind="row.commit.subject" title.bind="row.commit.subject">
+        <div class="commit-rows" ui-context-menu.bind="commitMenu" role="list" aria-label="Commit history">
+          <button ui-button repeat.for="row of rows; key: commit.hash" id="commit-${row.commit.hash}" class="commit-row grid! h-[var(--app-row-height)] w-full min-w-[650px] items-center gap-0 rounded-none! border-0! border-l-2! border-transparent! p-0! text-left text-sm! leading-normal! font-normal! transform-none! ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}" contextmenu.trigger="contextCommit = row.commit" click.trigger="selectCommit(row.commit)" aria-label.bind="row.commit.subject" title.bind="row.commit.subject">
             <span class="graph-and-subject flex h-full min-w-0 items-center">
               <svg class="graph block flex-none overflow-visible" width.bind="row.width" height.bind="appearance.rowHeight" aria-hidden="true">
                 <path repeat.for="edge of row.edges" d.bind="edge.d" stroke.bind="edge.color" fill="none" stroke-width="1.8"></path>
@@ -123,3 +128,13 @@
     </section>
   </section>
 </div>
+
+<ui-menu component.ref="commitMenu" close-on-select menu-select.trigger="commitAction($event.detail)">
+  <ui-list>
+    <ui-list-item value="files">Browse files at this commit</ui-list-item>
+    <ui-list-item value="copy">Copy commit hash</ui-list-item>
+    <ui-list-item value="branch" disabled.bind="workspace.busy">Create branch here…</ui-list-item>
+    <ui-list-item value="checkout" disabled.bind="workspace.busy">Check out commit…</ui-list-item>
+    <ui-list-item value="merge" disabled.bind="workspace.busy || !!workspace.snapshot.operation">Merge into current branch…</ui-list-item>
+  </ui-list>
+</ui-menu>

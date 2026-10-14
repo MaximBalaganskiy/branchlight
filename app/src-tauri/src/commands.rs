@@ -1,3 +1,4 @@
+use crate::models::{conflict_content::ConflictContent, message_options::MessageOptions, worktree::Worktree};
 use crate::models::{file_preview::FilePreview, tree_entry::TreeEntry};
 use crate::{
   app_state::AppState,
@@ -12,6 +13,30 @@ use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
+
+#[tauri::command]
+pub async fn worktrees(app: AppHandle, window: WebviewWindow) -> Result<Vec<Worktree>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.worktrees(&repo))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn conflict_content(app: AppHandle, window: WebviewWindow, path: String) -> Result<ConflictContent, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.conflict_content(&repo, &path))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn message_options(app: AppHandle, window: WebviewWindow) -> Result<MessageOptions, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.message_options(&repo))
+    .await
+    .map_err(|error| error.to_string())?
+}
 
 #[tauri::command]
 pub async fn commit_tree(app: AppHandle, window: WebviewWindow, hash: String) -> Result<Vec<TreeEntry>, String> {

@@ -8,10 +8,15 @@ export class NewBranchDialog {
   private dialog = resolve(IDialogController);
   name = '';
   error = '';
+  reference = '';
+
+  activate(reference?: string) {
+    this.reference = reference || '';
+  }
 
   async save() {
     this.error = '';
-    if (await this.workspace.action('branch', { name: this.name })) {
+    if (await this.workspace.action('branch', { name: this.name, reference: this.reference || undefined })) {
       await this.dialog.ok();
     } else {
       this.error = this.workspace.lastError;

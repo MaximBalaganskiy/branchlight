@@ -20,6 +20,193 @@ fn repository() -> (TempDir, GitService) {
   (temp, service)
 }
 
+#[test]
+fn merge_resolution_abort_and_stale_editor_protection() {
+  let (temp, service) = repository();
+  let repo = temp.path();
+  commit(&service, repo, "conflict.txt", "base\n", "Base");
+  service.run(repo, &["switch", "-c", "feature"], false).unwrap();
+  commit(&service, repo, "conflict.txt", "theirs\n", "Incoming");
+  service.run(repo, &["switch", "main"], false).unwrap();
+  commit(&service, repo, "conflict.txt", "ours\n", "Current");
+  mutate(&service, repo, "merge", serde_json::json!({ "reference": "feature" }));
+  assert_eq!(service.snapshot(repo, 300).unwrap().operation, "Merge");
+  let content = service.conflict_content(repo, "conflict.txt").unwrap();
+  assert_eq!(content.base, "base\n");
+  assert_eq!(content.ours, "ours\n");
+  assert_eq!(content.theirs, "theirs\n");
+  assert!(content.editable);
+  assert!(service
+    .mutate(
+      repo,
+      "resolve",
+      &serde_json::from_value(serde_json::json!({ "paths": ["conflict.txt"], "choice": "mark" })).unwrap()
+    )
+    .is_err());
+  fs::write(repo.join("conflict.txt"), "External resolution\n").unwrap();
+  assert!(service.mutate(repo, "resolve", &serde_json::from_value(serde_json::json!({ "paths": ["conflict.txt"], "choice": "edit", "original": content.working, "text": "stale result\n" })).unwrap()).is_err());
+  mutate(&service, repo, "merge-abort", serde_json::json!({}));
+  assert_eq!(fs::read_to_string(repo.join("conflict.txt")).unwrap(), "ours\n");
+  mutate(&service, repo, "merge", serde_json::json!({ "reference": "feature" }));
+  mutate(
+    &service,
+    repo,
+    "resolve",
+    serde_json::json!({ "paths": ["conflict.txt"], "choice": "theirs" }),
+  );
+  assert!(!service
+    .snapshot(repo, 300)
+    .unwrap()
+    .files
+    .iter()
+    .any(|file| file.conflict));
+  assert!(!service.message_options(repo).unwrap().suggested.is_empty());
+  mutate(
+    &service,
+    repo,
+    "commit",
+    serde_json::json!({ "message": "Resolved merge" }),
+  );
+  let snapshot = service.snapshot(repo, 300).unwrap();
+  assert_eq!(snapshot.commits[0].parents.len(), 2);
+  assert_eq!(fs::read_to_string(repo.join("conflict.txt")).unwrap(), "theirs\n");
+}
+
+#[test]
+fn resolving_to_ours_can_commit_an_unchanged_merge_tree() {
+  let (temp, service) = repository();
+  let repo = temp.path();
+  commit(&service, repo, "conflict.txt", "base\n", "Base");
+  service.run(repo, &["switch", "-c", "feature"], false).unwrap();
+  commit(&service, repo, "conflict.txt", "theirs\n", "Incoming");
+  service.run(repo, &["switch", "main"], false).unwrap();
+  commit(&service, repo, "conflict.txt", "ours\n", "Current");
+  mutate(&service, repo, "merge", serde_json::json!({ "reference": "feature" }));
+  mutate(
+    &service,
+    repo,
+    "resolve",
+    serde_json::json!({ "paths": ["conflict.txt"], "choice": "ours" }),
+  );
+  assert!(service.snapshot(repo, 300).unwrap().files.is_empty());
+  mutate(&service, repo, "commit", serde_json::json!({ "message": "Keep ours" }));
+  assert_eq!(service.snapshot(repo, 300).unwrap().commits[0].parents.len(), 2);
+  assert_eq!(fs::read_to_string(repo.join("conflict.txt")).unwrap(), "ours\n");
+}
+
+#[test]
+fn choosing_a_deleted_side_resolves_modify_delete_conflicts() {
+  let (temp, service) = repository();
+  let repo = temp.path();
+  commit(&service, repo, "conflict.txt", "base\n", "Base");
+  service.run(repo, &["switch", "-c", "feature"], false).unwrap();
+  service.run(repo, &["rm", "conflict.txt"], false).unwrap();
+  mutate(
+    &service,
+    repo,
+    "commit",
+    serde_json::json!({ "message": "Remove file" }),
+  );
+  service.run(repo, &["switch", "main"], false).unwrap();
+  commit(&service, repo, "conflict.txt", "ours\n", "Current");
+  mutate(&service, repo, "merge", serde_json::json!({ "reference": "feature" }));
+  let content = service.conflict_content(repo, "conflict.txt").unwrap();
+  assert_eq!(content.theirs, "[File absent on this side]");
+  mutate(
+    &service,
+    repo,
+    "resolve",
+    serde_json::json!({ "paths": ["conflict.txt"], "choice": "theirs" }),
+  );
+  assert!(!repo.join("conflict.txt").exists());
+  mutate(
+    &service,
+    repo,
+    "commit",
+    serde_json::json!({ "message": "Accept deletion" }),
+  );
+  assert_eq!(service.snapshot(repo, 300).unwrap().commits[0].parents.len(), 2);
+}
+
+#[test]
+fn worktrees_preserve_dirty_files_and_ignore_rules_are_literal() {
+  let (temp, service) = repository();
+  let repo = temp.path();
+  commit(&service, repo, "tracked.txt", "keep\n", "Initial");
+  fs::write(repo.join("build [1].log"), "temporary").unwrap();
+  mutate(
+    &service,
+    repo,
+    "ignore",
+    serde_json::json!({ "paths": ["build [1].log"] }),
+  );
+  assert!(service
+    .run(
+      repo,
+      &["--no-literal-pathspecs", "check-ignore", "--", "build [1].log"],
+      true
+    )
+    .unwrap()
+    .status
+    .success());
+  assert!(!service
+    .run(
+      repo,
+      &["--no-literal-pathspecs", "check-ignore", "--", "build 1.log"],
+      true
+    )
+    .unwrap()
+    .status
+    .success());
+  assert!(service
+    .mutate(
+      repo,
+      "ignore",
+      &serde_json::from_value(serde_json::json!({ "paths": ["tracked.txt"] })).unwrap()
+    )
+    .is_err());
+  let extra = tempfile::tempdir().unwrap();
+  let directory = extra.path().join("linked");
+  mutate(
+    &service,
+    repo,
+    "worktree-add",
+    serde_json::json!({ "name": "feature/worktree", "directory": directory, "reference": "HEAD" }),
+  );
+  assert_eq!(service.worktrees(repo).unwrap().len(), 2);
+  assert_eq!(service.snapshot(&directory, 300).unwrap().branch, "feature/worktree");
+  fs::write(directory.join("tracked.txt"), "unsaved\n").unwrap();
+  assert!(service
+    .mutate(
+      repo,
+      "worktree-remove",
+      &serde_json::from_value(serde_json::json!({ "directory": directory })).unwrap()
+    )
+    .is_err());
+  assert_eq!(fs::read_to_string(directory.join("tracked.txt")).unwrap(), "unsaved\n");
+  service.run(&directory, &["restore", "tracked.txt"], false).unwrap();
+  mutate(
+    &service,
+    repo,
+    "worktree-remove",
+    serde_json::json!({ "directory": directory }),
+  );
+  assert_eq!(service.worktrees(repo).unwrap().len(), 1);
+  assert!(service
+    .run(repo, &["show-ref", "--verify", "refs/heads/feature/worktree"], true)
+    .unwrap()
+    .status
+    .success());
+  let template = extra.path().join("message-template.txt");
+  fs::write(&template, "Summary\n\nDetails\n").unwrap();
+  service
+    .run(repo, &["config", "commit.template", template.to_str().unwrap()], false)
+    .unwrap();
+  let messages = service.message_options(repo).unwrap();
+  assert_eq!(messages.template, "Summary\n\nDetails\n");
+  assert!(messages.recent.contains(&"Initial".into()));
+}
+
 fn mutate(service: &GitService, repo: &Path, action: &str, payload: serde_json::Value) {
   service
     .mutate(repo, action, &serde_json::from_value(payload).unwrap())

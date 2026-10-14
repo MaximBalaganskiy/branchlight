@@ -1,10 +1,14 @@
 import { observable, resolve } from 'aurelia';
+import { IDialogService } from '@aurelia/dialog';
+import { ConflictDialog } from './conflict-dialog/conflict-dialog';
+import { ActionDialog } from '../history/action-dialog/action-dialog';
 import { WorkspaceService } from '../../services/workspace-service';
 import type { ChangedFile } from '../../interfaces/changed-file';
 import './commit.css';
 
 export class Commit {
   readonly workspace = resolve(WorkspaceService);
+  private dialogs = resolve(IDialogService);
   private unsubscribe?: () => void;
   private diffGeneration = 0;
   workingFile: ChangedFile | null = null;
@@ -12,12 +16,49 @@ export class Commit {
   diff = '';
   diffLoading = false;
 
+  fileQuery = '';
+
   @observable
   message = '';
   messageChanged() {
     localStorage.setItem('draft:' + this.workspace.repo, this.message);
   }
 
+  @observable
+  treeLayout = localStorage.getItem('commit-file-layout') === 'tree';
+  treeLayoutChanged() {
+    localStorage.setItem('commit-file-layout', this.treeLayout ? 'tree' : 'flat');
+  }
+
+  get visibleUnstaged() {
+    return this.unstaged.filter(file => file.path.toLowerCase().includes(this.fileQuery.toLowerCase()));
+  }
+
+  get visibleStaged() {
+    return this.staged.filter(file => file.path.toLowerCase().includes(this.fileQuery.toLowerCase()));
+  }
+
+  ignore(file: ChangedFile) {
+    return this.workspace.action('ignore', { paths: [file.path] });
+  }
+
+  resolveConflict(file: ChangedFile) {
+    return this.dialogs.open({ component: ConflictDialog, model: file.path });
+  }
+
+  abortMerge() {
+    return this.dialogs.open({
+      component: ActionDialog,
+      model: {
+        title: 'Abort merge',
+        description: 'Abort the current merge and discard its in-progress conflict resolutions?',
+        action: 'merge-abort',
+        payload: {},
+        confirm: 'Abort merge',
+        danger: true
+      }
+    });
+  }
   get unstaged() {
     return this.workspace.snapshot?.files.filter(file => file.unstaged) ?? [];
   }
@@ -26,9 +67,16 @@ export class Commit {
     return this.workspace.snapshot?.files.filter(file => file.staged) ?? [];
   }
 
+  get canStageAll() {
+    return !this.workspace.busy && this.unstaged.some(file => !file.conflict);
+  }
+
   get canCommit() {
     return (
-      !this.workspace.busy && !!this.message.trim() && this.staged.length > 0 && !this.workspace.snapshot?.files.some(file => file.conflict)
+      !this.workspace.busy &&
+      !!this.message.trim() &&
+      (this.staged.length > 0 || this.workspace.snapshot?.operation === 'Merge') &&
+      !this.workspace.snapshot?.files.some(file => file.conflict)
     );
   }
 
@@ -100,9 +148,11 @@ export class Commit {
   }
 
   stageAll(staged: boolean) {
-    const files = staged ? this.staged : this.unstaged;
+    const files = (staged ? this.staged : this.unstaged).filter(file => !file.conflict);
     const paths = [...new Set(files.flatMap(file => [file.path, ...(file.originalPath ? [file.originalPath] : [])]))];
-    return this.workspace.action(staged ? 'unstage' : 'stage', { paths });
+    if (paths.length) {
+      return this.workspace.action(staged ? 'unstage' : 'stage', { paths });
+    }
   }
 
   async commit() {

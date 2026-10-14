@@ -6,4 +6,9 @@ pub struct Mutation {
   pub message: Option<String>,
   pub name: Option<String>,
   pub url: Option<String>,
+  pub reference: Option<String>,
+  pub directory: Option<String>,
+  pub choice: Option<String>,
+  pub text: Option<String>,
+  pub original: Option<String>,
 }

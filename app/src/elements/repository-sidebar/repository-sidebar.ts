@@ -2,6 +2,8 @@ import { INode, observable, resolve, watch } from 'aurelia';
 import { WorkspaceService } from '../../services/workspace-service';
 import { buildBranchTree } from '../../services/branch-tree';
 import type { BranchTreeNode } from '../../interfaces/branch-tree-node';
+import type { Branch } from '../../interfaces/branch';
+import type { UiMenu } from '@aurelia-ui-toolkits/headless';
 import './repository-sidebar.css';
 
 export class RepositorySidebar {
@@ -11,6 +13,30 @@ export class RepositorySidebar {
   private repository = '';
   selectedNode = '';
   nodes: BranchTreeNode[] = [];
+  branchMenu!: UiMenu;
+  contextBranch: Branch | null = null;
+
+  async branchAction(action: string) {
+    const branch = this.contextBranch;
+    if (!branch) {
+      return;
+    }
+    if (action === 'tip') {
+      this.selectedNode = branch.fullName;
+      this.element.dispatchEvent(new CustomEvent('branch-selected', { detail: branch, bubbles: true }));
+    } else if (action === 'checkout') {
+      await this.workspace.action('checkout', { name: branch.name });
+    } else if (action === 'copy') {
+      try {
+        await navigator.clipboard.writeText(branch.name);
+        this.workspace.inform('Reference name copied');
+      } catch (error) {
+        this.workspace.fail(error);
+      }
+    } else {
+      this.element.dispatchEvent(new CustomEvent('branch-action', { detail: { action, branch }, bubbles: true }));
+    }
+  }
 
   @observable
   branchSearch = '';

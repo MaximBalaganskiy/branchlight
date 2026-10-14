@@ -6,8 +6,14 @@ import type { BootstrapState } from './bootstrap-state';
 import type { Remote } from './remote';
 import type { TreeEntry } from './tree-entry';
 import type { FilePreview } from './file-preview';
+import type { Worktree } from './worktree';
+import type { ConflictContent } from './conflict-content';
+import type { MessageOptions } from './message-options';
 
 export interface GitClient {
+  worktrees(): Promise<Worktree[]>;
+  conflictContent(path: string): Promise<ConflictContent>;
+  messageOptions(): Promise<MessageOptions>;
   bootstrap(): Promise<BootstrapState>;
   open(directory?: string): Promise<string | null>;
   snapshot(limit: number): Promise<Snapshot>;

@@ -1,4 +1,5 @@
-import { bindable, resolve } from 'aurelia';
+import { bindable, INode, observable, resolve } from 'aurelia';
+import type { TreeEntry } from '../../../interfaces/tree-entry';
 import { WorkspaceService } from '../../../services/workspace-service';
 import { buildFileTree } from '../../../services/file-tree';
 import type { FileTreeNode } from '../../../interfaces/file-tree-node';
@@ -6,6 +7,8 @@ import '../../../elements/diff-view/syntax.css';
 
 export class CommitFiles {
   private workspace = resolve(WorkspaceService);
+  private element = resolve(INode) as HTMLElement;
+  private entries: TreeEntry[] = [];
   private treeGeneration = 0;
   private fileGeneration = 0;
   private isBound = false;
@@ -19,6 +22,10 @@ export class CommitFiles {
   message = '';
   error = '';
   truncated = false;
+
+  rawLines: string[] = [];
+  contentQuery = '';
+  matchLine = -1;
 
   @bindable
   hash = '';
@@ -36,6 +43,31 @@ export class CommitFiles {
     }
   }
 
+  @observable
+  fileQuery = '';
+  fileQueryChanged() {
+    this.filterFiles();
+  }
+
+  filterFiles() {
+    const query = this.fileQuery.trim().toLowerCase();
+    this.nodes = buildFileTree(
+      this.entries.filter(entry => entry.path.toLowerCase().includes(query)),
+      !!query
+    );
+  }
+
+  get contentMatches() {
+    return this.contentQuery
+      ? this.rawLines.flatMap((line, index) => (line.toLowerCase().includes(this.contentQuery.toLowerCase()) ? [index] : []))
+      : [];
+  }
+
+  findInFile() {
+    const matches = this.contentMatches;
+    this.matchLine = matches[(matches.indexOf(this.matchLine) + 1) % matches.length] ?? -1;
+    this.element.querySelector(`[data-line="${this.matchLine}"]`)?.scrollIntoView({ block: 'center' });
+  }
   binding() {
     this.isBound = true;
     void this.loadTree();
@@ -51,6 +83,8 @@ export class CommitFiles {
     const generation = ++this.treeGeneration;
     ++this.fileGeneration;
     this.nodes = [];
+    this.entries = [];
+    this.rawLines = [];
     this.selectedNode = '';
     this.selectedPath = '';
     this.lines = [];
@@ -66,7 +100,8 @@ export class CommitFiles {
     try {
       const entries = await this.workspace.client.commitTree(this.hash);
       if (generation === this.treeGeneration) {
-        this.nodes = buildFileTree(entries);
+        this.entries = entries;
+        this.filterFiles();
         this.fileCount = entries.length;
       }
     } catch (error) {
@@ -87,6 +122,8 @@ export class CommitFiles {
     const generation = ++this.fileGeneration;
     this.selectedPath = node.path;
     this.lines = [];
+    this.rawLines = [];
+    this.matchLine = -1;
     this.message = '';
     this.truncated = false;
     this.fileLoading = true;
@@ -99,6 +136,7 @@ export class CommitFiles {
       this.message = preview.message || (preview.text ? '' : 'Empty file.');
       const lines = preview.text.split('\n');
       this.truncated = lines.length > 12000;
+      this.rawLines = lines.slice(0, 12000);
       this.lines = preview.text ? highlightCode(lines.slice(0, 12000).join('\n'), node.path) : [];
     } catch (error) {
       if (generation === this.fileGeneration) {
