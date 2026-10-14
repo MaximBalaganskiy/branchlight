@@ -55,6 +55,7 @@ Measured Windows x64 release (14 October 2026): **3.64 MiB** executable, **1.44 
 - Compact repository-name menu in the top bar switches between recent repositories and opens new ones. Full paths distinguish identical folder names.
 - Resizable panes, light/dark themes, Normal/Compact density, recent repositories, and keyboard shortcuts. Normal density is the default; appearance choices are saved and synchronized between windows.
 - Main and commit windows remember their size, position, and maximized state separately across launches. Commit windows share their layout across repositories; unavailable monitors fall back to OS placement.
+- Integrated title bar on main and commit windows, with headless minimize, maximize/restore, and close buttons. Drag the header's empty space or title to move the window; double-click to maximize/restore. Repository and appearance controls remain interactive. Resizing uses Tauri's native undecorated-window support; Linux compositor behavior still needs desktop validation.
 
 | Shortcut | Action |
 | --- | --- |

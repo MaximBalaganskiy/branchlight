@@ -24,6 +24,7 @@ pub fn create(app: &AppHandle, label: &str, mode: &str, repo: String) -> Result<
     .unwrap_or(app.path().app_data_dir().map_err(|error| error.to_string())?);
   let result = WebviewWindowBuilder::new(app, label, WebviewUrl::App("index.html".into()))
     .data_directory(data_dir.join("webview"))
+    .decorations(false)
     .title(if mode == "commit" {
       "Commit — Branchlight"
     } else {

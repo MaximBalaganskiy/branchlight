@@ -1,0 +1,13 @@
+<template class="flex shrink-0 self-stretch" data-tauri-drag-region="false">
+  <div if.bind="available" class="flex items-center gap-1 border-l border-card-border pl-2" role="group" aria-label="Window controls">
+    <button ui-icon-button class="transform-none!" click.trigger="run('minimize')" aria-label="Minimize window" title="Minimize">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d="M 3 8 H 13"></path></svg>
+    </button>
+    <button ui-icon-button class="transform-none!" click.trigger="run('toggleMaximize')" aria-label.bind="maximized ? 'Restore window' : 'Maximize window'" title.bind="maximized ? 'Restore' : 'Maximize'">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d.bind="maximized ? 'M 5 5 V 2.5 H 13.5 V 11 H 11 M 2.5 5.5 H 10.5 V 13.5 H 2.5 Z' : 'M 3 3 H 13 V 13 H 3 Z'"></path></svg>
+    </button>
+    <button ui-icon-button danger class="transform-none!" click.trigger="run('close')" aria-label="Close window" title="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d="m 3 3 10 10 M 13 3 3 13"></path></svg>
+    </button>
+  </div>
+</template>

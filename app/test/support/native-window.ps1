@@ -1,11 +1,15 @@
 param(
   [int]$AppProcessId,
   [ValidateSet('main', 'commit')][string]$Window = 'main',
-  [ValidateSet('inspect', 'resize', 'maximize', 'minimize', 'restore', 'close')][string]$Action = 'inspect',
+  [ValidateSet('inspect', 'resize', 'maximize', 'minimize', 'restore', 'close', 'gesture', 'snap-left')][string]$Action = 'inspect',
   [int]$X = 100,
   [int]$Y = 100,
   [int]$Width = 1600,
-  [int]$Height = 1100
+  [int]$Height = 1100,
+  [int]$StartX = 0,
+  [int]$StartY = 0,
+  [int]$DeltaX = 0,
+  [int]$DeltaY = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,6 +24,7 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 public static class NativeWindow {
+  [StructLayout(LayoutKind.Sequential)] public struct Point { public int X; public int Y; }
   public delegate bool Callback(IntPtr window, IntPtr data);
   [DllImport("user32.dll")] public static extern bool EnumWindows(Callback callback, IntPtr data);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
@@ -32,6 +37,15 @@ public static class NativeWindow {
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr window, uint message, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+  [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr window, ref Point point);
+  [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
+  [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(Point point);
+  [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr window, uint flags);
+  [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extra);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
 }
 '@
 
@@ -55,6 +69,14 @@ if ($script:targetWindow -eq [IntPtr]::Zero) {
   throw "No $Window test window found."
 }
 
+if ($Action -in @('gesture', 'snap-left')) {
+  [void][NativeWindow]::SetForegroundWindow($script:targetWindow)
+  Start-Sleep -Milliseconds 150
+  if ([NativeWindow]::GetForegroundWindow() -ne $script:targetWindow) {
+    throw 'Refusing to send input because the test window is not foreground.'
+  }
+}
+
 switch ($Action) {
   'resize' {
     [void][NativeWindow]::ShowWindow($script:targetWindow, 9)
@@ -65,6 +87,42 @@ switch ($Action) {
   'maximize' { [void][NativeWindow]::ShowWindow($script:targetWindow, 3) }
   'minimize' { [void][NativeWindow]::ShowWindow($script:targetWindow, 6) }
   'restore' { [void][NativeWindow]::ShowWindow($script:targetWindow, 9) }
+  'gesture' {
+    $origin = New-Object NativeWindow+Point
+    $origin.X = $StartX
+    $origin.Y = $StartY
+    [void][NativeWindow]::ClientToScreen($script:targetWindow, [ref]$origin)
+    $hit = [NativeWindow]::WindowFromPoint($origin)
+    if ([NativeWindow]::GetAncestor($hit, 2) -ne $script:targetWindow) {
+      throw 'Refusing to drag outside the test application.'
+    }
+    $cursor = New-Object NativeWindow+Point
+    [void][NativeWindow]::GetCursorPos([ref]$cursor)
+    try {
+      [void][NativeWindow]::SetCursorPos($origin.X, $origin.Y)
+      Start-Sleep -Milliseconds 80
+      [NativeWindow]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero)
+      Start-Sleep -Milliseconds 150
+      for ($step = 1; $step -le 12; $step++) {
+        [void][NativeWindow]::SetCursorPos($origin.X + [int]($DeltaX * $step / 12), $origin.Y + [int]($DeltaY * $step / 12))
+        Start-Sleep -Milliseconds 25
+      }
+    } finally {
+      [NativeWindow]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero)
+      [void][NativeWindow]::SetCursorPos($cursor.X, $cursor.Y)
+    }
+    Start-Sleep -Milliseconds 150
+  }
+  'snap-left' {
+    try {
+      [NativeWindow]::keybd_event(0x5B, 0, 0, [UIntPtr]::Zero)
+      [NativeWindow]::keybd_event(0x25, 0, 0, [UIntPtr]::Zero)
+    } finally {
+      [NativeWindow]::keybd_event(0x25, 0, 2, [UIntPtr]::Zero)
+      [NativeWindow]::keybd_event(0x5B, 0, 2, [UIntPtr]::Zero)
+    }
+    Start-Sleep -Milliseconds 400
+  }
   'close' {
     [void][NativeWindow]::PostMessage($script:targetWindow, 16, [IntPtr]::Zero, [IntPtr]::Zero)
     return
@@ -75,6 +133,8 @@ $bounds = New-Object int[] 4
 $client = New-Object int[] 4
 [void][NativeWindow]::GetWindowRect($script:targetWindow, $bounds)
 [void][NativeWindow]::GetClientRect($script:targetWindow, $client)
+$clientOrigin = New-Object NativeWindow+Point
+[void][NativeWindow]::ClientToScreen($script:targetWindow, [ref]$clientOrigin)
 @{
   x = $bounds[0]
   y = $bounds[1]
@@ -82,4 +142,5 @@ $client = New-Object int[] 4
   height = $client[3]
   maximized = [NativeWindow]::IsZoomed($script:targetWindow)
   minimized = [NativeWindow]::IsIconic($script:targetWindow)
+  frameTop = $clientOrigin.Y - $bounds[1]
 } | ConvertTo-Json -Compress

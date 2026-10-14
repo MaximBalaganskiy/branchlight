@@ -2,16 +2,17 @@
 <import from="../commit/commit"></import>
 <import from="../welcome/welcome"></import>
 <import from="../../elements/repository-switcher/repository-switcher"></import>
+<import from="../../elements/window-controls/window-controls"></import>
 
 <div class="app-shell flex h-dvh flex-col overflow-hidden">
-  <header class="topbar flex min-h-11 shrink-0 items-center gap-3 border-b border-card-border bg-card-muted px-3 py-1">
-    <strong class="app-name text-xs font-medium text-ink-500">Branchlight</strong>
+  <header class="topbar flex min-h-11 shrink-0 select-none items-center gap-2 border-b border-card-border bg-card-muted px-3 py-1" data-tauri-drag-region="deep">
+    <strong class="app-name shrink-0 text-xs font-medium text-ink-500">${workspace.mode === 'commit' ? 'Commit — Branchlight' : 'Branchlight'}</strong>
     <repository-switcher if.bind="!workspace.initializing && workspace.mode === 'browse'"></repository-switcher>
-    <div class="topbar-context flex items-center gap-4" if.bind="workspace.snapshot">
-      <strong if.bind="workspace.mode === 'commit'" title.bind="workspace.repo">${workspace.snapshot.name}</strong>
-      <span class="branch-pill rounded bg-info-bg px-2 py-1 text-xs whitespace-nowrap text-info-text">${workspace.snapshot.branch}</span>
+    <div class="topbar-context flex min-w-0 max-w-[25vw] items-center gap-2" if.bind="workspace.snapshot">
+      <strong class="truncate" if.bind="workspace.mode === 'commit'" title.bind="workspace.repo">${workspace.snapshot.name}</strong>
+      <span class="branch-pill truncate rounded bg-info-bg px-2 py-1 text-xs text-info-text" title.bind="workspace.snapshot.branch">${workspace.snapshot.branch}</span>
     </div>
-    <div class="spacer flex-1"></div>
+    <div class="spacer min-w-8 self-stretch flex-1" data-tauri-drag-region></div>
     <button ui-icon-button click.trigger="toggleDensity()" aria-label="Toggle density" title="Density: ${appearance.density === 'normal' ? 'Normal' : 'Compact'} · Switch to ${appearance.density === 'normal' ? 'Compact' : 'Normal'}">
       <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
         <path d.bind="appearance.density === 'normal' ? 'M 3 4 H 17 M 3 10 H 17 M 3 16 H 17' : 'M 3 4 H 17 M 3 8 H 17 M 3 12 H 17 M 3 16 H 17'"></path>
@@ -19,6 +20,7 @@
     </button>
     <button ui-icon-button click.trigger="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">◐</button>
     <button ui-button if.bind="workspace.mode === 'commit'" click.trigger="workspace.refresh()" disabled.bind="workspace.busy">Refresh</button>
+    <window-controls></window-controls>
   </header>
 
   <main if.bind="!workspace.snapshot && (workspace.initializing || workspace.refreshing)" class="grid min-h-0 flex-1 place-items-center bg-card text-sm text-ink-500" role="status">Loading repository…</main>
