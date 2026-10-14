@@ -1,12 +1,14 @@
 <template class="flex min-h-0 flex-1">
   <div class="w-[280px] min-w-0 shrink-0 overflow-auto">
     <div class="px-3 py-2 text-xs text-ink-500">Files at this commit · ${fileCount}</div>
-    <ui-input class="m-2" label="Find a file" value.bind="fileQuery">
-      <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="10" cy="10" r="6"></circle>
-        <path d="m 15 15 5 5"></path>
-      </svg>
-    </ui-input>
+    <div class="p-2">
+      <ui-input label="Find a file" value.bind="fileQuery">
+        <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="10" cy="10" r="6"></circle>
+          <path d="m 15 15 5 5"></path>
+        </svg>
+      </ui-input>
+    </div>
     <div if.bind="treeLoading" class="p-4 text-sm text-ink-500">Loading files…</div>
     <ui-alert if.bind="error" tone="danger">${error}</ui-alert>
     <ui-tree if.bind="!treeLoading && !error" class="border-0! rounded-none!" items.bind="nodes" value.bind="selectedNode" value-field="path" label-field="name" label="Commit files" toggle-on-parent-click tree-select.trigger="selectFile($event.detail)">
