@@ -1,19 +1,21 @@
 # Branchlight
 
-A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, its shipped Tailwind theme, and Electron. Inspired by GitExtensions' commit graph and separate staging window.
+A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, its shipped Tailwind theme, and **Tauri 2**. Inspired by GitExtensions' commit graph and separate staging window.
 
 ## Run
 
-Open `app/release/win-unpacked/Branchlight.exe` after packaging, or run from source:
+Open `app/release/windows/Branchlight.exe` after packaging, or run from source:
 
 ```powershell
 npm --prefix app ci
 npm start
 ```
 
-Node 24 or later is recommended for development. Install Git on PATH (or set `BRANCHLIGHT_GIT` to its executable). The desktop app uses your installed Git, identity, SSH configuration, and credential helpers. Remote authentication must already be configured. This preview does not provide a login wizard.
+Development requires Node 24+, Rust, and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/). On Windows, install the Visual Studio C++ build tools and Windows SDK. Install Git on PATH (or set `BRANCHLIGHT_GIT` to its executable). The desktop app uses your installed Git, identity, SSH configuration, and credential helpers. Remote authentication must already be configured. This preview does not provide a login wizard.
 
-The default package is an executable folder, avoiding a portable wrapper's extraction on each launch. The renderer is bundled and minified, and build-only dependencies are excluded. Electron still includes Chromium and Node; this is not a small native-webview distribution. Linux packaging has not been validated.
+The Windows executable embeds the bundled, minified UI and uses the shared WebView2 runtime. The NSIS installer downloads WebView2 if it is missing. Neither Node nor Git is bundled. Linux uses WebKitGTK; build Linux packages on Linux with `npm --prefix app run pack:linux`. Linux packaging and desktop behavior have not yet been validated.
+
+Measured Windows x64 release (14 October 2026): **3.44 MiB** executable, **1.37 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
 
 ## Included
 
@@ -43,18 +45,23 @@ This is an initial usable version, not full GitExtensions parity. Hunk/line stag
 
 ```powershell
 npm run build       # TypeScript checks and production renderer
-npm test            # Git integration and graph tests
-npm run test:e2e    # Real Electron staging/commit workflow
-npm run pack        # Direct Windows executable folder
+npm test            # Rust Git integration, graph, and highlighting tests
+npm run pack        # Native release executable with embedded frontend
+npm run test:e2e    # Real Windows WebView2 staging/commit workflow
+npm --prefix app run pack:installer # Windows NSIS installer
+npm --prefix app run pack:linux     # Linux .deb and AppImage (run on Linux)
 npm --prefix app run test:packaged  # Check the packaged desktop workflow
 npm --prefix app run check:conventions
+npm --prefix app run check:native
 npm --prefix app run format:check
 ```
 
-Tests create disposable repositories under `.test-repos/`; they do not modify your working repositories. Electron smoke-test screenshots are written to `app/test-results/`. `npm --prefix app run dev` runs only the renderer in a browser; filesystem and Git operations require the desktop app.
+Tests create disposable repositories under `.test-repos/` or the OS temporary directory; they do not modify your working repositories. Desktop smoke-test screenshots are written to `app/test-results/`. `npm --prefix app run dev` runs only the renderer in a browser; filesystem and Git operations require the desktop app. The Windows smoke test enables WebView2 debugging only for its isolated test process and profile.
 
-The renderer has no Node access. A sandboxed preload exposes a fixed IPC API, and the main process owns repository paths and Git execution. Git is launched using Node's `execFile`, with argument arrays, literal pathspecs, and no shell interpolation. Git hooks and signing behave as configured in the repository.
+The renderer invokes a fixed set of Rust commands. Rust owns each window's repository path and launches Git with argument arrays, literal pathspecs, and no shell interpolation. There is no generic shell or filesystem API exposed to the UI. Git hooks and signing behave as configured in the repository. Same-repository windows receive change events after Git operations.
 
-Source layout: `app/src/views/` contains folder-based views; `elements/` contains reusable components; `services/` contains workspace, graph, and diff logic; `interfaces/` has one contract per file. `app/electron/` contains the shell, preload bridge, and Git service; `app/test/` contains tests.
+Source layout: `app/src/views/` contains folder-based views; `elements/` contains reusable components; `services/` contains workspace, graph, diff, and Tauri bridge logic; `interfaces/` has one contract per file. `app/src-tauri/src/` contains the native shell, commands, Git service, and individual model files. Native integration tests are in `app/src-tauri/tests/`; renderer and desktop tests are in `app/test/`.
+
+Build caches (`app/src-tauri/target/`), `node_modules`, and optional workspace toolchains (`.toolchains/`) are development files, not distribution contents. `scripts/native.cjs` uses the workspace Rust/compiler fallback when present and otherwise uses the installed toolchain. Packaging copies the executable into `app/release/windows/` or `app/release/linux/` and installer packages directly into `app/release/`. Only these collected artifacts need distributing.
 
 Headless supplies buttons, inputs, tabs, splitters, dialogs, and service-created toast notifications. The app imports `@aurelia-ui-toolkits/headless-tailwind` and changes compact desktop density through its tokens. Templates use inline Tailwind layout utilities; reusable app selectors use nested CSS. `AGENTS.md` and the formatter record these conventions.

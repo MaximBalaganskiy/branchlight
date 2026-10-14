@@ -13,5 +13,5 @@ export interface GitClient {
   mutate(action: string, payload?: Record<string, unknown>): Promise<boolean>;
   log(): Promise<CommandEntry[]>;
   openCommit(): Promise<void>;
-  onChanged(callback: () => void): () => void;
+  onChanged(callback: () => void): Promise<() => void>;
 }

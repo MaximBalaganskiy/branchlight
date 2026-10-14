@@ -1,47 +1,39 @@
-const { _electron: electron } = require('playwright');
+const { launchTauri } = require('./support/launch-tauri.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { GitService } = require('../electron/git-service.cjs');
+const { git } = require('./support/git.cjs');
 (async () => {
   const output = path.resolve('test-results');
   await fs.mkdir(output, { recursive: true });
   const root = path.resolve('../.test-repos');
   await fs.mkdir(root, { recursive: true });
   const repo = await fs.mkdtemp(path.join(root, 'ui-test-'));
-  const git = new GitService();
-  await git.run(repo, ['init', '-b', 'main']);
-  await git.run(repo, ['config', 'user.name', 'Branchlight Test']);
-  await git.run(repo, ['config', 'user.email', 'test@example.invalid']);
-  await git.run(repo, ['config', 'commit.gpgsign', 'false']);
+  await git(repo, ['init', '-b', 'main']);
+  await git(repo, ['config', 'user.name', 'Branchlight Test']);
+  await git(repo, ['config', 'user.email', 'test@example.invalid']);
+  await git(repo, ['config', 'commit.gpgsign', 'false']);
   await fs.writeFile(path.join(repo, 'README.md'), '# A clear history\n\nStart here.\n');
-  await git.mutate(repo, 'stage', { paths: ['README.md'] });
-  await git.mutate(repo, 'commit', { message: 'Start the workspace' });
-  await git.mutate(repo, 'branch', { name: 'feature/graph' });
+  await git(repo, ['add', '--', 'README.md']);
+  await git(repo, ['commit', '-m', 'Start the workspace']);
+  await git(repo, ['switch', '-c', 'feature/graph']);
   await fs.writeFile(path.join(repo, 'graph.ts'), 'export const lanes = 3;\n');
-  await git.mutate(repo, 'stage', { paths: ['graph.ts'] });
-  await git.mutate(repo, 'commit', { message: 'Draw branch lanes in the history view' });
-  await git.mutate(repo, 'checkout', { name: 'main' });
+  await git(repo, ['add', '--', 'graph.ts']);
+  await git(repo, ['commit', '-m', 'Draw branch lanes in the history view']);
+  await git(repo, ['switch', 'main']);
   await fs.writeFile(path.join(repo, 'theme.css'), ':root { color-scheme: dark; }\n');
-  await git.mutate(repo, 'stage', { paths: ['theme.css'] });
-  await git.mutate(repo, 'commit', { message: 'Add the workspace theme' });
-  await git.run(repo, ['merge', '--no-ff', 'feature/graph', '-m', 'Merge the graph workspace']);
+  await git(repo, ['add', '--', 'theme.css']);
+  await git(repo, ['commit', '-m', 'Add the workspace theme']);
+  await git(repo, ['merge', '--no-ff', 'feature/graph', '-m', 'Merge the graph workspace']);
   await fs.writeFile(path.join(repo, 'README.md'), '# A clear history\n\nStage only what matters.\n');
   await fs.writeFile(path.join(repo, 'notes.txt'), 'Keep this change for later.\n');
-  const env = { ...process.env, BRANCHLIGHT_REPO: repo, BRANCHLIGHT_USER_DATA: path.join(repo, '.electron-data') };
-  delete env.ELECTRON_RUN_AS_NODE;
-  // Keep Electron's profile out of Git status while exercising a realistic working tree.
-  await fs.writeFile(path.join(repo, '.git/info/exclude'), '.electron-data/\n');
+  const profile = await fs.mkdtemp(path.join(root, 'tauri-profile-'));
   let app;
   const errors = [];
   try {
-    const packaged = process.argv.includes('--packaged');
     const started = performance.now();
-    app = await electron.launch({
-      ...(packaged ? { executablePath: path.resolve('release/win-unpacked/Branchlight.exe'), args: [] } : { args: ['.'] }),
-      env
-    });
-    const page = await app.firstWindow();
+    app = await launchTauri(repo, profile);
+    const page = app.page;
     page.setDefaultTimeout(10000);
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => {
@@ -74,7 +66,7 @@ const { GitService } = require('../electron/git-service.cjs');
     await page.getByRole('button', { name: 'Merge the graph workspace', exact: true }).click();
     await page.locator('.diff-code').getByText('+export const lanes = 3;', { exact: true }).waitFor();
     await page.screenshot({ path: path.join(output, 'history.png'), animations: 'disabled' });
-    const [commit] = await Promise.all([app.waitForEvent('window'), page.getByRole('button', { name: /Commit changes/ }).click()]);
+    const [commit] = await Promise.all([app.context.waitForEvent('page'), page.getByRole('button', { name: /Commit changes/ }).click()]);
     commit.setDefaultTimeout(10000);
     commit.on('pageerror', e => errors.push(e.message));
     await commit.getByRole('button', { name: 'Stage README.md', exact: true }).waitFor();
@@ -89,24 +81,34 @@ const { GitService } = require('../electron/git-service.cjs');
     await commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click();
     await commit.getByRole('status').getByText('Commit created', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Refine the getting started guide', exact: true }).waitFor();
-    const state = await git.snapshot(repo);
-    assert.equal(state.commits[0].subject, 'Refine the getting started guide');
-    assert.deepEqual(
-      state.files.map(f => f.path),
-      ['notes.txt']
-    );
+    assert.equal((await git(repo, ['log', '-1', '--format=%s'])).stdout.trim(), 'Refine the getting started guide');
+    assert.equal((await git(repo, ['status', '--porcelain'])).stdout.trim(), '?? notes.txt');
     await commit.close();
     await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
     await page.screenshot({ path: path.join(output, 'history-light.png'), animations: 'disabled' });
     assert.deepEqual(errors, []);
+    await page.evaluate(async directory => {
+      await window.__TAURI_INTERNALS__.invoke('open_repository', { directory });
+      await window.__TAURI_INTERNALS__.invoke('open_repository', { directory });
+    }, repo);
+    await app.close();
+    app = undefined;
+    app = await launchTauri('', profile);
+    await app.page.getByRole('heading', { name: 'Open a repository', exact: true }).waitFor();
+    await app.page
+      .locator('.recent button')
+      .filter({ hasText: path.basename(repo) })
+      .click();
+    await app.page.getByRole('button', { name: 'Refine the getting started guide', exact: true }).waitFor();
+    assert.equal(await app.page.locator('.commit-row').count(), 5);
     console.log(
-      'PASS: Electron renders real history and graph, opens a separate commit window, stages one file, commits, preserves unselected files, refreshes main window, and switches theme.'
+      'PASS: Tauri renders real history and graph, opens a separate commit window, stages one file, commits, preserves unselected files, refreshes main window, switches theme, and reopens a recent repository after restart.'
     );
     console.log('Screenshots:', output);
   } catch (error) {
     console.log('Renderer errors:', errors);
     if (app)
-      for (const [index, page] of app.windows().entries()) {
+      for (const [index, page] of app.context.pages().entries()) {
         console.log('Window', index, (await page.locator('body').innerText()).slice(-8000));
         await page.screenshot({ path: path.join(output, `failure-${index}.png`) });
       }

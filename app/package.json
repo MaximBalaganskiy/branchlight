@@ -4,19 +4,25 @@
   "private": true,
   "description": "A local Git client with a graph workspace and dedicated commit window.",
   "type": "module",
-  "main": "electron/main.cjs",
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  },
   "scripts": {
-    "start": "npm run build && electron .",
+    "start": "node scripts/native.cjs tauri dev",
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "test": "tsx --test test/*.test.ts",
-    "test:e2e": "node test/electron-smoke.cjs",
-    "pack": "npm run build && electron-builder --dir",
-    "test:packaged": "node test/electron-smoke.cjs --packaged",
-    "format": "prettier --write src electron scripts test *.json *.ts *.html",
-    "format:check": "prettier --check src electron scripts test *.json *.ts *.html",
-    "pack:portable": "npm run build && electron-builder --win portable",
-    "check:conventions": "node scripts/check-conventions.cjs"
+    "pack": "node scripts/native.cjs tauri build --no-bundle && node scripts/collect-release.cjs",
+    "pack:installer": "node scripts/native.cjs tauri build --bundles nsis && node scripts/collect-release.cjs --bundles",
+    "pack:linux": "node scripts/native.cjs tauri build --bundles deb,appimage && node scripts/collect-release.cjs --bundles",
+    "test": "npm run test:renderer && npm run test:native",
+    "test:renderer": "tsx --test test/*.test.ts",
+    "test:native": "node scripts/native.cjs cargo test --manifest-path src-tauri/Cargo.toml",
+    "test:e2e": "node test/tauri-smoke.cjs",
+    "test:packaged": "node test/tauri-smoke.cjs",
+    "check:conventions": "node scripts/check-conventions.cjs",
+    "check:native": "node scripts/native.cjs cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
+    "format": "prettier --write src scripts test *.json *.ts *.html src-tauri/*.json src-tauri/capabilities/*.json && node scripts/native.cjs cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "format:check": "prettier --check src scripts test *.json *.ts *.html src-tauri/*.json src-tauri/capabilities/*.json && node scripts/native.cjs cargo fmt --manifest-path src-tauri/Cargo.toml -- --check"
   },
   "devDependencies": {
     "@aurelia-ui-toolkits/headless": "1.3.8",
@@ -27,10 +33,10 @@
     "@aurelia/validation-html": "2.0.0-rc.2",
     "@aurelia/vite-plugin": "2.0.0-rc.2",
     "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/api": "^2.12.3",
+    "@tauri-apps/cli": "^2.12.2",
     "@types/node": "^24.0.0",
     "aurelia": "2.0.0-rc.2",
-    "electron": "44.7.1",
-    "electron-builder": "^26.0.0",
     "lowlight": "^3.3.0",
     "playwright": "^1.56.0",
     "prettier": "^3.9.10",
@@ -40,22 +46,5 @@
     "tsx": "^4.20.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
-  },
-  "build": {
-    "appId": "local.branchlight.app",
-    "productName": "Branchlight",
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "package.json"
-    ],
-    "directories": {
-      "output": "release"
-    },
-    "compression": "normal"
-  },
-  "allowScripts": {
-    "esbuild@0.28.2": true,
-    "electron-winstaller@5.4.0": true
   }
 }

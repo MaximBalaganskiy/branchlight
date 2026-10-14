@@ -1,0 +1,135 @@
+use crate::{
+  app_state::AppState,
+  models::{
+    command_entry::CommandEntry, detail::Detail, diff_request::DiffRequest, mutation::Mutation, snapshot::Snapshot,
+  },
+  windows,
+};
+use serde_json::{json, Value};
+use std::path::PathBuf;
+use std::sync::atomic::Ordering;
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use tauri_plugin_dialog::DialogExt;
+
+#[tauri::command]
+pub fn bootstrap(app: AppHandle, window: WebviewWindow) -> Result<Value, String> {
+  let state = app.state::<AppState>();
+  let context = state.context(window.label())?;
+  Ok(json!({ "mode": context.mode, "repo": context.repo, "recent": state.recent()? }))
+}
+
+#[tauri::command]
+pub async fn open_repository(
+  app: AppHandle,
+  window: WebviewWindow,
+  directory: Option<String>,
+) -> Result<Option<String>, String> {
+  if app.state::<AppState>().context(window.label())?.mode != "browse" {
+    return Err("Open repositories from the main window.".into());
+  }
+  tauri::async_runtime::spawn_blocking(move || {
+    let directory = match directory {
+      Some(value) => PathBuf::from(value),
+      None => match app
+        .dialog()
+        .file()
+        .set_title("Open Git repository")
+        .blocking_pick_folder()
+      {
+        Some(path) => path.into_path().map_err(|error| error.to_string())?,
+        None => return Ok(None),
+      },
+    };
+    let state = app.state::<AppState>();
+    let repo = state.git.open(&directory)?;
+    let name = repo.file_name().unwrap_or_default().to_string_lossy();
+    window
+      .set_title(&format!("{name} — Branchlight"))
+      .map_err(|error| error.to_string())?;
+    let repo = repo.to_string_lossy().into_owned();
+    state.remember(&repo)?;
+    state
+      .windows
+      .lock()
+      .map_err(|error| error.to_string())?
+      .get_mut(window.label())
+      .ok_or("Unknown application window.")?
+      .repo = repo.clone();
+    Ok(Some(repo))
+  })
+  .await
+  .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn snapshot(app: AppHandle, window: WebviewWindow, limit: usize) -> Result<Snapshot, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.snapshot(&repo, limit))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn detail(app: AppHandle, window: WebviewWindow, hash: String) -> Result<Detail, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.detail(&repo, &hash))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn diff(app: AppHandle, window: WebviewWindow, request: DiffRequest) -> Result<String, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.diff(&repo, &request))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn mutate(app: AppHandle, window: WebviewWindow, action: String, payload: Mutation) -> Result<bool, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || {
+    let state = app.state::<AppState>();
+    let result = state.git.mutate(&repo, &action, &payload);
+    // Failed hooks and Git operations can still change the index or worktree.
+    let labels: Vec<_> = state
+      .windows
+      .lock()
+      .map_err(|error| error.to_string())?
+      .iter()
+      .filter(|(_, context)| std::path::Path::new(&context.repo) == repo)
+      .map(|(label, _)| label.clone())
+      .collect();
+    for label in labels {
+      let _ = app.emit_to(label, "repository-changed", ());
+    }
+    result
+  })
+  .await
+  .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub fn command_log(app: AppHandle, window: WebviewWindow) -> Result<Vec<CommandEntry>, String> {
+  let state = app.state::<AppState>();
+  state.git.log(&state.repo(window.label())?)
+}
+
+#[tauri::command]
+pub async fn commit_window(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
+  let state = app.state::<AppState>();
+  let repo = state.repo(window.label())?.to_string_lossy().into_owned();
+  let existing = state
+    .windows
+    .lock()
+    .map_err(|error| error.to_string())?
+    .iter()
+    .find(|(_, context)| context.mode == "commit" && context.repo == repo)
+    .map(|(label, _)| label.clone());
+  if let Some(existing) = existing.and_then(|label| app.get_webview_window(&label)) {
+    existing.show().map_err(|error| error.to_string())?;
+    return existing.set_focus().map_err(|error| error.to_string());
+  }
+  let label = format!("commit-{}", state.next_window.fetch_add(1, Ordering::Relaxed));
+  windows::create(&app, &label, "commit", repo)
+}

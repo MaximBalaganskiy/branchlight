@@ -1,9 +1,11 @@
 import { resolve } from 'aurelia';
+import { isTauri } from '@tauri-apps/api/core';
 import { UiToastService } from '@aurelia-ui-toolkits/headless';
 import type { Snapshot } from '../interfaces/snapshot';
+import { TauriGitClient } from './tauri-git-client';
 
 export class WorkspaceService {
-  readonly client = window.gitClient;
+  readonly client = resolve(TauriGitClient);
   private toasts = resolve(UiToastService);
   private listeners = new Set<() => void>();
   private generation = 0;
@@ -20,7 +22,7 @@ export class WorkspaceService {
   lastError = '';
 
   async initialize() {
-    if (!this.client) {
+    if (!isTauri()) {
       this.fail(new Error('Launch the desktop app to access local repositories.'));
       return;
     }
@@ -30,7 +32,7 @@ export class WorkspaceService {
       this.mode = initial.mode;
       this.repo = initial.repo;
       this.recent = initial.recent;
-      this.unsubscribe = this.client.onChanged(() => {
+      this.unsubscribe = await this.client.onChanged(() => {
         if (!this.busy) {
           void this.refresh();
         }
@@ -53,7 +55,7 @@ export class WorkspaceService {
   }
 
   async open(directory?: string) {
-    if (this.busy || !this.client) {
+    if (this.busy) {
       return;
     }
 
@@ -78,7 +80,7 @@ export class WorkspaceService {
   }
 
   async refresh() {
-    if (!this.repo || !this.client) {
+    if (!this.repo) {
       return;
     }
 
@@ -159,7 +161,7 @@ export class WorkspaceService {
   }
 
   fail(error: unknown) {
-    const message = (error instanceof Error ? error.message : String(error)).replace(/^Error invoking remote method '[^']+': Error: /, '');
+    const message = error instanceof Error ? error.message : String(error);
     if (message !== this.lastError) {
       void this.toasts.show({ tone: 'danger', message, duration: 0 });
     }

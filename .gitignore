@@ -3,3 +3,6 @@ app/dist/
 app/release/
 app/test-results/
 .test-repos/
+.toolchains/
+app/src-tauri/target/
+app/src-tauri/gen/

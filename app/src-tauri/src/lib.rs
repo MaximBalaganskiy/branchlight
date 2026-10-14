@@ -1,0 +1,38 @@
+mod app_state;
+mod commands;
+pub mod git;
+pub mod models;
+mod windows;
+
+use app_state::AppState;
+use tauri::Manager;
+
+pub fn run() {
+  tauri::Builder::default()
+    .plugin(tauri_plugin_dialog::init())
+    .setup(|app| {
+      let data_dir = std::env::var_os("BRANCHLIGHT_USER_DATA")
+        .map(std::path::PathBuf::from)
+        .unwrap_or(app.path().app_data_dir()?);
+      let state = AppState::new(&data_dir);
+      let repo = std::env::var_os("BRANCHLIGHT_REPO")
+        .and_then(|path| state.git.open(std::path::Path::new(&path)).ok())
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_default();
+      app.manage(state);
+      windows::create(app.handle(), "main", "browse", repo).map_err(std::io::Error::other)?;
+      Ok(())
+    })
+    .invoke_handler(tauri::generate_handler![
+      commands::bootstrap,
+      commands::open_repository,
+      commands::snapshot,
+      commands::detail,
+      commands::diff,
+      commands::mutate,
+      commands::command_log,
+      commands::commit_window
+    ])
+    .run(tauri::generate_context!())
+    .expect("Could not start Branchlight");
+}
