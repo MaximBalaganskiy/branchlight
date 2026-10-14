@@ -16,6 +16,7 @@ export class WorkspaceService {
   repo = '';
   recent: string[] = [];
   snapshot: Snapshot | null = null;
+  initializing = true;
   busy = false;
   refreshing = false;
   limit = 300;
@@ -28,6 +29,7 @@ export class WorkspaceService {
   async initialize() {
     if (!isTauri()) {
       this.fail(new Error('Launch the desktop app to access local repositories.'));
+      this.initializing = false;
       return;
     }
 
@@ -44,6 +46,8 @@ export class WorkspaceService {
       await this.refresh();
     } catch (error) {
       this.fail(error);
+    } finally {
+      this.initializing = false;
     }
   }
 

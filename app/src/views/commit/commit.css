@@ -4,9 +4,6 @@
 }
 
 .stage-section {
-  & + & {
-    border-top: 1px solid var(--color-card-border);
-  }
   & .count {
     margin-left: 5px;
   }
@@ -22,9 +19,14 @@
   }
 }
 
+.unstaged-section {
+  max-height: calc(100% - 160px);
+}
+
 .message-composer {
-  & textarea {
-    min-height: 90px;
-    max-height: 240px;
+  max-height: calc(100% - 140px);
+
+  & textarea.ui-input__native {
+    resize: none;
   }
 }

@@ -112,12 +112,21 @@ const path = require('node:path');
     await commit.getByRole('button', { name: 'Show file tree', exact: true }).click();
     await commit.getByRole('tree', { name: 'Staged files', exact: true }).locator('[title="src/conflict.ts"]').waitFor();
     await commit.screenshot({ path: path.resolve('test-results/commit-workflows.png') });
+    const hook = path.join(repo, '.git', 'hooks', 'pre-commit');
+    await fs.writeFile(hook, '#!/bin/sh\necho "Merge hook rejected commit" >&2\nexit 1\n');
     await commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click();
+    await commit.getByText('Merge hook rejected commit', { exact: false }).waitFor();
+    assert.equal(commit.isClosed(), false, 'A failed merge commit must keep its window and draft');
+    assert.equal(await commit.locator('#commit-message').inputValue(), 'Resolved feature\n\nReviewed both sides.');
+    await fs.access(path.join(repo, '.git', 'MERGE_HEAD'));
+    await fs.unlink(hook);
+    await Promise.all([commit.waitForEvent('close'), commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click()]);
     await page.getByRole('button', { name: 'Resolved feature', exact: true }).waitFor();
     assert.equal((await git(repo, ['rev-list', '--parents', '-1', 'HEAD'])).stdout.trim().split(' ').length, 3);
 
     await fs.writeFile(path.join(repo, 'src', 'build [1].log'), 'ignore this');
-    await commit.keyboard.press('F5');
+    [commit] = await Promise.all([app.context.waitForEvent('page'), page.getByRole('button', { name: /Commit changes/ }).click()]);
+    commit.setDefaultTimeout(15000);
     const changedSearch = commit.getByRole('textbox', { name: 'Find changed files', exact: true });
     await changedSearch.fill('build');
     await commit

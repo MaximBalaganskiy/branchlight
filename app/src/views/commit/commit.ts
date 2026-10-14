@@ -1,5 +1,6 @@
 import { observable, resolve } from 'aurelia';
 import { IDialogService } from '@aurelia/dialog';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { ConflictDialog } from './conflict-dialog/conflict-dialog';
 import { ActionDialog } from '../history/action-dialog/action-dialog';
 import { WorkspaceService } from '../../services/workspace-service';
@@ -11,6 +12,13 @@ export class Commit {
   private dialogs = resolve(IDialogService);
   private unsubscribe?: () => void;
   private diffGeneration = 0;
+  private resizeObserver?: ResizeObserver;
+  stagingPane!: HTMLElement;
+  editorPane!: HTMLElement;
+  unstagedHeight = 300;
+  messageHeight = 300;
+  unstagedMax = 1200;
+  messageMax = 1200;
   workingFile: ChangedFile | null = null;
   workingStaged = false;
   diff = '';
@@ -94,10 +102,19 @@ export class Commit {
 
   attached() {
     window.addEventListener('keydown', this.onKey);
+    this.resizeObserver = new ResizeObserver(() => {
+      this.unstagedMax = Math.max(80, this.stagingPane.clientHeight - 160);
+      this.messageMax = Math.max(180, this.editorPane.clientHeight - 140);
+      this.unstagedHeight = Math.min(this.unstagedHeight, this.unstagedMax);
+      this.messageHeight = Math.min(this.messageHeight, this.messageMax);
+    });
+    this.resizeObserver.observe(this.stagingPane);
+    this.resizeObserver.observe(this.editorPane);
   }
 
   detaching() {
     window.removeEventListener('keydown', this.onKey);
+    this.resizeObserver?.disconnect();
   }
 
   unbinding() {
@@ -125,9 +142,13 @@ export class Commit {
 
   async selectWorking(file: ChangedFile, staged: boolean) {
     const generation = ++this.diffGeneration;
+    const changed = this.workingFile?.path !== file.path || this.workingStaged !== staged;
     this.workingFile = file;
     this.workingStaged = staged;
-    this.diffLoading = true;
+    if (changed || !this.diff) {
+      this.diff = '';
+      this.diffLoading = true;
+    }
 
     try {
       const text = await this.workspace.client.diff({ path: file.path, staged, untracked: file.index === '?' });
@@ -177,8 +198,16 @@ export class Commit {
       }
       return;
     }
+    const completingMerge = this.workspace.snapshot?.operation === 'Merge';
     if (this.canCommit && (await this.workspace.action('commit', { message: this.message }))) {
       this.message = '';
+      if (completingMerge) {
+        try {
+          await getCurrentWindow().close();
+        } catch (error) {
+          this.workspace.fail(error);
+        }
+      }
     }
   }
 

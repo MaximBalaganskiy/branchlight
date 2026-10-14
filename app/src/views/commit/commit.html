@@ -14,7 +14,7 @@
   <button ui-button if.bind="workspace.snapshot.operation === 'Merge'" click.trigger="abortMerge()" disabled.bind="workspace.busy">Abort merge…</button>
 </div>
 <div class="commit-workspace flex min-h-0 flex-1 bg-card">
-  <aside class="staging-sidebar flex w-[330px] min-h-0 shrink-0 flex-col bg-card-muted">
+  <aside ref="stagingPane" class="staging-sidebar flex w-[330px] min-h-0 shrink-0 flex-col bg-card-muted">
     <div class="shrink-0 p-2">
       <ui-input label="Find changed files" value.bind="fileQuery">
         <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -23,8 +23,8 @@
         </svg>
       </ui-input>
     </div>
-    <section class="stage-section flex min-h-0 flex-1 flex-col">
-      <div class="stage-heading flex items-center justify-between gap-2 px-2.5 py-2">
+    <section class="stage-section unstaged-section flex min-h-0 flex-1 flex-col">
+      <div class="stage-heading flex shrink-0 items-center justify-between gap-2 px-2.5 py-2">
         <h2>
           Unstaged
           <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${unstaged.length}</span>
@@ -40,8 +40,9 @@
         </div>
       </div>
     </section>
+    <ui-splitter direction="vertical" size.bind="unstagedHeight" min.bind="80" max.bind="unstagedMax" storage-key="commit-unstaged" aria-label="Resize unstaged and staged files"></ui-splitter>
     <section class="stage-section flex min-h-0 flex-1 flex-col">
-      <div class="stage-heading flex items-center justify-between gap-2 px-2.5 py-2">
+      <div class="stage-heading flex shrink-0 items-center justify-between gap-2 px-2.5 py-2">
         <h2>
           Staged
           <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500 accent">${staged.length}</span>
@@ -60,7 +61,7 @@
     </section>
   </aside>
   <ui-splitter direction="horizontal" size="330" min.bind="220" max.bind="600" storage-key="staging-files" aria-label="Resize staging lists"></ui-splitter>
-  <section class="commit-editor flex min-h-0 min-w-0 flex-1 flex-col">
+  <section ref="editorPane" class="commit-editor flex min-h-0 min-w-0 flex-1 flex-col">
     <div class="diff-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <div class="diff-heading flex min-h-8 shrink-0 items-center justify-between gap-2.5 border-b border-card-border px-3.5 text-[11px]">
         <span>${workingFile ? workingFile.path : 'Review your changes'}</span>
@@ -71,15 +72,16 @@
       </div>
       <diff-view file-path.bind="workingFile ? workingFile.path : ''" text.bind="diff" is-loading.bind="diffLoading" selectable.bind="canStageSelection" staged.bind="workingStaged" disabled.bind="workspace.busy" stage-selection.trigger="stageSelection($event.detail)"></diff-view>
     </div>
-    <section class="message-composer shrink-0 border-t border-card-border bg-card p-3">
-      <message-picker message.bind="message" message-chosen.trigger="message = $event.detail"></message-picker>
-      <div class="mb-2 flex flex-wrap items-center gap-2">
+    <ui-splitter direction="vertical" target="next" size.bind="messageHeight" min.bind="180" max.bind="messageMax" storage-key="commit-message" aria-label="Resize diff and commit message"></ui-splitter>
+    <section class="message-composer flex min-h-0 shrink-0 flex-col overflow-auto bg-card p-3">
+      <message-picker class="shrink-0" message.bind="message" message-chosen.trigger="message = $event.detail"></message-picker>
+      <div class="mb-2 flex shrink-0 flex-wrap items-center gap-2">
         <button ui-button click.trigger="toggleAmend()" disabled.bind="workspace.busy || !workspace.snapshot.head || !!workspace.snapshot.operation">${amendHead ? 'Cancel amend' : 'Amend last commit…'}</button>
         <button ui-button click.trigger="undoCommit()" disabled.bind="workspace.busy || !workspace.snapshot.head || !!workspace.snapshot.operation || !!amendHead">Undo last commit…</button>
         <span if.bind="amendHead" class="text-xs text-warning-text">Amending ${amendHead.slice(0, 8)}. Staged changes will be included.</span>
       </div>
-      <ui-input textarea id="commit-message" value.bind="message" label="Commit message" rows="5" placeholder="Summary of changes" disabled.bind="workspace.busy"></ui-input>
-      <div class="composer-actions mt-2.5 flex items-center gap-2.5 text-[10px]">
+      <ui-input class="min-h-24 flex-1" textarea id="commit-message" value.bind="message" label="Commit message" rows="5" placeholder="Summary of changes" disabled.bind="workspace.busy"></ui-input>
+      <div class="composer-actions mt-2.5 flex shrink-0 items-center gap-2.5 text-[10px]">
         <span class="muted text-ink-500">
           ${staged.length} file${staged.length === 1 ? '' : 's'} staged ·
           <kbd>Ctrl Enter</kbd>
