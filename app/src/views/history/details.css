@@ -1,0 +1,30 @@
+.detail-tabs {
+  & .count {
+    margin-left: 5px;
+  }
+  & > code {
+    font-size: 10px;
+    color: var(--color-ink-500);
+    padding-right: 5px;
+  }
+}
+
+.list-caption small {
+  display: block;
+  letter-spacing: 0;
+  margin-top: 7px;
+  font-size: 10px;
+}
+
+.diff-heading {
+  & > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+  }
+  & .muted {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+}

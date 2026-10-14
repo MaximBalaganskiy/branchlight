@@ -1,0 +1,66 @@
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink-900);
+  background: var(--color-canvas);
+}
+
+h2 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+kbd {
+  font-size: 10px;
+  color: var(--color-ink-500);
+}
+
+/* Shared file rows appear in both history and the commit window. */
+.file-item {
+  & > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.file-status {
+  &.A {
+    color: var(--color-success-text);
+  }
+
+  &.D {
+    color: var(--color-danger-text);
+  }
+}
+
+.search-field,
+.message-composer {
+  & .ui-input__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.file-item {
+  background: transparent !important;
+  color: inherit !important;
+  &:hover {
+    background: var(--color-outline-hover) !important;
+    color: var(--color-ink-900) !important;
+  }
+  &.selected {
+    background: var(--color-selected) !important;
+    color: var(--color-on-selected) !important;
+  }
+}

@@ -1,0 +1,30 @@
+.commit-toolbar h1 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stage-section {
+  & + & {
+    border-top: 1px solid var(--color-card-border);
+  }
+  & .count {
+    margin-left: 5px;
+  }
+}
+
+.stage-file {
+  &.selected {
+    background: var(--color-selected);
+    color: var(--color-on-selected);
+  }
+  & .file-item {
+    flex: 1;
+  }
+}
+
+.message-composer {
+  & textarea {
+    min-height: 90px;
+    max-height: 240px;
+  }
+}

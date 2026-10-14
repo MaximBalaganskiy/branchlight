@@ -1,0 +1,18 @@
+@import '@aurelia-ui-toolkits/headless-tailwind';
+@source '../';
+
+/* Compact desktop density; colours and component states come from the shipped theme. */
+:root {
+  font-size: 13px;
+  --font-mono: 'Cascadia Code', Consolas, monospace;
+  --ui-button-radius: 3px;
+  --ui-button-padding-x: 9px;
+  --ui-button-padding-y: 6px;
+  --ui-button-font-size: 12px;
+  --ui-field-radius: 3px;
+  --ui-field-control-height: 28px;
+  --ui-field-padding-x: 8px;
+  --ui-field-font-size: 12px;
+  --ui-icon-button-size: 28px;
+  --ui-icon-button-radius: 3px;
+}

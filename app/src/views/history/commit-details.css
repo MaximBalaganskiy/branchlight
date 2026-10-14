@@ -1,0 +1,37 @@
+.commit-message {
+  & h2 {
+    font-size: 19px;
+    margin: 12px 0;
+  }
+  & p {
+    color: var(--color-ink-500);
+    font-size: 12px;
+  }
+  & pre {
+    white-space: pre-wrap;
+    margin: 22px 0;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  & .metadata code {
+    word-break: break-all;
+  }
+}
+
+.log-entry {
+  & > code {
+    flex: 1;
+    overflow-wrap: anywhere;
+  }
+  & > span:last-of-type {
+    color: var(--color-ink-500);
+  }
+  & .failed,
+  & pre {
+    color: var(--color-danger-text);
+  }
+  & pre {
+    width: 100%;
+    white-space: pre-wrap;
+  }
+}

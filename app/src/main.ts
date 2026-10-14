@@ -1,6 +1,9 @@
 import Aurelia from 'aurelia';
 import { SVGAnalyzer } from '@aurelia/runtime-html';
 import { AureliaHeadlessConfiguration } from '@aurelia-ui-toolkits/headless';
-import { MyApp } from './my-app';
-import './styles.css';
-Aurelia.register(AureliaHeadlessConfiguration, SVGAnalyzer).app(MyApp).start();
+import { App } from './views/app/app';
+import './styles/theme.css';
+import './styles/layout.css';
+import './styles/scrollbar.css';
+
+Aurelia.register(AureliaHeadlessConfiguration, SVGAnalyzer).app(App).start();

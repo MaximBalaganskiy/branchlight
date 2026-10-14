@@ -1,0 +1,32 @@
+diff-view {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--color-canvas);
+
+  & .diff-line {
+    & code {
+      padding: 0 12px;
+      tab-size: 4;
+      flex: 1;
+    }
+    &.added {
+      background: var(--color-success-bg);
+      color: var(--color-success-text);
+    }
+    &.removed {
+      background: var(--color-danger-bg);
+      color: var(--color-danger-text);
+    }
+    &.hunk {
+      background: var(--color-info-bg);
+      color: var(--color-info-text);
+      margin: 8px 0;
+    }
+    &.meta {
+      color: var(--color-ink-500);
+      font-size: 11px;
+    }
+  }
+}

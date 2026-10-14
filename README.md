@@ -1,23 +1,25 @@
 # Branchlight
 
-A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, Electron, and Dugite. Inspired by GitExtensions' commit graph and separate staging window; implemented from scratch.
+A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, its shipped Tailwind theme, and Electron. Inspired by GitExtensions' commit graph and separate staging window.
 
 ## Run
 
-Open `app/release/Branchlight 0.1.0.exe` for the portable Windows build, or run from source:
+Open `app/release/win-unpacked/Branchlight.exe` after packaging, or run from source:
 
 ```powershell
 npm --prefix app ci
 npm start
 ```
 
-Node 24 or later is recommended for development. The desktop app bundles Git through Dugite. No account is required. Existing Git identity, SSH configuration, and credential helpers are used; remote authentication must already be configured. This preview does not provide a login wizard.
+Node 24 or later is recommended for development. Install Git on PATH (or set `BRANCHLIGHT_GIT` to its executable). The desktop app uses your installed Git, identity, SSH configuration, and credential helpers. Remote authentication must already be configured. This preview does not provide a login wizard.
+
+The default package is an executable folder, avoiding a portable wrapper's extraction on each launch. The renderer is bundled and minified, and build-only dependencies are excluded. Electron still includes Chromium and Node; this is not a small native-webview distribution. Linux packaging has not been validated.
 
 ## Included
 
 - Commit graph with branch lanes, merge connections, refs, author, date, and SHA.
 - Local branches, remote branches, tags, commit search, and paginated history (up to 5,000 commits).
-- Changed files, unified diffs, full commit messages, and a Git command log.
+- Changed files, syntax-highlighted unified diffs using Lowlight/highlight.js, full commit messages, and a Git command log.
 - A separate native desktop window for staging, unstaging, reviewing, and committing whole files.
 - Commit drafts saved per repository; changes synchronize between open windows.
 - Create and switch local branches, fetch, fast-forward pull, and push to an existing upstream.
@@ -43,11 +45,16 @@ This is an initial usable version, not full GitExtensions parity. Hunk/line stag
 npm run build       # TypeScript checks and production renderer
 npm test            # Git integration and graph tests
 npm run test:e2e    # Real Electron staging/commit workflow
-npm run pack        # Portable Windows executable
+npm run pack        # Direct Windows executable folder
+npm --prefix app run test:packaged  # Check the packaged desktop workflow
+npm --prefix app run check:conventions
+npm --prefix app run format:check
 ```
 
 Tests create disposable repositories under `.test-repos/`; they do not modify your working repositories. Electron smoke-test screenshots are written to `app/test-results/`. `npm --prefix app run dev` runs only the renderer in a browser; filesystem and Git operations require the desktop app.
 
-The renderer has no Node access. A sandboxed preload exposes a fixed IPC API, and the main process owns repository paths and Git execution. Arguments are passed as arrays through Dugite, with literal pathspecs and no shell interpolation. Git hooks and signing behave as configured in the repository.
+The renderer has no Node access. A sandboxed preload exposes a fixed IPC API, and the main process owns repository paths and Git execution. Git is launched using Node's `execFile`, with argument arrays, literal pathspecs, and no shell interpolation. Git hooks and signing behave as configured in the repository.
 
-Source layout: `app/src/` contains the Aurelia UI and graph layout; `app/electron/` contains the Electron shell, preload bridge, and Git service; `app/test/` contains the tests.
+Source layout: `app/src/views/` contains folder-based views; `elements/` contains reusable components; `services/` contains workspace, graph, and diff logic; `interfaces/` has one contract per file. `app/electron/` contains the shell, preload bridge, and Git service; `app/test/` contains tests.
+
+Headless supplies buttons, inputs, tabs, splitters, dialogs, and service-created toast notifications. The app imports `@aurelia-ui-toolkits/headless-tailwind` and changes compact desktop density through its tokens. Templates use inline Tailwind layout utilities; reusable app selectors use nested CSS. `AGENTS.md` and the formatter record these conventions.

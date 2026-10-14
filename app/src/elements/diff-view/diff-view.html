@@ -1,0 +1,12 @@
+<template>
+  <div class="diff-empty grid h-full min-h-40 place-items-center text-xs text-ink-500" if.bind="isLoading">Loading diff…</div>
+  <div class="diff-empty grid h-full min-h-40 place-items-center text-xs text-ink-500" if.bind="!isLoading && !text">Select a file to inspect its changes.</div>
+  <div class="diff-code min-w-max pt-2 pb-5 text-xs leading-[21px]" if.bind="!isLoading && text" tabindex="0" aria-label="File diff">
+    <div repeat.for="line of lines" class="diff-line flex min-h-[21px] whitespace-pre ${line.kind}">
+      <span class="line-number w-[43px] shrink-0 pr-2.5 text-right font-mono text-[10px] text-ink-500 opacity-70 select-none">${line.old}</span>
+      <span class="line-number w-[43px] shrink-0 pr-2.5 text-right font-mono text-[10px] text-ink-500 opacity-70 select-none">${line.next}</span>
+      <code innerhtml.bind="line.html"></code>
+    </div>
+    <div if.bind="truncated" class="diff-limit p-4 text-ink-500">Preview limited to 12,000 lines.</div>
+  </div>
+</template>

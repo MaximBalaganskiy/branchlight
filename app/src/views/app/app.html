@@ -1,0 +1,32 @@
+<import from="../history/history"></import>
+<import from="../commit/commit"></import>
+<import from="../welcome/welcome"></import>
+
+<div class="app-shell flex h-dvh flex-col overflow-hidden">
+  <header class="topbar flex h-11 shrink-0 items-center gap-3 border-b border-card-border bg-card-muted px-3">
+    <strong class="app-name text-xs font-medium text-ink-500">Branchlight</strong>
+    <div class="topbar-context flex items-center gap-4" if.bind="workspace.snapshot">
+      <strong title.bind="workspace.repo">${workspace.snapshot.name}</strong>
+      <span class="branch-pill rounded bg-info-bg px-2 py-1 text-xs whitespace-nowrap text-info-text">${workspace.snapshot.branch}</span>
+    </div>
+    <div class="spacer flex-1"></div>
+    <button ui-icon-button click.trigger="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">◐</button>
+    <button ui-button class="gap-2" if.bind="workspace.mode === 'browse'" click.trigger="workspace.open()" disabled.bind="workspace.busy">
+      Open repository
+      <kbd>Ctrl O</kbd>
+    </button>
+    <button ui-button else click.trigger="workspace.refresh()" disabled.bind="workspace.busy">Refresh</button>
+  </header>
+
+  <welcome if.bind="!workspace.snapshot"></welcome>
+  <history if.bind="workspace.snapshot && workspace.mode === 'browse'"></history>
+  <commit if.bind="workspace.snapshot && workspace.mode === 'commit'"></commit>
+
+  <footer class="statusbar flex h-[27px] shrink-0 items-center gap-2.5 border-t border-card-border bg-card-muted px-4 text-[10px] text-ink-500">
+    <span class="status-dot mr-1 inline-block size-[5px] shrink-0 rounded-full bg-success-border ${workspace.busy || workspace.refreshing ? 'pulsing' : ''}"></span>
+    <span>${workspace.busy ? 'Running Git operation…' : workspace.refreshing ? 'Refreshing…' : 'Ready'}</span>
+    <span if.bind="workspace.snapshot">${workspace.snapshot.branch} ${tracking}</span>
+    <div class="spacer flex-1"></div>
+    <span if.bind="workspace.snapshot">${workspace.snapshot.files.length} changes</span>
+  </footer>
+</div>

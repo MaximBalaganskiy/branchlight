@@ -1,0 +1,66 @@
+repository-sidebar {
+  display: block;
+  width: 220px;
+  min-width: 0;
+  flex: none;
+}
+
+.sidebar {
+  & .nav-item {
+    &.active {
+      background: var(--color-outline-active) !important;
+    }
+    & .count,
+    & > .muted {
+      margin-left: auto;
+    }
+  }
+
+  & details {
+    margin-top: 10px;
+  }
+  & summary {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--color-ink-500);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px;
+    & span {
+      float: right;
+      font-weight: 400;
+    }
+  }
+
+  & .branch-item.chosen {
+    background: var(--color-outline-active);
+  }
+  & .branch-name {
+    & > span:nth-child(2) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    & small {
+      margin-left: auto;
+      font-size: 9px;
+      color: var(--color-ink-500);
+      white-space: nowrap;
+    }
+    &:hover {
+      background: var(--color-outline-hover) !important;
+    }
+  }
+  & .branch-dot.current {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  & .sidebar-bottom small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0;
+    margin-top: 8px;
+  }
+}

@@ -1,0 +1,85 @@
+<import from="../../elements/diff-view/diff-view"></import>
+<div class="commit-toolbar flex h-11 shrink-0 items-center gap-4 border-b border-card-border bg-card px-3">
+  <div>
+    <h1>Commit changes</h1>
+  </div>
+  <div class="spacer flex-1"></div>
+  <span class="branch-pill rounded bg-info-bg px-2 py-1 text-xs whitespace-nowrap text-info-text">⑂ ${workspace.snapshot.branch}</span>
+</div>
+<div class="operation-banner bg-warning-bg px-5 py-2 text-xs text-warning-text" if.bind="workspace.snapshot.operation">${workspace.snapshot.operation} in progress. Resolve conflicts before committing. Use your terminal to continue or abort a rebase.</div>
+<div class="commit-workspace flex min-h-0 flex-1 bg-card">
+  <aside class="staging-sidebar flex w-[330px] min-h-0 shrink-0 flex-col bg-card-muted">
+    <section class="stage-section flex min-h-0 flex-1 flex-col">
+      <div class="stage-heading flex items-center justify-between gap-2 px-2.5 py-2">
+        <h2>
+          Unstaged
+          <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${unstaged.length}</span>
+        </h2>
+        <button ui-button class="text-[11px]!" click.trigger="stageAll(false)" disabled.bind="workspace.busy || !unstaged.length">Stage all ↓</button>
+      </div>
+      <div class="stage-files flex-1 overflow-auto">
+        <div repeat.for="file of unstaged; key: path" class="stage-file flex min-w-0 items-center ${workingFile && workingFile.path === file.path && !workingStaged ? 'selected' : ''}">
+          <button ui-button class="file-item flex! min-h-[26px] min-w-0 w-full items-center justify-start! gap-2 rounded-none! border-0! px-2.5! py-1.5! text-left text-[11px]! font-normal!" click.trigger="selectWorking(file, false)" title.bind="file.path">
+            <span class="file-status min-w-4 text-center font-mono text-[10px] font-bold text-warning-text ${statusLabel(file, false)}">${statusLabel(file, false)}</span>
+            <span>${file.path}</span>
+          </button>
+          <button ui-icon-button class="file-action mr-2 text-lg! text-accent!" click.trigger="stage(file, false)" disabled.bind="workspace.busy" title="Stage ${file.path}" aria-label="Stage ${file.path}">+</button>
+        </div>
+        <div class="empty-small px-4 py-6 text-center text-[11px] leading-relaxed text-ink-500" if.bind="!unstaged.length">
+          <span class="empty-check mb-1 block text-xl text-success-text">✓</span>
+          No unstaged changes
+        </div>
+      </div>
+    </section>
+    <section class="stage-section flex min-h-0 flex-1 flex-col">
+      <div class="stage-heading flex items-center justify-between gap-2 px-2.5 py-2">
+        <h2>
+          Staged
+          <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500 accent">${staged.length}</span>
+        </h2>
+        <button ui-button class="text-[11px]!" click.trigger="stageAll(true)" disabled.bind="workspace.busy || !staged.length">Unstage all ↑</button>
+      </div>
+      <div class="stage-files flex-1 overflow-auto">
+        <div repeat.for="file of staged; key: path" class="stage-file flex min-w-0 items-center ${workingFile && workingFile.path === file.path && workingStaged ? 'selected' : ''}">
+          <button ui-button class="file-item flex! min-h-[26px] min-w-0 w-full items-center justify-start! gap-2 rounded-none! border-0! px-2.5! py-1.5! text-left text-[11px]! font-normal!" click.trigger="selectWorking(file, true)" title.bind="file.path">
+            <span class="file-status min-w-4 text-center font-mono text-[10px] font-bold text-warning-text ${statusLabel(file, true)}">${statusLabel(file, true)}</span>
+            <span>${file.path}</span>
+          </button>
+          <button ui-icon-button class="file-action mr-2 text-lg! text-accent!" click.trigger="stage(file, true)" disabled.bind="workspace.busy" title="Unstage ${file.path}" aria-label="Unstage ${file.path}">−</button>
+        </div>
+        <div class="empty-small px-4 py-6 text-center text-[11px] leading-relaxed text-ink-500" if.bind="!staged.length">
+          Stage changes to include
+          <br />
+          them in your next commit.
+        </div>
+      </div>
+    </section>
+  </aside>
+  <ui-splitter direction="horizontal" size="330" min.bind="220" max.bind="600" storage-key="staging-files" aria-label="Resize staging lists"></ui-splitter>
+  <section class="commit-editor flex min-h-0 min-w-0 flex-1 flex-col">
+    <div class="diff-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div class="diff-heading flex min-h-8 shrink-0 items-center justify-between gap-2.5 border-b border-card-border px-3.5 text-[11px]">
+        <span>${workingFile ? workingFile.path : 'Review your changes'}</span>
+        <span class="diff-mode ml-auto text-[9px] tracking-widest ${workingStaged ? 'text-accent' : ''}">${workingFile ? workingStaged ? 'STAGED' : 'UNSTAGED' : ''}</span>
+        <button ui-button class="text-[11px]!" if.bind="workingFile" disabled.bind="workspace.busy" click.trigger="stage(workingFile, workingStaged)">${workingStaged ? '↑ Unstage file' : '↓ Stage file'}</button>
+      </div>
+      <diff-view file-path.bind="workingFile ? workingFile.path : ''" text.bind="diff" is-loading.bind="diffLoading"></diff-view>
+    </div>
+    <section class="message-composer shrink-0 border-t border-card-border bg-card p-3">
+      <div class="composer-label mb-2 flex justify-between text-[11px]">
+        <span>Commit message</span>
+        <span class="muted text-ink-500 ${summaryLength > 72 ? 'text-warning-text' : ''}">${summaryLength} / 72</span>
+      </div>
+      <ui-input inset.bind="false" textarea id="commit-message" value.bind="message" label="Commit message" rows="5" placeholder="Summary of changes" disabled.bind="workspace.busy"></ui-input>
+      <div class="composer-actions mt-2.5 flex items-center gap-2.5 text-[10px]">
+        <span class="muted text-ink-500">
+          ${staged.length} file${staged.length === 1 ? '' : 's'} staged ·
+          <kbd>Ctrl Enter</kbd>
+          to commit
+        </span>
+        <div class="spacer flex-1"></div>
+        <button ui-button primary class="gap-2" click.trigger="commit()" disabled.bind="!canCommit">${workspace.busy ? 'Working…' : '✓ Commit to ' + workspace.snapshot.branch}</button>
+      </div>
+    </section>
+  </section>
+</div>

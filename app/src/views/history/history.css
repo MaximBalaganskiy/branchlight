@@ -1,0 +1,45 @@
+/* Shared column geometry keeps the header aligned with the graph rows. */
+.history-head,
+.commit-row {
+  grid-template-columns: minmax(200px, 1fr) 130px 74px 72px;
+}
+
+.history-head > span:first-child {
+  padding-left: 15px;
+}
+
+.commit-row {
+  background: transparent !important;
+  &:nth-child(even) {
+    background: var(--color-subtle-overlay) !important;
+  }
+  &:hover {
+    background: var(--color-outline-hover) !important;
+  }
+  &.selected {
+    background: var(--color-selected) !important;
+    color: var(--color-on-selected) !important;
+    border-left-color: var(--color-accent) !important;
+  }
+  &.dimmed {
+    & .commit-subject,
+    & .author {
+      opacity: 0.3;
+    }
+  }
+  & time {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+}
+
+.commit-subject > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ref-label.tag-label {
+  color: var(--color-warning-text);
+  background: var(--color-warning-bg);
+}

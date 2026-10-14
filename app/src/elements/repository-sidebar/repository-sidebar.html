@@ -1,0 +1,56 @@
+<aside class="sidebar flex size-full min-w-0 flex-col overflow-auto bg-card-muted px-1.5 py-2.5">
+  <div class="sidebar-heading px-3 pb-3 text-[10px] tracking-widest text-ink-500">REPOSITORY</div>
+  <button ui-button class="nav-item mb-1 flex! w-full items-center justify-start! gap-2 border-0! bg-transparent! px-2! py-1.5! text-left font-normal! active" click.trigger="branchFilter = ''">
+    <span>◉</span>
+    All history
+    <span class="muted text-ink-500">${workspace.snapshot.commits.length}</span>
+  </button>
+  <button ui-button class="nav-item mb-1 flex! w-full items-center justify-start! gap-2 border-0! bg-transparent! px-2! py-1.5! text-left font-normal!" click.trigger="workspace.openCommit()">
+    <span>▤</span>
+    Working directory
+    <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${workspace.snapshot.files.length}</span>
+  </button>
+  <div class="branch-search my-2">
+    <ui-input inset.bind="false" value.bind="branchSearch" placeholder="Find a branch…" label="Find a branch" class="search-field"></ui-input>
+  </div>
+  <details open>
+    <summary>
+      LOCAL BRANCHES
+      <span>${localBranches.length}</span>
+    </summary>
+    <div class="branch-item group flex min-w-0 items-center rounded ${branchFilter === branch.name ? 'chosen' : ''}" repeat.for="branch of localBranches; key: fullName">
+      <button ui-button class="branch-name flex! min-w-0 flex-1 items-center justify-start! gap-2 border-0! bg-transparent! px-2! py-1.5! text-left text-xs! font-normal!" click.trigger="focusBranch(branch)" title.bind="branch.name">
+        <span class="branch-dot size-1.5 shrink-0 rounded-full border border-ink-500 ${branch.name === workspace.snapshot.branch ? 'current' : ''}"></span>
+        <span>${branch.name}</span>
+        <small>${branch.tracking}</small>
+      </button>
+      <button ui-icon-button class="checkout mr-1 text-ink-500 opacity-0 focus:opacity-100 group-hover:opacity-100" if.bind="branch.name !== workspace.snapshot.branch" disabled.bind="workspace.busy" click.trigger="workspace.action('checkout', { name: branch.name })" title="Switch to ${branch.name}" aria-label="Switch to ${branch.name}">↪</button>
+    </div>
+  </details>
+  <details open>
+    <summary>
+      REMOTES
+      <span>${remoteBranches.length}</span>
+    </summary>
+    <button ui-button class="branch-name flex! min-w-0 flex-1 items-center justify-start! gap-2 border-0! bg-transparent! px-2! py-1.5! text-left text-xs! font-normal! remote w-full text-ink-500!" repeat.for="branch of remoteBranches; key: fullName" click.trigger="focusBranch(branch)" title.bind="branch.name">
+      <span>⑂</span>
+      <span>${branch.name}</span>
+    </button>
+    <div class="sidebar-empty px-3 py-2 text-[11px] text-ink-500" if.bind="!remoteBranches.length">No remote branches</div>
+  </details>
+  <details>
+    <summary>
+      TAGS
+      <span>${tags.length}</span>
+    </summary>
+    <button ui-button class="branch-name flex! min-w-0 flex-1 items-center justify-start! gap-2 border-0! bg-transparent! px-2! py-1.5! text-left text-xs! font-normal! remote w-full text-ink-500!" repeat.for="branch of tags; key: fullName" click.trigger="focusBranch(branch)">
+      <span>◇</span>
+      <span>${branch.name}</span>
+    </button>
+  </details>
+  <div class="sidebar-bottom mt-auto px-2.5 pt-8 text-[9px] tracking-widest text-ink-500">
+    <span class="status-dot mr-1 inline-block size-[5px] shrink-0 rounded-full bg-success-border"></span>
+    LOCAL WORKSPACE
+    <small title.bind="workspace.repo">${workspace.repo}</small>
+  </div>
+</aside>

@@ -4,5 +4,11 @@
   "printWidth": 140,
   "arrowParens": "avoid",
   "htmlWhitespaceSensitivity": "ignore",
-  "endOfLine": "lf"
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": { "printWidth": 10000, "singleAttributePerLine": false }
+    }
+  ]
 }

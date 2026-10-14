@@ -36,32 +36,56 @@ const { GitService } = require('../electron/git-service.cjs');
   const errors = [];
   try {
     const packaged = process.argv.includes('--packaged');
+    const started = performance.now();
     app = await electron.launch({
       ...(packaged ? { executablePath: path.resolve('release/win-unpacked/Branchlight.exe'), args: [] } : { args: ['.'] }),
       env
     });
     const page = await app.firstWindow();
+    page.setDefaultTimeout(10000);
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => {
       if (m.type() === 'error') console.log('Renderer:', m.text());
     });
     await page.locator('.commit-row').first().waitFor({ timeout: 30000 });
+    console.log(`Launch to rendered history: ${Math.round(performance.now() - started)} ms`);
     assert.equal(await page.locator('.commit-row').count(), 4);
     assert.equal(await page.locator('.graph circle').count(), 4);
     await page.getByRole('button', { name: 'Draw branch lanes in the history view', exact: true }).click();
     await page.locator('.diff-code').getByText('+export const lanes = 3;', { exact: true }).waitFor();
+    assert.ok(await page.locator('.diff-code .hljs-keyword').count());
+    assert.equal(await page.locator('.ui-input').count(), 2);
+    assert.equal(await page.getByRole('textbox', { name: 'Search commits' }).count(), 1);
+    const sidebarWidth = (await page.locator('repository-sidebar').boundingBox()).width;
+    await page.getByRole('separator', { name: 'Resize branches sidebar' }).press('ArrowRight');
+    assert.ok((await page.locator('repository-sidebar').boundingBox()).width > sidebarWidth);
+    await page.getByRole('button', { name: '⑂ New branch', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('textbox', { name: 'Branch name' }).fill('invalid branch name');
+    await dialog.getByRole('button', { name: 'Create branch', exact: true }).click();
+    await dialog.getByRole('alert').waitFor();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    await page.getByRole('region', { name: 'Notifications' }).getByRole('button', { name: 'Dismiss' }).click();
+    await page.getByRole('tab', { name: 'Commit details', exact: true }).click();
+    await page.getByRole('tab', { name: 'Commit details', exact: true }).press('ArrowRight');
+    assert.equal(await page.getByRole('tab', { name: 'Command log', exact: true }).getAttribute('aria-selected'), 'true');
+    await page.getByRole('tab', { name: /^Changes/ }).click();
     await page.getByRole('button', { name: 'Merge the graph workspace', exact: true }).click();
     await page.locator('.diff-code').getByText('+export const lanes = 3;', { exact: true }).waitFor();
-    await page.screenshot({ path: path.join(output, 'history.png') });
-    const windowPromise = app.waitForEvent('window');
-    await page.getByRole('button', { name: /Commit changes/ }).click();
-    const commit = await windowPromise;
+    await page.screenshot({ path: path.join(output, 'history.png'), animations: 'disabled' });
+    const [commit] = await Promise.all([app.waitForEvent('window'), page.getByRole('button', { name: /Commit changes/ }).click()]);
+    commit.setDefaultTimeout(10000);
     commit.on('pageerror', e => errors.push(e.message));
     await commit.getByRole('button', { name: 'Stage README.md', exact: true }).waitFor();
+    const layoutBeforeToast = await commit.locator('.commit-workspace').boundingBox();
     await commit.getByRole('button', { name: 'Stage README.md', exact: true }).click();
     await commit.getByRole('button', { name: 'Unstage README.md', exact: true }).waitFor();
+    await commit.getByRole('region', { name: 'Notifications' }).waitFor();
+    assert.deepEqual(await commit.locator('.commit-workspace').boundingBox(), layoutBeforeToast);
+    assert.equal(await commit.locator('.ui-input[data-textarea]').count(), 1);
     await commit.locator('#commit-message').fill('Refine the getting started guide');
-    await commit.screenshot({ path: path.join(output, 'commit.png') });
+    await commit.screenshot({ path: path.join(output, 'commit.png'), animations: 'disabled' });
     await commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click();
     await commit.getByRole('status').getByText('Commit created', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Refine the getting started guide', exact: true }).waitFor();
@@ -73,7 +97,7 @@ const { GitService } = require('../electron/git-service.cjs');
     );
     await commit.close();
     await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
-    await page.screenshot({ path: path.join(output, 'history-light.png') });
+    await page.screenshot({ path: path.join(output, 'history-light.png'), animations: 'disabled' });
     assert.deepEqual(errors, []);
     console.log(
       'PASS: Electron renders real history and graph, opens a separate commit window, stages one file, commits, preserves unselected files, refreshes main window, and switches theme.'

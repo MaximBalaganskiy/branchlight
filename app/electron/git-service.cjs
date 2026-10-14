@@ -1,4 +1,4 @@
-const { exec } = require('dugite');
+const { executeGit } = require('./git-process.cjs');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
@@ -56,7 +56,7 @@ class GitService {
   }
   async run(repo, args, options = {}) {
     const started = Date.now();
-    const result = await exec(['--no-pager', '--literal-pathspecs', '-c', 'color.ui=false', ...args], repo, {
+    const result = await executeGit(['--no-pager', '--literal-pathspecs', '-c', 'color.ui=false', ...args], repo, {
       maxBuffer: 32 * 1024 * 1024,
       ...options,
       env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never', ...options.env }

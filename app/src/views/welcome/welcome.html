@@ -1,0 +1,13 @@
+<main class="welcome flex min-h-0 flex-1 flex-col items-center overflow-auto bg-card px-6 py-12 text-center">
+  <h1>Open a repository</h1>
+  <button ui-button primary click.trigger="workspace.open()" disabled.bind="workspace.busy || !workspace.client">Browse…</button>
+  <div class="recent mt-6 w-[480px] max-w-full text-left" if.bind="workspace.recent.length">
+    <h2>Recent repositories</h2>
+    <button ui-button repeat.for="item of workspace.recent" click.trigger="workspace.open(item)" disabled.bind="workspace.busy">
+      <span>
+        <strong>${basename(item)}</strong>
+        <small>${item}</small>
+      </span>
+    </button>
+  </div>
+</main>

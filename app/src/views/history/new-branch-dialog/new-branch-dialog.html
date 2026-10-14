@@ -1,0 +1,12 @@
+<template class="branch-dialog w-[430px] max-w-[90vw] p-6">
+  <form submit.trigger:prevent="save()">
+    <h2>Create branch</h2>
+    <ui-input inset.bind="false" label="Branch name" value.bind="name" placeholder="feature/my-change" required autofocus></ui-input>
+    <p class="muted text-ink-500">Create and check out a branch from the current commit.</p>
+    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <div class="dialog-actions mt-5 flex justify-end gap-2.5">
+      <button ui-button type="button" click.trigger="cancel()">Cancel</button>
+      <button ui-button primary type="submit" disabled.bind="workspace.busy || !name.trim()">Create branch</button>
+    </div>
+  </form>
+</template>
