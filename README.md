@@ -56,6 +56,21 @@ This is an initial usable version, not full GitExtensions parity. Clone/init UI,
 
 ## Development
 
+### Automated binaries and releases
+
+The **Build desktop binaries** GitHub Actions workflow builds Windows x64 and Linux x64 on every push to `main`, pull request, or manual run. Each build runs formatting, source checks, renderer tests, Git integration tests, and Clippy before packaging. Download the two platform artifacts from the workflow run; they are retained for 14 days.
+
+Push a version tag such as `v0.1.0` to publish a GitHub Release after both platforms pass. The tag must match the versions in `app/package.json`, `app/src-tauri/tauri.conf.json`, and `app/src-tauri/Cargo.toml`. Tags containing a suffix such as `-beta.1` create prereleases. Releases contain:
+
+- `Branchlight.exe`: Windows executable.
+- `Branchlight_<version>_x64-setup.exe`: Windows NSIS installer.
+- Linux `.AppImage` and `.deb` packages.
+- `SHA256SUMS.txt`: checksums for all four downloads.
+
+Release assets remain available independently of Actions artifact retention and inherit the repository's private visibility. Windows binaries are unsigned. Git must be installed separately; Windows uses the shared WebView2 runtime. On Linux, mark the downloaded AppImage executable with `chmod +x *.AppImage`. Linux packages are built on Ubuntu 22.04 for compatibility with systems providing WebKitGTK 4.1.
+
+### Local commands
+
 ```powershell
 npm run build       # TypeScript checks and production renderer
 npm test            # Rust Git integration, graph, and highlighting tests

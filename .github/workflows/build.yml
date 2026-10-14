@@ -1,0 +1,150 @@
+name: Build desktop binaries
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }} x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            runner: windows-2022
+            bundles: nsis
+            files: |
+              app/release/windows/Branchlight.exe
+              app/release/*-setup.exe
+          - platform: linux
+            runner: ubuntu-22.04
+            bundles: deb,appimage
+            files: |
+              app/release/*.deb
+              app/release/*.AppImage
+    defaults:
+      run:
+        working-directory: app
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: "0"
+      APPIMAGE_EXTRACT_AND_RUN: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: app/src-tauri -> target
+          cache-on-failure: true
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 xdg-utils
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Check release version
+        run: node scripts/check-release-version.cjs
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Check conventions
+        run: npm run check:conventions
+
+      - name: Run renderer and Git integration tests
+        run: npm test
+
+      - name: Check native code
+        run: npm run check:native
+
+      - name: Build executable and installers
+        run: node scripts/native.cjs tauri build --ci --bundles ${{ matrix.bundles }} -- --locked
+
+      - name: Collect distribution files
+        run: node scripts/collect-release.cjs --bundles
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: branchlight-${{ matrix.platform }}-x64
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish release assets
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download binaries from both builds
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: branchlight-*-x64
+          merge-multiple: true
+          path: artifacts
+
+      - name: Publish binaries and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' assets < <(find artifacts -type f \( -name '*.exe' -o -name '*.deb' -o -name '*.AppImage' \) -print0 | sort -z)
+          if [ "${#assets[@]}" -ne 4 ]; then
+            echo 'Expected Windows executable, Windows installer, Linux deb and Linux AppImage.' >&2
+            exit 1
+          fi
+          for asset in "${assets[@]}"; do
+            (cd "$(dirname "$asset")" && sha256sum "$(basename "$asset")")
+          done > artifacts/SHA256SUMS.txt
+          assets+=(artifacts/SHA256SUMS.txt)
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            flags=()
+            if [[ "$RELEASE_TAG" == *-* ]]; then
+              flags+=(--prerelease)
+            fi
+            gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --title "Branchlight $RELEASE_TAG" --generate-notes "${flags[@]}"
+          fi
