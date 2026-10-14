@@ -42,7 +42,7 @@
       </div>
       <div class="history-scroll min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
         <div class="commit-rows" role="list" aria-label="Commit history">
-          <button ui-button repeat.for="row of rows; key: commit.hash" id="commit-${row.commit.hash}" class="commit-row grid! h-[var(--app-row-height)] w-full min-w-[650px] items-center gap-0 rounded-none! border-0! border-l-2! border-transparent! p-0! text-left text-sm! font-normal! transform-none! ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}" click.trigger="selectCommit(row.commit)" aria-label.bind="row.commit.subject" title.bind="row.commit.subject">
+          <button ui-button repeat.for="row of rows; key: commit.hash" id="commit-${row.commit.hash}" class="commit-row grid! h-[var(--app-row-height)] w-full min-w-[650px] items-center gap-0 rounded-none! border-0! border-l-2! border-transparent! p-0! text-left text-sm! leading-normal! font-normal! transform-none! ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}" click.trigger="selectCommit(row.commit)" aria-label.bind="row.commit.subject" title.bind="row.commit.subject">
             <span class="graph-and-subject flex h-full min-w-0 items-center">
               <svg class="graph block flex-none overflow-visible" width.bind="row.width" height.bind="appearance.rowHeight" aria-hidden="true">
                 <path repeat.for="edge of row.edges" d.bind="edge.d" stroke.bind="edge.color" fill="none" stroke-width="1.8"></path>
