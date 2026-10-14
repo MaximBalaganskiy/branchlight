@@ -18,8 +18,18 @@ pub struct GitService {
 
 impl GitService {
   pub fn run(&self, repo: &Path, args: &[&str], allow_failure: bool) -> Result<Output, String> {
+    self.run_input(repo, args, allow_failure, None)
+  }
+
+  pub(super) fn run_input(
+    &self,
+    repo: &Path,
+    args: &[&str],
+    allow_failure: bool,
+    input: Option<&[u8]>,
+  ) -> Result<Output, String> {
     let started = Instant::now();
-    let output = process::execute(repo, args)?;
+    let output = process::execute_with_input(repo, args, input)?;
     let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
     let entry = CommandEntry {
       command: format!(
@@ -267,7 +277,15 @@ impl GitService {
       } else {
         vec!["show", "--format=", hash]
       };
-      args.extend(["--no-ext-diff", "--no-textconv", "--no-renames", "--", &request.path]);
+      args.extend([
+        "--no-ext-diff",
+        "--no-textconv",
+        "--no-renames",
+        "--src-prefix=a/",
+        "--dst-prefix=b/",
+        "--",
+        &request.path,
+      ]);
       return self.text(repo, &args);
     }
     if request.untracked {
@@ -299,7 +317,14 @@ impl GitService {
           .join("\n")
       ));
     }
-    let mut args = vec!["diff", "--no-ext-diff", "--no-textconv", "--no-renames"];
+    let mut args = vec![
+      "diff",
+      "--no-ext-diff",
+      "--no-textconv",
+      "--no-renames",
+      "--src-prefix=a/",
+      "--dst-prefix=b/",
+    ];
     if request.staged {
       args.push("--cached");
     }
@@ -319,6 +344,10 @@ impl GitService {
       .try_lock()
       .map_err(|_| "Another Git operation is running for this repository.")?;
     match action {
+      "publish" | "stash-save" | "stash-apply" | "stash-pop" | "stash-drop" | "amend" | "undo-commit"
+      | "partial-stage" => {
+        self.daily_action(repo, action, payload)?;
+      }
       "remote-remove" => {
         let name = payload
           .name
@@ -426,7 +455,24 @@ impl GitService {
         self.run(repo, &["pull", "--ff-only"], false)?;
       }
       "push" => {
-        self.run(repo, &["push"], false)?;
+        let branch = self.text(repo, &["symbolic-ref", "--quiet", "HEAD"])?;
+        let upstream = self.text(
+          repo,
+          &[
+            "for-each-ref",
+            "--format=%(upstream:remotename)%00%(upstream:remoteref)",
+            branch.trim(),
+          ],
+        )?;
+        let (remote, reference) = upstream
+          .trim()
+          .split_once('\0')
+          .ok_or("Publish this branch first to configure its upstream.")?;
+        if remote.is_empty() || reference.is_empty() || remote.starts_with('-') || !reference.starts_with("refs/heads/")
+        {
+          return Err("Publish this branch first to configure its upstream.".into());
+        }
+        self.run(repo, &["push", "--", remote, &format!("HEAD:{reference}")], false)?;
       }
       _ => return Err("Unsupported Git operation.".into()),
     }

@@ -5,12 +5,13 @@
   <div class="toolbar-group flex gap-1">
     <button ui-button click.trigger="workspace.action('fetch')" disabled.bind="workspace.busy">↓ Fetch</button>
     <button ui-button click.trigger="workspace.action('pull')" disabled.bind="workspace.busy" title="Pull with fast-forward only">↙ Pull</button>
-    <button ui-button click.trigger="workspace.action('push')" disabled.bind="workspace.busy">↑ Push</button>
+    <button ui-button click.trigger="push()" disabled.bind="workspace.busy">↑ Push</button>
   </div>
   <span class="toolbar-divider mx-1 h-5 border-l border-card-border"></span>
   <button ui-button click.trigger="createBranch()" disabled.bind="workspace.busy">⑂ New branch</button>
   <button ui-button click.trigger="manageRemotes()" disabled.bind="workspace.busy">Remotes</button>
   <button ui-button click.trigger="manageWorktrees()">Worktrees</button>
+  <button ui-button click.trigger="manageStashes()">Stashes</button>
   <div class="spacer flex-1"></div>
   <button ui-icon-button class="text-lg" click.trigger="workspace.refresh()" disabled.bind="workspace.busy || workspace.refreshing" title="Refresh · F5">↻</button>
   <button ui-button primary class="gap-2" click.trigger="workspace.openCommit()" title="Open commit window · Ctrl+K">

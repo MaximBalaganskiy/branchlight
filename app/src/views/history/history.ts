@@ -7,6 +7,8 @@ import { NewBranchDialog } from './new-branch-dialog/new-branch-dialog';
 import { RemotesDialog } from './remotes-dialog/remotes-dialog';
 import { WorktreesDialog } from './worktrees-dialog/worktrees-dialog';
 import { ActionDialog } from './action-dialog/action-dialog';
+import { PublishDialog } from './publish-dialog/publish-dialog';
+import { StashesDialog } from './stashes-dialog/stashes-dialog';
 import type { UiMenu } from '@aurelia-ui-toolkits/headless';
 import type { Commit } from '../../interfaces/commit';
 import type { Branch } from '../../interfaces/branch';
@@ -103,6 +105,17 @@ export class History {
 
   manageWorktrees() {
     return this.dialogs.open({ component: WorktreesDialog });
+  }
+
+  push() {
+    const current = this.workspace.snapshot?.branches.find(
+      branch => branch.kind === 'local' && branch.name === this.workspace.snapshot?.branch
+    );
+    return current?.upstream ? this.workspace.action('push') : this.dialogs.open({ component: PublishDialog });
+  }
+
+  manageStashes() {
+    return this.dialogs.open({ component: StashesDialog });
   }
 
   @watch('appearance.density')

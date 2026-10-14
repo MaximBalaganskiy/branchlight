@@ -11,6 +11,7 @@ pub mod message_options;
 pub mod mutation;
 pub mod remote;
 pub mod snapshot;
+pub mod stash;
 pub mod tree_entry;
 pub mod window_context;
 pub mod worktree;

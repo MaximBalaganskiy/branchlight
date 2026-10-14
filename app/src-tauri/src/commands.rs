@@ -15,6 +15,22 @@ use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
+pub async fn stashes(app: AppHandle, window: WebviewWindow) -> Result<Vec<crate::models::stash::Stash>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.stashes(&repo))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn stash_diff(app: AppHandle, window: WebviewWindow, hash: String) -> Result<String, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.stash_diff(&repo, &hash))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
 pub async fn worktrees(app: AppHandle, window: WebviewWindow) -> Result<Vec<Worktree>, String> {
   let repo = app.state::<AppState>().repo(window.label())?;
   tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.worktrees(&repo))

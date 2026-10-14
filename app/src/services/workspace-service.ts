@@ -148,6 +148,14 @@ export class WorkspaceService {
         fetch: 'Fetch complete',
         pull: 'Pull complete',
         push: 'Push complete',
+        publish: 'Branch published and upstream configured',
+        'stash-save': 'Changes stashed',
+        'stash-apply': 'Stash applied',
+        'stash-pop': 'Stash applied and removed',
+        'stash-drop': 'Stash removed',
+        amend: 'Commit amended',
+        'undo-commit': 'Commit undone; changes remain staged',
+        'partial-stage': 'Selected changes updated in the index',
         checkout: 'Branch switched',
         branch: 'Branch created',
         'remote-add': 'Remote added',
@@ -161,7 +169,9 @@ export class WorkspaceService {
         'worktree-remove': 'Worktree removed',
         'checkout-detached': 'Commit checked out in detached HEAD mode'
       };
-      void this.toasts.success(messages[action] || 'Done');
+      if (action !== 'partial-stage') {
+        void this.toasts.success(messages[action] || 'Done');
+      }
       return true;
     } catch (error) {
       if (notifyErrors) {

@@ -15,6 +15,8 @@ export class Commit {
   workingStaged = false;
   diff = '';
   diffLoading = false;
+  amendHead = '';
+  private previousDraft = '';
 
   fileQuery = '';
 
@@ -75,7 +77,7 @@ export class Commit {
     return (
       !this.workspace.busy &&
       !!this.message.trim() &&
-      (this.staged.length > 0 || this.workspace.snapshot?.operation === 'Merge') &&
+      (this.staged.length > 0 || !!this.amendHead || this.workspace.snapshot?.operation === 'Merge') &&
       !this.workspace.snapshot?.files.some(file => file.conflict)
     );
   }
@@ -156,9 +158,77 @@ export class Commit {
   }
 
   async commit() {
+    if (this.canCommit && this.amendHead) {
+      const result = await this.dialogs.open({
+        component: ActionDialog,
+        model: {
+          title: 'Amend last commit',
+          description: `Replace commit ${this.amendHead.slice(0, 8)} with the current index and this message? This rewrites its history, including if it was already pushed.\n\n${this.message}`,
+          action: 'amend',
+          payload: { reference: this.amendHead, message: this.message },
+          confirm: 'Amend commit',
+          danger: true
+        }
+      });
+      const closed = await result.dialog.closed;
+      if (closed.status === 'ok') {
+        this.amendHead = '';
+        this.message = '';
+      }
+      return;
+    }
     if (this.canCommit && (await this.workspace.action('commit', { message: this.message }))) {
       this.message = '';
     }
+  }
+
+  async toggleAmend() {
+    if (this.amendHead) {
+      this.amendHead = '';
+      this.message = this.previousDraft;
+      return;
+    }
+    const head = this.workspace.snapshot?.head;
+    if (!head) {
+      return;
+    }
+    try {
+      const detail = await this.workspace.client.detail(head);
+      this.previousDraft = this.message;
+      this.message = detail.message;
+      this.amendHead = head;
+    } catch (error) {
+      this.workspace.fail(error);
+    }
+  }
+
+  undoCommit() {
+    return this.dialogs.open({
+      component: ActionDialog,
+      model: {
+        title: 'Undo last commit',
+        description:
+          'Move the branch back one commit while keeping the index and working files intact. The undone changes stay staged. This rewrites branch history, including if the commit was already pushed.',
+        action: 'undo-commit',
+        payload: { reference: this.workspace.snapshot?.head },
+        confirm: 'Undo commit',
+        danger: true
+      }
+    });
+  }
+
+  get canStageSelection() {
+    const file = this.workingFile;
+    return !!file && !file.conflict && !file.originalPath && (this.workingStaged ? file.index : file.worktree) === 'M';
+  }
+
+  stageSelection(lines: number[]) {
+    return this.workspace.action('partial-stage', {
+      paths: [this.workingFile?.path],
+      staged: this.workingStaged,
+      original: this.diff,
+      lines
+    });
   }
 
   statusLabel(file: ChangedFile, staged: boolean) {

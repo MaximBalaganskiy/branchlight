@@ -1,12 +1,14 @@
-import { bindable } from 'aurelia';
+import { bindable, INode, resolve } from 'aurelia';
 import type { DiffLine } from '../../interfaces/diff-line';
 import './diff-view.css';
 import './syntax.css';
 
 export class DiffView {
   private generation = 0;
+  private element = resolve(INode) as HTMLElement;
   lines: DiffLine[] = [];
   truncated = false;
+  selected: number[] = [];
 
   @bindable
   text = '';
@@ -22,6 +24,35 @@ export class DiffView {
 
   @bindable
   isLoading = false;
+
+  @bindable
+  selectable = false;
+
+  @bindable
+  staged = false;
+
+  @bindable
+  disabled = false;
+
+  toggle(index: number) {
+    this.selected = this.selected.includes(index) ? this.selected.filter(value => value !== index) : [...this.selected, index];
+  }
+
+  apply(indices = this.selected) {
+    if (indices.length && !this.disabled && !this.isLoading && !this.truncated) {
+      this.element.dispatchEvent(new CustomEvent('stage-selection', { bubbles: true, detail: indices }));
+    }
+  }
+
+  applyHunk(index: number) {
+    const indices: number[] = [];
+    for (let cursor = index + 1; cursor < this.lines.length && this.lines[cursor].kind !== 'hunk'; cursor++) {
+      if (['added', 'removed'].includes(this.lines[cursor].kind)) {
+        indices.push(cursor);
+      }
+    }
+    this.apply(indices);
+  }
 
   binding() {
     return this.render();
@@ -39,6 +70,7 @@ export class DiffView {
     }
 
     this.truncated = this.text.split('\n').length > 12000;
+    this.selected = [];
     this.lines = parseDiff(this.text, this.filePath);
   }
 }

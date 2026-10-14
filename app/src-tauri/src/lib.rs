@@ -33,6 +33,8 @@ pub fn run() {
       commands::worktrees,
       commands::conflict_content,
       commands::message_options,
+      commands::stashes,
+      commands::stash_diff,
       commands::diff,
       commands::mutate,
       commands::remotes,

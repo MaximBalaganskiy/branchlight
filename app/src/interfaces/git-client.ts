@@ -9,8 +9,11 @@ import type { FilePreview } from './file-preview';
 import type { Worktree } from './worktree';
 import type { ConflictContent } from './conflict-content';
 import type { MessageOptions } from './message-options';
+import type { Stash } from './stash';
 
 export interface GitClient {
+  stashes(): Promise<Stash[]>;
+  stashDiff(hash: string): Promise<string>;
   worktrees(): Promise<Worktree[]>;
   conflictContent(path: string): Promise<ConflictContent>;
   messageOptions(): Promise<MessageOptions>;

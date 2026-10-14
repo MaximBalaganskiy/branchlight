@@ -12,8 +12,17 @@ import type { FilePreview } from '../interfaces/file-preview';
 import type { Worktree } from '../interfaces/worktree';
 import type { ConflictContent } from '../interfaces/conflict-content';
 import type { MessageOptions } from '../interfaces/message-options';
+import type { Stash } from '../interfaces/stash';
 
 export class TauriGitClient implements GitClient {
+  stashes() {
+    return invoke<Stash[]>('stashes');
+  }
+
+  stashDiff(hash: string) {
+    return invoke<string>('stash_diff', { hash });
+  }
+
   worktrees() {
     return invoke<Worktree[]>('worktrees');
   }

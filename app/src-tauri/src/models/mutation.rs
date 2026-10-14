@@ -11,4 +11,7 @@ pub struct Mutation {
   pub choice: Option<String>,
   pub text: Option<String>,
   pub original: Option<String>,
+  pub lines: Option<Vec<usize>>,
+  pub staged: Option<bool>,
+  pub include_untracked: Option<bool>,
 }

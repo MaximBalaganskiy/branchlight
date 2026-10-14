@@ -15,7 +15,7 @@ Development requires Node 24+, Rust, and the [Tauri platform prerequisites](http
 
 The Windows executable embeds the bundled, minified UI and uses the shared WebView2 runtime. The NSIS installer downloads WebView2 if it is missing. Neither Node nor Git is bundled. Linux uses WebKitGTK; build Linux packages on Linux with `npm --prefix app run pack:linux`. Linux packaging and desktop behavior have not yet been validated.
 
-Measured Windows x64 release (14 October 2026): **3.54 MiB** executable, **1.41 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
+Measured Windows x64 release (14 October 2026): **3.58 MiB** executable, **1.42 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
 
 ## Included
 
@@ -27,12 +27,15 @@ Measured Windows x64 release (14 October 2026): **3.54 MiB** executable, **1.41 
 - Filename filtering and search within historical file contents, with a search icon inside each input.
 - Context menus on commits and references for browsing, copying, creating branches, checking out, and merging.
 - A separate native desktop window for staging, unstaging, reviewing, and committing whole files.
+- Stage or unstage selected lines and complete hunks in modified UTF-8 text files. The working file stays intact; stale diffs are rejected. Added/deleted/renamed files, mode changes, binary files, links, and submodules still use whole-file staging.
 - Flat/tree staging lists, changed-file filtering, and an action to ignore an untracked file. Ignore rules escape pattern characters; the resulting `.gitignore` edit remains unstaged for review.
 - Commit drafts saved per repository; changes synchronize between open windows.
 - Commit-message dropdown with recent messages, the repository's configured `commit.template`, and named templates saved in the app.
+- Amend the last commit, including message-only corrections, with a review prompt. Undo a normal last commit with a soft reset, retaining index and working files; root and merge commits are excluded. Both operations reject a changed HEAD and warn about rewriting published history.
+- Stash tracked changes and optionally untracked files, inspect saved diffs, apply/pop with the saved index state, and confirm deletion. Apply/pop require a clean working tree; failed application retains the stash.
 - Merge into the current branch, review before committing, and abort a merge. The conflict dialog shows the common ancestor and both sides, accepts an edited result, or stages a whole side. Text editing is limited to UTF-8 files up to 1 MiB; externally resolved text can also be marked resolved.
 - Worktree list with create-on-new-branch, open, and remove actions. Removal preserves the branch and refuses dirty, current, main, or locked worktrees.
-- Create and switch local branches, add/edit/remove remotes, fetch, fast-forward pull, and push to an existing upstream. Remote removal confirms the name and removes its local tracking references without deleting the server repository.
+- Create and switch local branches, add/edit/remove remotes, fetch, fast-forward pull, and push to the configured upstream. Push opens a publishing dialog when no upstream exists; choose the remote and destination branch. Remote removal confirms the name and removes its local tracking references without deleting the server repository.
 - Compact repository-name menu in the top bar switches between recent repositories and opens new ones. Full paths distinguish identical folder names.
 - Resizable panes, light/dark themes, Normal/Compact density, recent repositories, and keyboard shortcuts. Normal density is the default; appearance choices are saved and synchronized between windows.
 
@@ -48,7 +51,7 @@ Branch switching currently requires a clean working tree. Clicking a branch name
 
 ## Preview scope
 
-This is an initial usable version, not full GitExtensions parity. Hunk/line staging, clone/init UI, stash management, rebase/cherry-pick controls, amend, interactive rebase, history rewriting, and advanced remote configuration are not implemented. Conflict resolution is a whole-file text editor and side selection, without a visual hunk-by-hunk merge editor. Use the terminal or another client for unsupported operations. Untracked text previews are limited to 1 MB; rendered diffs are limited to 12,000 lines. Repository changes are refreshed on focus, after an app operation, and every eight seconds while focused.
+This is an initial usable version, not full GitExtensions parity. Clone/init UI, rebase/cherry-pick/revert controls, interactive rebase, general reset, branch rename/delete, and advanced remote configuration are not implemented. Conflict resolution is a whole-file text editor and side selection, without a visual hunk-by-hunk merge editor. Partial staging is unavailable for truncated previews. Use the terminal or another client for unsupported operations. Untracked text previews are limited to 1 MB; rendered diffs are limited to 12,000 lines. Repository changes are refreshed on focus, after an app operation, and every eight seconds while focused.
 
 ## Development
 

@@ -88,6 +88,10 @@ const path = require('node:path');
     }
     await commit.getByRole('button', { name: 'Previous messages & templates ▾', exact: true }).click();
     await commit.getByRole('option').filter({ hasText: 'Main change' }).waitFor();
+    await commit
+      .getByRole('listbox')
+      .filter({ has: commit.getByRole('option').filter({ hasText: 'Main change' }) })
+      .focus();
     await commit.keyboard.press('Home');
     await commit.keyboard.press('ArrowDown');
     await commit.keyboard.press('ArrowDown');

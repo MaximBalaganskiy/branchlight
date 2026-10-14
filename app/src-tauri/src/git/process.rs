@@ -1,10 +1,14 @@
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 
 const OUTPUT_LIMIT: u64 = 32 * 1024 * 1024;
 
 pub fn execute(repo: &Path, args: &[&str]) -> Result<Output, String> {
+  execute_with_input(repo, args, None)
+}
+
+pub fn execute_with_input(repo: &Path, args: &[&str], input: Option<&[u8]>) -> Result<Output, String> {
   let mut command = Command::new(std::env::var_os("BRANCHLIGHT_GIT").unwrap_or_else(|| "git".into()));
   command
     .current_dir(repo)
@@ -13,7 +17,7 @@ pub fn execute(repo: &Path, args: &[&str]) -> Result<Output, String> {
     .env("GIT_TERMINAL_PROMPT", "0")
     .env("GCM_INTERACTIVE", "never")
     .env("GIT_OPTIONAL_LOCKS", "0")
-    .stdin(Stdio::null())
+    .stdin(if input.is_some() { Stdio::piped() } else { Stdio::null() })
     .stdout(Stdio::piped())
     .stderr(Stdio::piped());
   #[cfg(windows)]
@@ -30,12 +34,20 @@ pub fn execute(repo: &Path, args: &[&str]) -> Result<Output, String> {
   })?;
   let stdout = child.stdout.take().ok_or("Cannot capture Git output.")?;
   let stderr = child.stderr.take().ok_or("Cannot capture Git errors.")?;
-  let (out, err) = std::thread::scope(|scope| {
+  let stdin = child.stdin.take();
+  let (out, err, written) = std::thread::scope(|scope| {
     let out = scope.spawn(|| read_bounded(stdout));
     let err = scope.spawn(|| read_bounded(stderr));
-    (out.join().unwrap(), err.join().unwrap())
+    let written = scope.spawn(move || match (stdin, input) {
+      (Some(mut stream), Some(bytes)) => stream.write_all(bytes).map_err(|error| error.to_string()),
+      _ => Ok(()),
+    });
+    (out.join().unwrap(), err.join().unwrap(), written.join().unwrap())
   });
   let status = child.wait().map_err(|error| error.to_string())?;
+  if status.success() {
+    written?;
+  }
   Ok(Output {
     status,
     stdout: out?,
