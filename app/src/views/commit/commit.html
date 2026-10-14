@@ -66,11 +66,7 @@
       <diff-view file-path.bind="workingFile ? workingFile.path : ''" text.bind="diff" is-loading.bind="diffLoading"></diff-view>
     </div>
     <section class="message-composer shrink-0 border-t border-card-border bg-card p-3">
-      <div class="composer-label mb-2 flex justify-between text-[11px]">
-        <span>Commit message</span>
-        <span class="muted text-ink-500 ${summaryLength > 72 ? 'text-warning-text' : ''}">${summaryLength} / 72</span>
-      </div>
-      <ui-input inset.bind="false" textarea id="commit-message" value.bind="message" label="Commit message" rows="5" placeholder="Summary of changes" disabled.bind="workspace.busy"></ui-input>
+      <ui-input textarea id="commit-message" value.bind="message" label="Commit message" rows="5" placeholder="Summary of changes" disabled.bind="workspace.busy"></ui-input>
       <div class="composer-actions mt-2.5 flex items-center gap-2.5 text-[10px]">
         <span class="muted text-ink-500">
           ${staged.length} file${staged.length === 1 ? '' : 's'} staged ·
@@ -78,6 +74,7 @@
           to commit
         </span>
         <div class="spacer flex-1"></div>
+        <span class="text-xs text-ink-500 ${summaryLength > 72 ? 'text-warning-text' : ''}" aria-label="Summary length">${summaryLength} / 72</span>
         <button ui-button primary class="gap-2" click.trigger="commit()" disabled.bind="!canCommit">${workspace.busy ? 'Working…' : '✓ Commit to ' + workspace.snapshot.branch}</button>
       </div>
     </section>

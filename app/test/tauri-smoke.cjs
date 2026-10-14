@@ -43,22 +43,59 @@ const { git } = require('./support/git.cjs');
     console.log(`Launch to rendered history: ${Math.round(performance.now() - started)} ms`);
     assert.equal(await page.locator('.commit-row').count(), 4);
     assert.equal(await page.locator('.graph circle').count(), 4);
+    assert.equal(await page.locator('html').getAttribute('data-density'), 'normal');
+    assert.equal((await page.locator('.commit-row').first().boundingBox()).height, 34);
+    assert.equal(await page.locator('.working-row').count(), 0);
+    assert.equal(await page.locator('ui-tabs').evaluate(element => getComputedStyle(element).borderTopWidth), '0px');
+    const branchHeights = await page
+      .locator('.branch-item')
+      .evaluateAll(elements => elements.map(element => element.getBoundingClientRect().height));
+    assert.equal(new Set(branchHeights).size, 1);
+    const row = page.locator('.commit-row').first();
+    const rowBounds = await row.boundingBox();
+    await row.hover();
+    await page.mouse.down();
+    assert.equal(await row.evaluate(element => getComputedStyle(element).transform), 'none');
+    assert.deepEqual(await row.boundingBox(), rowBounds);
+    await page.mouse.up();
+    await page.getByRole('button', { name: 'Toggle density', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('.graph').getAttribute('height') === '26');
+    assert.equal((await row.boundingBox()).height, 26);
+    await page.getByRole('button', { name: 'Toggle density', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('.graph').getAttribute('height') === '34');
     await page.getByRole('button', { name: 'Draw branch lanes in the history view', exact: true }).click();
     await page.locator('.diff-code').getByText('+export const lanes = 3;', { exact: true }).waitFor();
     assert.ok(await page.locator('.diff-code .hljs-keyword').count());
     assert.equal(await page.locator('.ui-input').count(), 2);
+    assert.equal(await page.locator('.ui-input[data-inset]').count(), 2);
     assert.equal(await page.getByRole('textbox', { name: 'Search commits' }).count(), 1);
     const sidebarWidth = (await page.locator('repository-sidebar').boundingBox()).width;
     await page.getByRole('separator', { name: 'Resize branches sidebar' }).press('ArrowRight');
     assert.ok((await page.locator('repository-sidebar').boundingBox()).width > sidebarWidth);
     await page.getByRole('button', { name: '⑂ New branch', exact: true }).click();
     const dialog = page.getByRole('dialog');
+    assert.equal(await dialog.locator('.ui-input[data-inset]').count(), 1);
     await dialog.getByRole('textbox', { name: 'Branch name' }).fill('invalid branch name');
     await dialog.getByRole('button', { name: 'Create branch', exact: true }).click();
     await dialog.getByRole('alert').waitFor();
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     await page.getByRole('region', { name: 'Notifications' }).getByRole('button', { name: 'Dismiss' }).click();
+    await page.getByRole('button', { name: 'Remotes', exact: true }).click();
+    const remotes = page.getByRole('dialog');
+    await remotes.getByRole('textbox', { name: 'Remote name', exact: true }).fill('origin');
+    await remotes.getByRole('textbox', { name: 'Remote URL', exact: true }).fill('https://example.invalid/first.git');
+    await remotes.getByRole('button', { name: 'Create remote', exact: true }).click();
+    await remotes.getByRole('button', { name: 'Edit remote origin', exact: true }).waitFor();
+    await remotes.getByRole('textbox', { name: 'Remote URL', exact: true }).fill('https://example.invalid/second.git');
+    await remotes.getByRole('button', { name: 'Save remote', exact: true }).click();
+    await remotes
+      .getByRole('button', { name: 'Edit remote origin', exact: true })
+      .getByText('https://example.invalid/second.git')
+      .waitFor();
+    assert.equal((await git(repo, ['remote', 'get-url', 'origin'])).stdout.trim(), 'https://example.invalid/second.git');
+    await remotes.getByRole('button', { name: 'Close', exact: true }).click();
+    await remotes.waitFor({ state: 'hidden' });
     await page.getByRole('tab', { name: 'Commit details', exact: true }).click();
     await page.getByRole('tab', { name: 'Commit details', exact: true }).press('ArrowRight');
     assert.equal(await page.getByRole('tab', { name: 'Command log', exact: true }).getAttribute('aria-selected'), 'true');
@@ -76,6 +113,7 @@ const { git } = require('./support/git.cjs');
     await commit.getByRole('region', { name: 'Notifications' }).waitFor();
     assert.deepEqual(await commit.locator('.commit-workspace').boundingBox(), layoutBeforeToast);
     assert.equal(await commit.locator('.ui-input[data-textarea]').count(), 1);
+    assert.equal(await commit.locator('.ui-input[data-textarea][data-inset]').count(), 1);
     await commit.locator('#commit-message').fill('Refine the getting started guide');
     await commit.screenshot({ path: path.join(output, 'commit.png'), animations: 'disabled' });
     await commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click();
@@ -101,8 +139,33 @@ const { git } = require('./support/git.cjs');
       .click();
     await app.page.getByRole('button', { name: 'Refine the getting started guide', exact: true }).waitFor();
     assert.equal(await app.page.locator('.commit-row').count(), 5);
+    const rootCommit = (await git(repo, ['rev-list', '--max-parents=0', 'HEAD'])).stdout.trim();
+    await git(repo, ['branch', 'older-tip', rootCommit]);
+    const tree = (await git(repo, ['rev-parse', 'HEAD^{tree}'])).stdout.trim();
+    let tip = (await git(repo, ['rev-parse', 'HEAD'])).stdout.trim();
+    for (let index = 0; index < 320; index++) {
+      tip = (await git(repo, ['commit-tree', tree, '-p', tip, '-m', `Recent commit ${index}`])).stdout.trim();
+    }
+    await git(repo, ['update-ref', 'refs/heads/main', tip]);
+    await app.page.keyboard.press('F5');
+    await app.page.waitForFunction(() => document.querySelectorAll('.commit-row').length === 300);
+    await app.page.locator('.branch-name').filter({ hasText: 'older-tip' }).click();
+    const selectedTip = app.page.locator('.commit-row.selected').filter({ hasText: 'Start the workspace' });
+    await selectedTip.waitFor();
+    await app.page.waitForFunction(() => {
+      const row = document.querySelector('.commit-row.selected').getBoundingClientRect();
+      const scroll = document.querySelector('.history-scroll').getBoundingClientRect();
+      return row.top >= scroll.top - 1 && row.bottom <= scroll.bottom + 1;
+    });
+    assert.equal(await app.page.locator('.commit-row').count(), 325);
+    await app.page.getByRole('button', { name: 'Toggle density', exact: true }).click();
+    await app.page.waitForFunction(() => document.documentElement.dataset.density === 'compact');
+    assert.equal(await app.page.evaluate(() => localStorage.getItem('branchlight-density')), 'compact');
+    await app.page.reload();
+    await app.page.locator('.commit-row').first().waitFor();
+    assert.equal(await app.page.locator('html').getAttribute('data-density'), 'compact');
     console.log(
-      'PASS: Tauri renders real history and graph, opens a separate commit window, stages one file, commits, preserves unselected files, refreshes main window, switches theme, and reopens a recent repository after restart.'
+      'PASS: desktop Git workflow, inset labels, equal branch heights, stable pressed graph rows, borderless tabs, persistent density, and automatic navigation to an unloaded branch tip.'
     );
     console.log('Screenshots:', output);
   } catch (error) {

@@ -7,7 +7,8 @@ const palette = ['#79c6ad', '#9ca4ff', '#efa76e', '#e68db8', '#74b7ed', '#c6b56d
 
 const x = (lane: number) => 14 + lane * 12;
 /** Allocate lanes in topological order. Pending parents continue across page boundaries. */
-export function buildGraph(commits: Commit[]): GraphRow[] {
+export function buildGraph(commits: Commit[], height = ROW_HEIGHT): GraphRow[] {
+  const middle = height / 2;
   let lanes: Lane[] = [];
   let nextColor = 0;
   const rows: GraphRow[] = [];
@@ -35,16 +36,19 @@ export function buildGraph(commits: Commit[]): GraphRow[] {
       const lane = before[i];
       if (i === index) {
         if (hasIncoming) {
-          edges.push({ d: `M ${x(i)} 0 L ${x(i)} 13`, color: lane.color });
+          edges.push({ d: `M ${x(i)} 0 L ${x(i)} ${middle}`, color: lane.color });
         }
         continue;
       }
       const j = after.findIndex(item => item.hash === lane.hash);
-      edges.push({ d: `M ${x(i)} 0 C ${x(i)} 13 ${x(j)} 13 ${x(j)} 26`, color: lane.color });
+      edges.push({ d: `M ${x(i)} 0 C ${x(i)} ${middle} ${x(j)} ${middle} ${x(j)} ${height}`, color: lane.color });
     }
     for (const parent of commit.parents) {
       const j = after.findIndex(lane => lane.hash === parent);
-      edges.push({ d: `M ${x(index)} 13 C ${x(index)} 21 ${x(j)} 19 ${x(j)} 26`, color: after[j].color });
+      edges.push({
+        d: `M ${x(index)} ${middle} C ${x(index)} ${height * 0.8} ${x(j)} ${height * 0.7} ${x(j)} ${height}`,
+        color: after[j].color
+      });
     }
     // Only this row's active lanes reserve space. Distant merges must not widen
     // every commit or move the existing subjects when another page is loaded.

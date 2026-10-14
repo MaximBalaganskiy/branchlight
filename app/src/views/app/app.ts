@@ -1,10 +1,11 @@
 import { resolve } from 'aurelia';
 import { WorkspaceService } from '../../services/workspace-service';
+import { AppearanceService } from '../../services/appearance-service';
 import './app.css';
 
 export class App {
   readonly workspace = resolve(WorkspaceService);
-  theme = localStorage.getItem('branchlight-theme') || 'dark';
+  readonly appearance = resolve(AppearanceService);
   private timer?: ReturnType<typeof setInterval>;
 
   get tracking() {
@@ -12,14 +13,11 @@ export class App {
     return snapshot?.branches.find(branch => branch.kind === 'local' && branch.name === snapshot.branch)?.tracking || '';
   }
 
-  binding() {
-    document.documentElement.dataset.theme = this.theme;
-  }
-
   attached() {
     void this.workspace.initialize();
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('focus', this.onFocus);
+    window.addEventListener('storage', this.onStorage);
     this.timer = setInterval(() => {
       if (document.hasFocus() && !this.workspace.busy && !this.workspace.refreshing) {
         void this.workspace.refresh();
@@ -31,14 +29,26 @@ export class App {
     clearInterval(this.timer);
     window.removeEventListener('keydown', this.onKey);
     window.removeEventListener('focus', this.onFocus);
+    window.removeEventListener('storage', this.onStorage);
     this.workspace.dispose();
   }
 
   toggleTheme() {
-    this.theme = this.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = this.theme;
-    localStorage.setItem('branchlight-theme', this.theme);
+    this.appearance.theme = this.appearance.theme === 'dark' ? 'light' : 'dark';
   }
+
+  toggleDensity() {
+    this.appearance.density = this.appearance.density === 'normal' ? 'compact' : 'normal';
+  }
+
+  private onStorage = (event: StorageEvent) => {
+    if (event.key === 'branchlight-density') {
+      this.appearance.density = event.newValue === 'compact' ? 'compact' : 'normal';
+    }
+    if (event.key === 'branchlight-theme') {
+      this.appearance.theme = event.newValue === 'light' ? 'light' : 'dark';
+    }
+  };
 
   private onFocus = () => {
     if (!this.workspace.busy) {

@@ -6,8 +6,13 @@ import type { Snapshot } from '../interfaces/snapshot';
 import type { Detail } from '../interfaces/detail';
 import type { DiffRequest } from '../interfaces/diff-request';
 import type { CommandEntry } from '../interfaces/command-entry';
+import type { Remote } from '../interfaces/remote';
 
 export class TauriGitClient implements GitClient {
+  remotes() {
+    return invoke<Remote[]>('remotes');
+  }
+
   bootstrap() {
     return invoke<BootstrapState>('bootstrap');
   }

@@ -8,6 +8,7 @@
   </div>
   <span class="toolbar-divider mx-1 h-5 border-l border-card-border"></span>
   <button ui-button click.trigger="createBranch()" disabled.bind="workspace.busy">⑂ New branch</button>
+  <button ui-button click.trigger="manageRemotes()" disabled.bind="workspace.busy">Remotes</button>
   <div class="spacer flex-1"></div>
   <button ui-icon-button class="text-lg" click.trigger="workspace.refresh()" disabled.bind="workspace.busy || workspace.refreshing" title="Refresh · F5">↻</button>
   <button ui-button primary class="gap-2" click.trigger="workspace.openCommit()" title="Open commit window · Ctrl+K">
@@ -16,19 +17,19 @@
   </button>
 </div>
 <div class="workspace flex min-h-0 flex-1">
-  <repository-sidebar branch-selected.trigger="focusBranch($event.detail)"></repository-sidebar>
+  <repository-sidebar branch-selected.trigger="focusBranch($event.detail)" manage-remotes.trigger="manageRemotes()"></repository-sidebar>
   <ui-splitter direction="horizontal" size="220" min.bind="160" max.bind="400" storage-key="sidebar" aria-label="Resize branches sidebar"></ui-splitter>
   <section class="repository-content flex min-h-0 min-w-0 flex-1 flex-col bg-card">
     <section class="history-panel flex h-[410px] max-h-[calc(100%-180px)] min-h-0 flex-col">
-      <div class="panel-toolbar flex h-10 shrink-0 items-center gap-4 px-3">
+      <div class="panel-toolbar flex min-h-12 shrink-0 py-1 items-center gap-4 px-3">
         <h2>
           History
           <span class="muted text-ink-500">/ All branches</span>
         </h2>
         <div class="spacer flex-1"></div>
-        <form class="history-search flex h-8 w-[330px] items-center gap-2 text-ink-500" submit.trigger:prevent="findNext()">
+        <form class="history-search flex w-[330px] items-center gap-2 text-ink-500" submit.trigger:prevent="findNext()">
           <span>⌕</span>
-          <ui-input inset.bind="false" value.bind="query" placeholder="Find a commit, author or hash…" label="Search commits" class="search-field"></ui-input>
+          <ui-input value.bind="query" placeholder="Find a commit, author or hash…" label="Search commits" class="search-field"></ui-input>
           <small if.bind="query">${matchCount} matches</small>
           <button ui-icon-button type="submit" title="Next match">↵</button>
         </form>
@@ -40,38 +41,31 @@
         <span>SHA</span>
       </div>
       <div class="history-scroll min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
-        <button ui-button class="working-row flex! h-[30px] w-full items-center justify-start! gap-3 rounded-none! border-0! border-b! border-card-border! bg-info-bg! px-3! py-1! text-left text-[11px]!" click.trigger="workspace.openCommit()">
-          <span class="working-node w-7 text-[22px] text-accent">◌</span>
-          <strong>Working directory</strong>
-          <span class="muted text-ink-500">${workspace.snapshot.files.length ? workspace.snapshot.files.length + ' changed files' : 'Clean working tree'}</span>
-          <span class="spacer flex-1"></span>
-          <span class="working-link text-[10px] text-accent">Prepare commit ↗</span>
-        </button>
         <div class="commit-rows" role="list" aria-label="Commit history">
-          <button ui-button repeat.for="row of rows; key: commit.hash" id="commit-${row.commit.hash}" class="commit-row grid! h-[26px] w-full min-w-[650px] items-center gap-0 rounded-none! border-0! border-l-2! border-transparent! p-0! text-left text-xs! font-normal! data-[active]:scale-100! ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}" click.trigger="selectCommit(row.commit)" aria-label.bind="row.commit.subject" title.bind="row.commit.subject">
-            <span class="graph-and-subject flex h-[26px] min-w-0 items-center">
-              <svg class="graph block flex-none overflow-visible" width.bind="row.width" height="26" aria-hidden="true">
+          <button ui-button repeat.for="row of rows; key: commit.hash" id="commit-${row.commit.hash}" class="commit-row grid! h-[var(--app-row-height)] w-full min-w-[650px] items-center gap-0 rounded-none! border-0! border-l-2! border-transparent! p-0! text-left text-sm! font-normal! transform-none! ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}" click.trigger="selectCommit(row.commit)" aria-label.bind="row.commit.subject" title.bind="row.commit.subject">
+            <span class="graph-and-subject flex h-full min-w-0 items-center">
+              <svg class="graph block flex-none overflow-visible" width.bind="row.width" height.bind="appearance.rowHeight" aria-hidden="true">
                 <path repeat.for="edge of row.edges" d.bind="edge.d" stroke.bind="edge.color" fill="none" stroke-width="1.8"></path>
-                <circle cx.bind="row.x" cy="13" r.bind="row.commit.parents.length > 1 ? 4.5 : 3.5" fill.bind="row.color" stroke="var(--color-card)" stroke-width="1.5"></circle>
+                <circle cx.bind="row.x" cy.bind="appearance.rowHeight / 2" r.bind="row.commit.parents.length > 1 ? 4.5 : 3.5" fill.bind="row.color" stroke="var(--color-card)" stroke-width="1.5"></circle>
               </svg>
               <span class="commit-subject flex min-w-0 flex-1 items-center gap-1 overflow-hidden pr-2.5 whitespace-nowrap">
                 <span class="ref-label max-w-[180px] shrink-0 truncate rounded-sm bg-info-bg px-1 py-px text-[10px] font-medium text-info-text ${ref.startsWith('tag:') ? 'tag-label' : ''}" repeat.for="ref of row.commit.refs">${ref.replace('HEAD -> ', '⑂ ').replace('tag: ', '◇ ')}</span>
                 <span>${row.commit.subject}</span>
               </span>
             </span>
-            <span class="author truncate pr-2.5 text-[11px]">${row.commit.author}</span>
+            <span class="author truncate pr-2.5 text-xs">${row.commit.author}</span>
             <time title.bind="fullDate(row.commit.date)">${date(row.commit.date)}</time>
             <code class="hash truncate pr-2.5 text-[10px]">${short(row.commit.hash)}</code>
           </button>
         </div>
         <div class="history-empty p-10 text-center text-ink-500" if.bind="!rows.length">No commits yet. Open the commit window to create the first one.</div>
-        <button ui-button class="load-more block! w-full rounded-none! p-3! text-[11px]! text-accent!" if.bind="workspace.snapshot.hasMore && workspace.limit < 5000" click.trigger="workspace.loadMore()" disabled.bind="workspace.refreshing">${workspace.refreshing ? 'Loading…' : 'Load 300 more commits'}</button>
+        <button ui-button class="load-more block! w-full rounded-none! p-3! text-[11px]! text-accent!" if.bind="workspace.canLoadMore" click.trigger="workspace.loadMore()" disabled.bind="workspace.refreshing">${workspace.refreshing ? 'Loading…' : 'Load 300 more commits'}</button>
       </div>
     </section>
     <ui-splitter direction="vertical" size="410" min.bind="150" max.bind="1000" storage-key="history" aria-label="Resize commit history"></ui-splitter>
     <section class="detail-panel flex min-h-0 flex-1 flex-col overflow-hidden">
       <div class="detail-tabs flex shrink-0 items-center gap-1.5 border-b border-card-border bg-card-muted px-2">
-        <ui-tabs value.bind="tab">
+        <ui-tabs value.bind="tab" class="border-0! rounded-none!">
           <ui-tab value="diff">
             Changes
             <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${detail ? detail.files.length : 0}</span>

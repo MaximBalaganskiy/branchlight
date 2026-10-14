@@ -15,17 +15,17 @@ Development requires Node 24+, Rust, and the [Tauri platform prerequisites](http
 
 The Windows executable embeds the bundled, minified UI and uses the shared WebView2 runtime. The NSIS installer downloads WebView2 if it is missing. Neither Node nor Git is bundled. Linux uses WebKitGTK; build Linux packages on Linux with `npm --prefix app run pack:linux`. Linux packaging and desktop behavior have not yet been validated.
 
-Measured Windows x64 release (14 October 2026): **3.44 MiB** executable, **1.37 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
+Measured Windows x64 release (14 October 2026): **3.46 MiB** executable, **1.38 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
 
 ## Included
 
 - Commit graph with branch lanes, merge connections, refs, author, date, and SHA.
-- Local branches, remote branches, tags, commit search, and paginated history (up to 5,000 commits).
+- Local branches, remote branches, tags, commit search, and paginated history (up to 100,000 commits). Selecting an unloaded branch tip automatically expands history and scrolls to it.
 - Changed files, syntax-highlighted unified diffs using Lowlight/highlight.js, full commit messages, and a Git command log.
 - A separate native desktop window for staging, unstaging, reviewing, and committing whole files.
 - Commit drafts saved per repository; changes synchronize between open windows.
-- Create and switch local branches, fetch, fast-forward pull, and push to an existing upstream.
-- Resizable panes, light/dark themes, recent repositories, and keyboard shortcuts.
+- Create and switch local branches, add remotes and edit their URLs, fetch, fast-forward pull, and push to an existing upstream.
+- Resizable panes, light/dark themes, Normal/Compact density, recent repositories, and keyboard shortcuts. Normal density is the default; appearance choices are saved and synchronized between windows.
 
 | Shortcut | Action |
 | --- | --- |
@@ -39,7 +39,7 @@ Branch switching currently requires a clean working tree. Clicking a branch name
 
 ## Preview scope
 
-This is an initial usable version, not full GitExtensions parity. Hunk/line staging, clone/init UI, stash management, merge/rebase/cherry-pick controls, conflict resolution, amend, interactive rebase, history rewriting, and remote configuration are not implemented. Use the terminal or another client for these operations. Untracked text previews are limited to 1 MB; rendered diffs are limited to 12,000 lines. Repository changes are refreshed on focus, after an app operation, and every eight seconds while focused.
+This is an initial usable version, not full GitExtensions parity. Hunk/line staging, clone/init UI, stash management, merge/rebase/cherry-pick controls, conflict resolution, amend, interactive rebase, history rewriting, and advanced remote configuration are not implemented. Use the terminal or another client for these operations. Untracked text previews are limited to 1 MB; rendered diffs are limited to 12,000 lines. Repository changes are refreshed on focus, after an app operation, and every eight seconds while focused.
 
 ## Development
 
@@ -64,4 +64,4 @@ Source layout: `app/src/views/` contains folder-based views; `elements/` contain
 
 Build caches (`app/src-tauri/target/`), `node_modules`, and optional workspace toolchains (`.toolchains/`) are development files, not distribution contents. `scripts/native.cjs` uses the workspace Rust/compiler fallback when present and otherwise uses the installed toolchain. Packaging copies the executable into `app/release/windows/` or `app/release/linux/` and installer packages directly into `app/release/`. Only these collected artifacts need distributing.
 
-Headless supplies buttons, inputs, tabs, splitters, dialogs, and service-created toast notifications. The app imports `@aurelia-ui-toolkits/headless-tailwind` and changes compact desktop density through its tokens. Templates use inline Tailwind layout utilities; reusable app selectors use nested CSS. `AGENTS.md` and the formatter record these conventions.
+Headless supplies buttons, inputs, tabs, splitters, dialogs, and service-created toast notifications. The app imports `@aurelia-ui-toolkits/headless-tailwind` and uses its Normal and Compact density tokens, with inset field labels enabled globally. Templates use inline Tailwind layout utilities; reusable app selectors use nested CSS. `AGENTS.md` and the formatter record these conventions.

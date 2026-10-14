@@ -1,8 +1,10 @@
-import { observable, resolve } from 'aurelia';
+import { observable, resolve, watch } from 'aurelia';
 import { IDialogService } from '@aurelia/dialog';
 import { WorkspaceService } from '../../services/workspace-service';
 import { buildGraph } from '../../services/graph-layout';
+import { AppearanceService } from '../../services/appearance-service';
 import { NewBranchDialog } from './new-branch-dialog/new-branch-dialog';
+import { RemotesDialog } from './remotes-dialog/remotes-dialog';
 import type { Commit } from '../../interfaces/commit';
 import type { Branch } from '../../interfaces/branch';
 import type { Detail } from '../../interfaces/detail';
@@ -15,11 +17,13 @@ import './commit-details.css';
 
 export class History {
   readonly workspace = resolve(WorkspaceService);
+  readonly appearance = resolve(AppearanceService);
   private dialogs = resolve(IDialogService);
   private unsubscribe?: () => void;
   private lastSnapshot: Snapshot | null = null;
   private detailGeneration = 0;
   private diffGeneration = 0;
+  private branchGeneration = 0;
 
   rows: GraphRow[] = [];
   selected: Commit | null = null;
@@ -29,6 +33,11 @@ export class History {
   diffLoading = false;
   query = '';
   commandLog: CommandEntry[] = [];
+
+  @watch('appearance.density')
+  densityChanged() {
+    this.rows = buildGraph(this.workspace.snapshot?.commits ?? [], this.appearance.rowHeight);
+  }
 
   @observable
   tab = 'diff';
@@ -51,6 +60,7 @@ export class History {
     this.unsubscribe?.();
     ++this.detailGeneration;
     ++this.diffGeneration;
+    ++this.branchGeneration;
   }
 
   refresh() {
@@ -60,7 +70,7 @@ export class History {
     }
 
     this.lastSnapshot = snapshot;
-    this.rows = buildGraph(snapshot.commits);
+    this.rows = buildGraph(snapshot.commits, this.appearance.rowHeight);
     const commit = snapshot.commits.find(item => item.hash === this.selected?.hash) ?? snapshot.commits[0];
     if (commit && commit.hash !== this.selected?.hash) {
       void this.selectCommit(commit);
@@ -123,15 +133,28 @@ export class History {
     return `${commit.subject} ${commit.author} ${commit.hash} ${commit.refs.join(' ')}`.toLowerCase().includes(this.query.toLowerCase());
   }
 
-  focusBranch(branch: Branch) {
-    const commit = this.workspace.snapshot?.commits.find(item => item.hash === branch.hash);
-    if (!commit) {
-      this.workspace.inform('Load more history to find this branch tip.');
-      return;
+  async focusBranch(branch: Branch) {
+    const generation = ++this.branchGeneration;
+    const repo = this.workspace.repo;
+    let commit = this.workspace.snapshot?.commits.find(item => item.hash === branch.hash);
+    while (!commit && this.workspace.canLoadMore) {
+      const loaded = await this.workspace.loadMore(true);
+      if (!loaded || generation !== this.branchGeneration || repo !== this.workspace.repo) {
+        return;
+      }
+      commit = this.workspace.snapshot?.commits.find(item => item.hash === branch.hash);
     }
 
-    void this.selectCommit(commit);
-    document.getElementById('commit-' + commit.hash)?.scrollIntoView({ block: 'center' });
+    if (commit) {
+      void this.selectCommit(commit);
+      requestAnimationFrame(() => {
+        if (generation === this.branchGeneration && repo === this.workspace.repo) {
+          document.getElementById('commit-' + commit.hash)?.scrollIntoView({ block: 'center' });
+        }
+      });
+    } else {
+      this.workspace.fail(new Error('The branch tip is not available in the loaded history.'));
+    }
   }
 
   findNext() {
@@ -149,6 +172,14 @@ export class History {
   async createBranch() {
     try {
       await this.dialogs.open({ component: NewBranchDialog });
+    } catch (error) {
+      this.workspace.fail(error);
+    }
+  }
+
+  async manageRemotes() {
+    try {
+      await this.dialogs.open({ component: RemotesDialog });
     } catch (error) {
       this.workspace.fail(error);
     }

@@ -33,4 +33,8 @@ export class RepositorySidebar {
     this.branchFilter = branch.name;
     this.element.dispatchEvent(new CustomEvent('branch-selected', { detail: branch, bubbles: true }));
   }
+
+  manageRemotes() {
+    this.element.dispatchEvent(new CustomEvent('manage-remotes', { bubbles: true }));
+  }
 }

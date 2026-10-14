@@ -1,0 +1,22 @@
+<template class="w-[600px] max-w-[90vw] p-6">
+  <header class="mb-5 flex items-center justify-between gap-4">
+    <h2 class="text-xl!">Remotes</h2>
+    <button ui-button click.trigger="add()" disabled.bind="loading || workspace.busy">Add remote</button>
+  </header>
+  <div class="mb-5 grid max-h-48 gap-1 overflow-auto" if.bind="remotes.length">
+    <button ui-button repeat.for="remote of remotes; key: name" class="flex! flex-col! items-start! gap-1 text-left! font-normal!" click.trigger="edit(remote)" disabled.bind="workspace.busy" aria-label="Edit remote ${remote.name}">
+      <strong>${remote.name}</strong>
+      <span class="max-w-full truncate text-xs text-ink-500">${remote.url}</span>
+    </button>
+  </div>
+  <p class="mb-4 text-sm text-ink-500" if.bind="!remotes.length">${loading ? 'Loading remotes…' : 'Add a remote to fetch, pull, and push.'}</p>
+  <form class="grid gap-4" submit.trigger:prevent="save()">
+    <ui-input label="Remote name" value.bind="name" readonly.bind="editing" disabled.bind="loading || workspace.busy" required></ui-input>
+    <ui-input label="Remote URL" value.bind="url" disabled.bind="loading || workspace.busy" required></ui-input>
+    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <div class="mt-2 flex justify-end gap-2">
+      <button ui-button type="button" click.trigger="close()" disabled.bind="workspace.busy">Close</button>
+      <button ui-button primary type="submit" disabled.bind="loading || workspace.busy || !name.trim() || !url.trim()">${editing ? 'Save remote' : 'Create remote'}</button>
+    </div>
+  </form>
+</template>

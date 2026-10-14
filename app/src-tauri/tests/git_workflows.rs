@@ -216,6 +216,59 @@ fn nul_status_handles_unicode_and_conflicts() {
 }
 
 #[test]
+fn repeated_release_merges_interleave_with_development_history() {
+  let (temp, service) = repository();
+  let repo = temp.path();
+  let tree = String::from_utf8(service.run(repo, &["mktree"], false).unwrap().stdout).unwrap();
+  let create = |tick: u64, parents: &[&str], subject: &str| {
+    let date = format!("{} +0000", 1_600_000_000 + tick * 60);
+    let mut command = std::process::Command::new("git");
+    command
+      .current_dir(repo)
+      .args(["commit-tree", tree.trim(), "-m", subject])
+      .env("GIT_AUTHOR_DATE", &date)
+      .env("GIT_COMMITTER_DATE", &date);
+    for parent in parents {
+      command.args(["-p", parent]);
+    }
+    let output = command.output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    String::from_utf8(output.stdout).unwrap().trim().to_owned()
+  };
+  let root = create(0, &[], "Root");
+  let mut main = root.clone();
+  let mut dev = root.clone();
+  let mut expected = vec![root];
+  for release in 1..=20 {
+    dev = create(release * 2, &[&dev], &format!("Development {release}"));
+    main = create(release * 2 + 1, &[&main, &dev], &format!("Release {release}"));
+    expected.extend([dev.clone(), main.clone()]);
+  }
+  dev = create(50, &[&dev], "Unreleased development");
+  expected.push(dev.clone());
+  dev = create(51, &[&dev, &main], "Merge releases back into development");
+  expected.push(dev.clone());
+  service
+    .run(repo, &["update-ref", "refs/heads/main", &main], false)
+    .unwrap();
+  service
+    .run(repo, &["update-ref", "refs/heads/dev", &dev], false)
+    .unwrap();
+  expected.reverse();
+  let snapshot = service.snapshot(repo, 100).unwrap();
+  assert_eq!(
+    snapshot.commits.iter().map(|commit| &commit.hash).collect::<Vec<_>>(),
+    expected.iter().collect::<Vec<_>>()
+  );
+  let page = service.snapshot(repo, 15).unwrap();
+  assert_eq!(
+    page.commits.iter().map(|commit| &commit.hash).collect::<Vec<_>>(),
+    expected[..15].iter().collect::<Vec<_>>()
+  );
+  assert!(page.has_more);
+}
+
+#[test]
 fn fetch_pull_push_local_remote() {
   let (temp, service) = repository();
   let repo = temp.path();
@@ -249,6 +302,55 @@ fn fetch_pull_push_local_remote() {
     .contains("behind 1"));
   mutate(&service, clone.path(), "pull", serde_json::json!({}));
   assert_eq!(fs::read_to_string(clone.path().join("readme.txt")).unwrap(), "v2\n");
+}
+
+#[test]
+fn add_and_edit_remote_urls_preserve_other_settings() {
+  let (temp, service) = repository();
+  let repo = temp.path();
+  assert!(service.remotes(repo).unwrap().is_empty());
+  mutate(
+    &service,
+    repo,
+    "remote-add",
+    serde_json::json!({ "name": "origin", "url": "https://example.invalid/first.git" }),
+  );
+  service
+    .run(
+      repo,
+      &["config", "remote.origin.pushurl", "ssh://example.invalid/push.git"],
+      false,
+    )
+    .unwrap();
+  mutate(
+    &service,
+    repo,
+    "remote-edit",
+    serde_json::json!({ "name": "origin", "url": "https://example.invalid/second.git" }),
+  );
+  let remotes = service.remotes(repo).unwrap();
+  assert_eq!(remotes.len(), 1);
+  assert_eq!(remotes[0].name, "origin");
+  assert_eq!(remotes[0].url, "https://example.invalid/second.git");
+  assert_eq!(
+    service
+      .run(repo, &["remote", "get-url", "--push", "origin"], false)
+      .unwrap()
+      .stdout,
+    b"ssh://example.invalid/push.git\n"
+  );
+  assert!(service
+    .mutate(
+      repo,
+      "remote-add",
+      &Mutation {
+        name: Some("bad name".into()),
+        url: Some("https://example.invalid/repo.git".into()),
+        ..Default::default()
+      }
+    )
+    .is_err());
+  assert_eq!(service.remotes(repo).unwrap().len(), 1);
 }
 
 #[test]

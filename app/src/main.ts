@@ -6,4 +6,11 @@ import './styles/theme.css';
 import './styles/layout.css';
 import './styles/scrollbar.css';
 
-Aurelia.register(AureliaHeadlessConfiguration, SVGAnalyzer).app(App).start();
+Aurelia.register(
+  AureliaHeadlessConfiguration.customize(config => {
+    config.field.defaultInset = true;
+  }),
+  SVGAnalyzer
+)
+  .app(App)
+  .start();

@@ -40,18 +40,6 @@ kbd {
   }
 }
 
-.search-field,
-.message-composer {
-  & .ui-input__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
 .file-item {
   background: transparent !important;
   color: inherit !important;

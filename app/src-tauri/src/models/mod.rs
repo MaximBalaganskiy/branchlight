@@ -6,5 +6,6 @@ pub mod commit_file;
 pub mod detail;
 pub mod diff_request;
 pub mod mutation;
+pub mod remote;
 pub mod snapshot;
 pub mod window_context;

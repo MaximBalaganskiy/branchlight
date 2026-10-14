@@ -1,7 +1,8 @@
 use crate::{
   app_state::AppState,
   models::{
-    command_entry::CommandEntry, detail::Detail, diff_request::DiffRequest, mutation::Mutation, snapshot::Snapshot,
+    command_entry::CommandEntry, detail::Detail, diff_request::DiffRequest, mutation::Mutation, remote::Remote,
+    snapshot::Snapshot,
   },
   windows,
 };
@@ -107,6 +108,14 @@ pub async fn mutate(app: AppHandle, window: WebviewWindow, action: String, paylo
   })
   .await
   .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn remotes(app: AppHandle, window: WebviewWindow) -> Result<Vec<Remote>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.remotes(&repo))
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]

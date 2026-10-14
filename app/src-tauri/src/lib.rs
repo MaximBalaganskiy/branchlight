@@ -30,6 +30,7 @@ pub fn run() {
       commands::detail,
       commands::diff,
       commands::mutate,
+      commands::remotes,
       commands::command_log,
       commands::commit_window
     ])

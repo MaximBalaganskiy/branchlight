@@ -1,7 +1,7 @@
 use super::{parsers, process, validation};
 use crate::models::{
   branch::Branch, command_entry::CommandEntry, commit_file::CommitFile, detail::Detail, diff_request::DiffRequest,
-  mutation::Mutation, snapshot::Snapshot,
+  mutation::Mutation, remote::Remote, snapshot::Snapshot,
 };
 use std::collections::HashMap;
 use std::fs;
@@ -91,8 +91,25 @@ impl GitService {
     dunce::canonicalize(root.trim()).map_err(|error| error.to_string())
   }
 
+  pub fn remotes(&self, repo: &Path) -> Result<Vec<Remote>, String> {
+    let output = self.run(repo, &["config", "--null", "--get-regexp", r"^remote\..*\.url$"], true)?;
+    if !output.status.success() && output.status.code() != Some(1) {
+      return Err(String::from_utf8_lossy(&output.stderr).trim().to_owned());
+    }
+    let mut remotes = std::collections::BTreeMap::new();
+    let text = String::from_utf8_lossy(&output.stdout);
+    for record in text.split('\0') {
+      if let Some((key, url)) = record.split_once('\n') {
+        if let Some(name) = key.strip_prefix("remote.").and_then(|key| key.strip_suffix(".url")) {
+          remotes.entry(name.to_owned()).or_insert_with(|| url.to_owned());
+        }
+      }
+    }
+    Ok(remotes.into_iter().map(|(name, url)| Remote { name, url }).collect())
+  }
+
   pub fn snapshot(&self, repo: &Path, limit: usize) -> Result<Snapshot, String> {
-    let limit = limit.clamp(1, 5000);
+    let limit = limit.clamp(1, 100_000);
     let (status, refs, head, symbolic) = std::thread::scope(|scope| {
       let status = scope.spawn(|| self.text(repo, &["status", "--porcelain=v1", "-z", "--untracked-files=all"]));
       let refs = scope.spawn(|| {
@@ -153,7 +170,6 @@ impl GitService {
       }
       args.extend([
         "--date-order",
-        "--topo-order",
         &count,
         "-z",
         "--format=%H%x00%P%x00%an%x00%aI%x00%s%x00%D",
@@ -303,6 +319,25 @@ impl GitService {
       .try_lock()
       .map_err(|_| "Another Git operation is running for this repository.")?;
     match action {
+      "remote-add" | "remote-edit" => {
+        let name = payload
+          .name
+          .as_deref()
+          .filter(|name| !name.is_empty() && !name.starts_with('-'))
+          .ok_or("Enter a remote name.")?;
+        self.run(repo, &["check-ref-format", &format!("refs/remotes/{name}/HEAD")], false)?;
+        let url = payload
+          .url
+          .as_deref()
+          .filter(|url| !url.trim().is_empty() && !url.contains(['\0', '\r', '\n']))
+          .ok_or("Enter a remote URL or local repository path.")?;
+        let args = if action == "remote-add" {
+          vec!["remote", "add", "--", name, url.trim()]
+        } else {
+          vec!["remote", "set-url", "--", name, url.trim()]
+        };
+        self.run(repo, &args, false)?;
+      }
       "stage" | "unstage" => {
         let paths = payload
           .paths

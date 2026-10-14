@@ -21,6 +21,10 @@ export class WorkspaceService {
   limit = 300;
   lastError = '';
 
+  get canLoadMore() {
+    return !!this.snapshot?.hasMore && this.limit < 100000;
+  }
+
   async initialize() {
     if (!isTauri()) {
       this.fail(new Error('Launch the desktop app to access local repositories.'));
@@ -101,6 +105,7 @@ export class WorkspaceService {
       for (const listener of this.listeners) {
         listener();
       }
+      return true;
     } catch (error) {
       if (generation === this.generation) {
         this.fail(error);
@@ -112,9 +117,9 @@ export class WorkspaceService {
     }
   }
 
-  async loadMore() {
-    this.limit = Math.min(this.limit + 300, 5000);
-    await this.refresh();
+  async loadMore(expand = false) {
+    this.limit = Math.min(expand ? this.limit * 2 : this.limit + 300, 100000);
+    return this.refresh();
   }
 
   async openCommit() {
@@ -143,7 +148,9 @@ export class WorkspaceService {
         pull: 'Pull complete',
         push: 'Push complete',
         checkout: 'Branch switched',
-        branch: 'Branch created'
+        branch: 'Branch created',
+        'remote-add': 'Remote added',
+        'remote-edit': 'Remote updated'
       };
       void this.toasts.success(messages[action] || 'Done');
       return true;
