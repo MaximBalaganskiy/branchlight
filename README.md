@@ -17,6 +17,20 @@ Development requires Node 24+, Rust, and the [Tauri platform prerequisites](http
 
 The Windows executable embeds the bundled, minified UI and uses the shared WebView2 runtime. The NSIS installer downloads WebView2 if it is missing. Neither Node nor Git is bundled. Linux uses WebKitGTK; build Linux packages on Linux with `npm --prefix app run pack:linux`. Linux packaging and native Git integration tests are validated in GitHub Actions; interactive Linux desktop behavior has not yet been validated.
 
+### Linux display servers
+
+The GTK/WebKitGTK shell supports native Wayland and X11. GTK selects the available display backend; Branchlight does not force X11. The locked Tauri CLI includes the AppImage bundler's native Wayland fixes. The same Aurelia UI and separate commit window are used on both backends.
+
+To explicitly select native Wayland when launching an AppImage from your Wayland session:
+
+```bash
+GDK_BACKEND=wayland ./Branchlight_0.1.0_amd64.AppImage
+```
+
+Use the filename of your downloaded AppImage. For a Debian installation, run `GDK_BACKEND=wayland branchlight`. `GDK_BACKEND=x11` selects X11 instead (requiring XWayland in a Wayland session). Wayland compositors control window placement; restoring exact screen coordinates is not guaranteed, while size and maximized state remain saved.
+
+Native Wayland desktop testing on GNOME/KDE, including clipboard, file dialogs, scaling, and multiple windows, is still pending. For driver-specific rendering problems, consult [Tauri's Linux graphics troubleshooting](https://v2.tauri.app/develop/debug/linux-graphics/); Branchlight does not disable hardware acceleration globally.
+
 Measured Windows x64 release (14 October 2026): **3.64 MiB** executable, **1.44 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
 
 ## Included

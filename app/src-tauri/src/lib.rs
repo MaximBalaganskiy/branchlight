@@ -2,6 +2,7 @@ mod app_state;
 mod commands;
 pub mod git;
 pub mod models;
+mod navigation;
 mod windows;
 
 use app_state::AppState;

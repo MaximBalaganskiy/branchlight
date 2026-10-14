@@ -32,14 +32,7 @@ pub fn create(app: &AppHandle, label: &str, mode: &str, repo: String) -> Result<
     .inner_size(if mode == "commit" { 1220.0 } else { 1480.0 }, 920.0)
     .min_inner_size(900.0, 640.0)
     .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
-    .on_navigation(|url| {
-      let local_app = matches!(url.scheme(), "tauri" | "http" | "https") && url.host_str() == Some("tauri.localhost");
-      let dev_server = cfg!(debug_assertions)
-        && url.scheme() == "http"
-        && matches!(url.host_str(), Some("127.0.0.1" | "localhost"))
-        && url.port() == Some(5173);
-      local_app || dev_server
-    })
+    .on_navigation(|url| crate::navigation::allowed(url, cfg!(debug_assertions)))
     .build();
   match result {
     Ok(window) => {
