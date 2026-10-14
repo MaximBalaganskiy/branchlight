@@ -1,0 +1,80 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const { GitService } = require('../electron/git-service.cjs');
+(async () => {
+  const output = path.resolve('test-results');
+  await fs.mkdir(output, { recursive: true });
+  const root = path.resolve('../.test-repos');
+  await fs.mkdir(root, { recursive: true });
+  const repo = await fs.mkdtemp(path.join(root, 'ui-test-'));
+  const git = new GitService();
+  await git.run(repo, ['init', '-b', 'main']);
+  await git.run(repo, ['config', 'user.name', 'Branchlight Test']);
+  await git.run(repo, ['config', 'user.email', 'test@example.invalid']);
+  await git.run(repo, ['config', 'commit.gpgsign', 'false']);
+  await fs.writeFile(path.join(repo, 'README.md'), '# A clear history\n\nStart here.\n');
+  await git.mutate(repo, 'stage', { paths: ['README.md'] });
+  await git.mutate(repo, 'commit', { message: 'Start the workspace' });
+  await git.mutate(repo, 'branch', { name: 'feature/graph' });
+  await fs.writeFile(path.join(repo, 'graph.ts'), 'export const lanes = 3;\n');
+  await git.mutate(repo, 'stage', { paths: ['graph.ts'] });
+  await git.mutate(repo, 'commit', { message: 'Draw branch lanes in the history view' });
+  await git.mutate(repo, 'checkout', { name: 'main' });
+  await fs.writeFile(path.join(repo, 'theme.css'), ':root { color-scheme: dark; }\n');
+  await git.mutate(repo, 'stage', { paths: ['theme.css'] });
+  await git.mutate(repo, 'commit', { message: 'Add the workspace theme' });
+  await git.run(repo, ['merge', '--no-ff', 'feature/graph', '-m', 'Merge the graph workspace']);
+  await fs.writeFile(path.join(repo, 'README.md'), '# A clear history\n\nStage only what matters.\n');
+  await fs.writeFile(path.join(repo, 'notes.txt'), 'Keep this change for later.\n');
+  const env = { ...process.env, BRANCHLIGHT_REPO: repo, BRANCHLIGHT_USER_DATA: path.join(repo, '.electron-data') };
+  delete env.ELECTRON_RUN_AS_NODE;
+  // Keep Electron's profile out of Git status while exercising a realistic working tree.
+  await fs.writeFile(path.join(repo, '.git/info/exclude'), '.electron-data/\n');
+  let app;
+  const errors = [];
+  try {
+    const packaged = process.argv.includes('--packaged');
+    app = await electron.launch({ ...(packaged ? { executablePath: path.resolve('release/win-unpacked/Branchlight.exe'), args: [] } : { args: ['.'] }), env });
+    const page = await app.firstWindow();
+    page.on('pageerror', e => errors.push(e.message));
+    page.on('console', m => { if (m.type() === 'error') console.log('Renderer:', m.text()); });
+    await page.locator('.commit-row').first().waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('.commit-row').count(), 4);
+    assert.equal(await page.locator('.graph circle').count(), 4);
+    await page.getByRole('button', { name: 'Draw branch lanes in the history view', exact: true }).click();
+    await page.locator('.diff-code').getByText('+export const lanes = 3;', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Merge the graph workspace', exact: true }).click();
+    await page.locator('.diff-code').getByText('+export const lanes = 3;', { exact: true }).waitFor();
+    await page.screenshot({ path: path.join(output, 'history.png') });
+    const windowPromise = app.waitForEvent('window');
+    await page.getByRole('button', { name: /Commit changes/ }).click();
+    const commit = await windowPromise;
+    commit.on('pageerror', e => errors.push(e.message));
+    await commit.getByRole('button', { name: 'Stage README.md', exact: true }).waitFor();
+    await commit.getByRole('button', { name: 'Stage README.md', exact: true }).click();
+    await commit.getByRole('button', { name: 'Unstage README.md', exact: true }).waitFor();
+    await commit.locator('#commit-message').fill('Refine the getting started guide');
+    await commit.screenshot({ path: path.join(output, 'commit.png') });
+    await commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click();
+    await commit.getByRole('status').getByText('Commit created', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Refine the getting started guide', exact: true }).waitFor();
+    const state = await git.snapshot(repo);
+    assert.equal(state.commits[0].subject, 'Refine the getting started guide');
+    assert.deepEqual(state.files.map(f => f.path), ['notes.txt']);
+    await commit.close();
+    await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
+    await page.screenshot({ path: path.join(output, 'history-light.png') });
+    assert.deepEqual(errors, []);
+    console.log('PASS: Electron renders real history and graph, opens a separate commit window, stages one file, commits, preserves unselected files, refreshes main window, and switches theme.');
+    console.log('Screenshots:', output);
+  } catch (error) {
+    console.log('Renderer errors:', errors);
+    if (app) for (const [index, page] of app.windows().entries()) {
+      console.log('Window', index, (await page.locator('body').innerText()).slice(-8000));
+      await page.screenshot({ path: path.join(output, `failure-${index}.png`) });
+    }
+    throw error;
+  } finally { if (app) await app.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

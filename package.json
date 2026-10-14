@@ -1,0 +1,11 @@
+{
+  "name": "branchlight-workspace",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix app start",
+    "build": "npm --prefix app run build",
+    "test": "npm --prefix app test",
+    "test:e2e": "npm --prefix app run test:e2e",
+    "pack": "npm --prefix app run pack"
+  }
+}
