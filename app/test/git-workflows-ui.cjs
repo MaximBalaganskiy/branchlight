@@ -149,46 +149,104 @@ const path = require('node:path');
     await commit.close();
     commit = undefined;
 
-    await page.getByRole('button', { name: 'Worktrees', exact: true }).click();
-    let worktrees = page.getByRole('dialog');
+    const sidebar = page.locator('worktree-sidebar');
+    await sidebar.getByRole('button', { name: 'Open worktree repo', exact: true }).waitFor();
+    assert.equal(await page.locator('.toolbar').getByRole('button', { name: 'Worktrees', exact: true }).count(), 0);
+    const disclosure = sidebar.locator('.ui-disclosure__header');
+    await disclosure.focus();
+    await page.keyboard.press('Enter');
+    await sidebar.getByRole('button', { name: 'Open worktree repo', exact: true }).waitFor({ state: 'hidden' });
+    await page.keyboard.press('Space');
+    await sidebar.getByRole('button', { name: 'Open worktree repo', exact: true }).waitFor();
+    await sidebar.getByRole('button', { name: 'Create worktree', exact: true }).click();
+    const worktrees = page.getByRole('dialog');
     const directory = path.join(root, 'linked');
-    await worktrees.getByRole('textbox', { name: 'New branch', exact: true }).fill('feature/linked');
+    await worktrees.getByRole('textbox', { name: 'New branch', exact: true }).fill('main');
     await worktrees.getByRole('textbox', { name: 'Worktree folder (absolute path)', exact: true }).fill(directory);
     await worktrees.getByRole('button', { name: 'Create worktree', exact: true }).click();
-    await worktrees.getByRole('button', { name: 'Remove worktree feature/linked', exact: true }).waitFor();
-    await page.screenshot({ path: path.resolve('test-results/worktrees.png') });
     await worktrees
-      .locator('div')
-      .filter({ has: page.locator('strong', { hasText: /^feature\/linked$/ }) })
-      .filter({ has: page.getByRole('button', { name: 'Open', exact: true }) })
-      .last()
-      .getByRole('button', { name: 'Open', exact: true })
-      .click();
+      .getByRole('alert')
+      .filter({ hasText: /already exists/ })
+      .waitFor();
+    await worktrees.getByRole('textbox', { name: 'New branch', exact: true }).fill('feature/linked');
+    await worktrees.getByRole('button', { name: 'Create worktree', exact: true }).click();
     await worktrees.waitFor({ state: 'hidden' });
+    const linked = sidebar.getByRole('button', { name: 'Open worktree linked', exact: true });
+    await linked.waitFor();
+    assert.equal((await linked.getAttribute('title')).replaceAll('\\', '/'), directory.replaceAll('\\', '/'));
+    await linked.getByText('feature/linked', { exact: true }).waitFor();
+    const current = sidebar.locator('.worktree-item[aria-current="true"]');
+    assert.notEqual(
+      await current.evaluate(element => getComputedStyle(element).backgroundColor),
+      await linked.evaluate(element => getComputedStyle(element).backgroundColor),
+      'The current worktree must have a visible selected background'
+    );
+    await page.screenshot({ path: path.resolve('test-results/worktrees.png') });
+    await page.getByRole('button', { name: 'Toggle density', exact: true }).click();
+    await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
+    assert.ok(
+      await sidebar.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        return [...element.querySelectorAll('.worktree-item, .ui-disclosure__header, button[aria-label="Create worktree"]')].every(item => {
+          const rect = item.getBoundingClientRect();
+          return rect.left >= bounds.left && rect.right <= bounds.right;
+        });
+      }),
+      'Worktree controls must fit the sidebar in compact density'
+    );
+    await page.screenshot({ path: path.resolve('test-results/worktrees-compact-light.png') });
+    await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
+    await page.getByRole('button', { name: 'Toggle density', exact: true }).click();
+    await linked.click();
     await page
       .locator('.branch-pill')
       .filter({ hasText: /^feature\/linked$/ })
       .waitFor();
-    await page.getByRole('button', { name: 'Worktrees', exact: true }).click();
-    await page
-      .getByRole('dialog')
-      .locator('div')
-      .filter({ has: page.locator('strong', { hasText: /^main$/ }) })
-      .filter({ has: page.getByRole('button', { name: 'Open', exact: true }) })
-      .last()
-      .getByRole('button', { name: 'Open', exact: true })
-      .click();
+    await sidebar.locator('.worktree-item[aria-current="true"]').getByText('linked', { exact: true }).waitFor();
+    await linked.focus();
+    await page.keyboard.press('Shift+F10');
+    const removeOption = page.getByRole('option', { name: 'Remove worktree…', exact: true });
+    await removeOption.waitFor();
+    assert.equal(await removeOption.getAttribute('aria-disabled'), 'true');
+    await page.keyboard.press('Escape');
+    await sidebar.getByRole('button', { name: 'Open worktree repo', exact: true }).focus();
+    await page.keyboard.press('Enter');
     await page
       .locator('.branch-pill')
       .filter({ hasText: /^main$/ })
       .waitFor();
-    await page.getByRole('button', { name: 'Worktrees', exact: true }).click();
-    worktrees = page.getByRole('dialog');
-    await worktrees.getByRole('button', { name: 'Remove worktree feature/linked', exact: true }).click();
-    await worktrees.getByRole('button', { name: 'Remove worktree', exact: true }).click();
-    await worktrees.getByRole('button', { name: 'Remove worktree feature/linked', exact: true }).waitFor({ state: 'hidden' });
+    await sidebar.locator('.worktree-item[aria-current="true"]').getByText('repo', { exact: true }).waitFor();
+    await sidebar.getByRole('button', { name: 'Open worktree repo', exact: true }).click({ button: 'right' });
+    await removeOption.waitFor();
+    assert.equal(await removeOption.getAttribute('aria-disabled'), 'true');
+    await page.keyboard.press('Escape');
+    await git(repo, ['worktree', 'lock', directory]);
+    await page.keyboard.press('F5');
+    await linked.getByText('Locked', { exact: true }).waitFor();
+    await linked.click({ button: 'right' });
+    await removeOption.waitFor();
+    assert.equal(await removeOption.getAttribute('aria-disabled'), 'true');
+    await page.keyboard.press('Escape');
+    await git(repo, ['worktree', 'unlock', directory]);
+    await git(directory, ['checkout', '--detach']);
+    await page.keyboard.press('F5');
+    await linked.getByText(/Detached HEAD/).waitFor();
+    await fs.writeFile(path.join(directory, 'keep.txt'), 'Do not remove untracked files.');
+    await linked.click({ button: 'right' });
+    await removeOption.click();
+    const removal = page.getByRole('dialog');
+    await removal.getByRole('button', { name: 'Remove worktree', exact: true }).click();
+    await removal
+      .getByRole('alert')
+      .filter({ hasText: /modified or untracked files/ })
+      .waitFor();
+    await fs.access(path.join(directory, 'keep.txt'));
+    await fs.unlink(path.join(directory, 'keep.txt'));
+    await removal.getByRole('button', { name: 'Remove worktree', exact: true }).click();
+    await removal.waitFor({ state: 'hidden' });
+    await linked.waitFor({ state: 'hidden' });
     assert.equal(await fs.stat(directory).catch(() => null), null);
-    await worktrees.getByRole('button', { name: 'Close', exact: true }).click();
+    assert.equal((await git(repo, ['branch', '--list', 'feature/linked'])).stdout.trim(), 'feature/linked');
     assert.deepEqual(errors, []);
     console.log(
       'PASS: prefix search, filename/content search, commit/branch context menus, merge conflict editor, message history/templates, tree/flat staging, ignore, and worktree create/open/remove.'

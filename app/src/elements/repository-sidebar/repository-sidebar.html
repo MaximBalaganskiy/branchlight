@@ -1,3 +1,4 @@
+<import from="../worktree-sidebar/worktree-sidebar"></import>
 <aside class="sidebar flex size-full min-w-0 flex-col overflow-hidden bg-card-muted px-1.5 py-2.5">
   <div class="sidebar-heading px-3 pb-3 text-[10px] tracking-widest text-ink-500">REPOSITORY</div>
   <button ui-button class="nav-item mb-1 flex! w-full items-center justify-start! gap-2 border-0! bg-transparent! px-2! py-1.5! text-left font-normal! active" click.trigger="selectedNode = ''">
@@ -19,6 +20,7 @@
     </ui-input>
   </div>
   <div class="branch-lists min-h-0 flex-1 overflow-auto">
+    <worktree-sidebar></worktree-sidebar>
     <ui-tree class="border-0! rounded-none! p-0!" items.bind="nodes" value.bind="selectedNode" value-field="id" label-field="name" label="Repository references" toggle-on-parent-click tree-select.trigger="selectNode($event.detail)" tree-expand.trigger="rememberExpansion($event.detail, true)" tree-collapse.trigger="rememberExpansion($event.detail, false)">
       <template au-slot="item">
         <div ui-context-menu.bind="$host.item.branch ? branchMenu : null" contextmenu.trigger="contextBranch = $host.item.branch" class="branch-item group flex min-h-[var(--ui-icon-button-small-size)] min-w-0 items-center gap-2" title.bind="$host.item.branch ? $host.item.branch.name : $host.item.name">

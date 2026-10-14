@@ -1,0 +1,13 @@
+<template class="w-[540px] max-w-[90vw] max-h-[85vh] overflow-auto p-6">
+  <h2 class="mb-4 text-xl!">Create worktree</h2>
+  <form class="grid gap-3" submit.trigger:prevent="create()">
+    <ui-input label="New branch" value.bind="name" required></ui-input>
+    <ui-input label="Worktree folder (absolute path)" value.bind="directory" required></ui-input>
+    <ui-input label="Start from branch or commit" value.bind="reference" required></ui-input>
+    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <div class="flex justify-end gap-2">
+      <button ui-button type="button" click.trigger="cancel()" disabled.bind="workspace.busy">Cancel</button>
+      <button ui-button primary type="submit" disabled.bind="workspace.busy || !name.trim() || !directory.trim() || !reference.trim()">Create worktree</button>
+    </div>
+  </form>
+</template>

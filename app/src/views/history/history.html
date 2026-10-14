@@ -10,7 +10,6 @@
   <span class="toolbar-divider mx-1 h-5 border-l border-card-border"></span>
   <button ui-button click.trigger="createBranch()" disabled.bind="workspace.busy">⑂ New branch</button>
   <button ui-button click.trigger="manageRemotes()" disabled.bind="workspace.busy">Remotes</button>
-  <button ui-button click.trigger="manageWorktrees()">Worktrees</button>
   <button ui-button click.trigger="manageStashes()">Stashes</button>
   <div class="spacer flex-1"></div>
   <button ui-icon-button class="text-lg" click.trigger="workspace.refresh()" disabled.bind="workspace.busy || workspace.refreshing" title="Refresh · F5">↻</button>
@@ -24,7 +23,7 @@
   <button ui-button click.trigger="workspace.openCommit()">Review and continue…</button>
 </div>
 <div class="workspace flex min-h-0 flex-1">
-  <repository-sidebar branch-action.trigger="branchAction($event.detail)" branch-selected.trigger="focusBranch($event.detail)" manage-remotes.trigger="manageRemotes()"></repository-sidebar>
+  <repository-sidebar branch-action.trigger="branchAction($event.detail)" branch-selected.trigger="focusBranch($event.detail)" manage-remotes.trigger="manageRemotes()" add-worktree.trigger="createWorktree()" remove-worktree.trigger="removeWorktree($event.detail)"></repository-sidebar>
   <ui-splitter direction="horizontal" size="220" min.bind="160" max.bind="400" storage-key="sidebar" aria-label="Resize branches sidebar"></ui-splitter>
   <section class="repository-content flex min-h-0 min-w-0 flex-1 flex-col bg-card">
     <section class="history-panel flex h-[410px] max-h-[calc(100%-180px)] min-h-0 flex-col">

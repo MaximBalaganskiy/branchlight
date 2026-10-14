@@ -1,0 +1,20 @@
+worktree-sidebar {
+  display: block;
+  min-width: 0;
+
+  & .ui-disclosure__header {
+    min-height: calc(var(--ui-icon-button-small-size) + 8px);
+    border: 0;
+    padding: 4px calc(var(--ui-icon-button-small-size) + 12px) 4px 8px;
+    gap: 8px;
+  }
+
+  & .ui-disclosure__content {
+    border: 0;
+    padding: 4px 0;
+  }
+
+  & .ui-button.worktree-item[aria-current='true'] {
+    background: var(--color-outline-active);
+  }
+}

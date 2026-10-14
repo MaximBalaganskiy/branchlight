@@ -5,7 +5,7 @@ import { buildGraph } from '../../services/graph-layout';
 import { AppearanceService } from '../../services/appearance-service';
 import { NewBranchDialog } from './new-branch-dialog/new-branch-dialog';
 import { RemotesDialog } from './remotes-dialog/remotes-dialog';
-import { WorktreesDialog } from './worktrees-dialog/worktrees-dialog';
+import { NewWorktreeDialog } from './new-worktree-dialog/new-worktree-dialog';
 import { ActionDialog } from './action-dialog/action-dialog';
 import { PublishDialog } from './publish-dialog/publish-dialog';
 import { StashesDialog } from './stashes-dialog/stashes-dialog';
@@ -18,6 +18,7 @@ import type { Detail } from '../../interfaces/detail';
 import type { CommandEntry } from '../../interfaces/command-entry';
 import type { GraphRow } from '../../interfaces/graph-row';
 import type { Snapshot } from '../../interfaces/snapshot';
+import type { Worktree } from '../../interfaces/worktree';
 import './history.css';
 import './details.css';
 import './commit-details.css';
@@ -117,8 +118,22 @@ export class History {
     });
   }
 
-  manageWorktrees() {
-    return this.dialogs.open({ component: WorktreesDialog });
+  createWorktree() {
+    return this.dialogs.open({ component: NewWorktreeDialog });
+  }
+
+  removeWorktree(tree: Worktree) {
+    return this.dialogs.open({
+      component: ActionDialog,
+      model: {
+        title: 'Remove worktree',
+        description: `Remove ${tree.path}? Git will refuse if it contains uncommitted or untracked files. Its branch will remain.`,
+        action: 'worktree-remove',
+        payload: { directory: tree.path },
+        confirm: 'Remove worktree',
+        danger: true
+      }
+    });
   }
 
   push() {

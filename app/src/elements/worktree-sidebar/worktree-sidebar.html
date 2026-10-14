@@ -1,0 +1,36 @@
+<section class="worktree-section relative mb-2" aria-label="Worktrees">
+  <ui-disclosure open.bind="expanded" class="gap-0!">
+    <template au-slot="header">
+      <span class="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">
+        Worktrees
+        <small class="text-xs font-normal text-ink-500">${trees.length}</small>
+      </span>
+    </template>
+    <template au-slot="content">
+      <div class="grid gap-0.5">
+        <button ui-button repeat.for="tree of trees; key: path" class="worktree-item flex! w-full min-w-0 items-center justify-start! gap-2 border-0! px-2! text-left font-normal! leading-normal! transform-none!" ui-context-menu.bind="menu" contextmenu.trigger="contextTree = tree" click.trigger="open(tree)" disabled.bind="workspace.busy" title.bind="tree.path" aria-label="Open worktree ${folder(tree)}" aria-current.bind="isCurrent(tree) ? 'true' : null">
+          <span class="size-1.5 shrink-0 rounded-full border border-ink-500 ${isCurrent(tree) ? 'bg-accent border-accent!' : ''}" aria-hidden="true"></span>
+          <span class="grid min-w-0 flex-1">
+            <span class="truncate">${folder(tree)}</span>
+            <small class="truncate text-xs text-ink-500">${tree.branch || 'Detached HEAD · ' + tree.head.slice(0, 8)}</small>
+          </span>
+          <small class="shrink-0 text-[10px] text-ink-500" if.bind="isCurrent(tree) || tree.main || tree.locked">${isCurrent(tree) ? 'Current' : tree.locked ? 'Locked' : 'Main'}</small>
+        </button>
+      </div>
+      <p if.bind="loading && !trees.length" class="px-2 py-2 text-xs text-ink-500" role="status">Loading worktrees…</p>
+      <div if.bind="error" class="grid gap-2 px-2 py-2 text-xs text-danger-text">
+        <p role="alert" class="break-words">${error}</p>
+        <button ui-button click.trigger="load()" disabled.bind="loading">Retry worktrees</button>
+      </div>
+    </template>
+  </ui-disclosure>
+  <button ui-icon-button size="small" class="absolute! right-1 top-1" title="Create worktree" aria-label="Create worktree" disabled.bind="workspace.busy" click.trigger="create()">+</button>
+</section>
+
+<ui-menu component.ref="menu" close-on-select menu-select.trigger="action($event.detail)">
+  <ui-list>
+    <ui-list-item value="open" disabled.bind="workspace.busy || !contextTree || isCurrent(contextTree)">Open worktree</ui-list-item>
+    <ui-list-item value="copy">Copy worktree path</ui-list-item>
+    <ui-list-item value="remove" disabled.bind="workspace.busy || !canRemove(contextTree)">Remove worktree…</ui-list-item>
+  </ui-list>
+</ui-menu>

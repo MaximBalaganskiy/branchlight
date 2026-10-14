@@ -5,7 +5,7 @@ body {
   background: var(--color-canvas);
 }
 
-dialog:has(.conflict-editor, .worktree-manager, .stash-manager, .history-operation-dialog) {
+dialog:has(.conflict-editor, .stash-manager, .history-operation-dialog) {
   max-width: 95vw;
 }
 
