@@ -21,6 +21,7 @@ Measured Windows x64 release (14 October 2026): **3.46 MiB** executable, **1.38 
 
 - Commit graph with branch lanes, merge connections, refs, author, date, and SHA.
 - Local branches, remote branches, tags, commit search, and paginated history (up to 100,000 commits). Selecting an unloaded branch tip automatically expands history and scrolls to it.
+- Headless reference tree groups slash-separated branch and tag names into folders, with remotes grouped by name. Arrow keys navigate the tree; search reveals matching paths and clearing it restores collapsed folders.
 - Changed files, syntax-highlighted unified diffs using Lowlight/highlight.js, full commit messages, and a Git command log.
 - A separate native desktop window for staging, unstaging, reviewing, and committing whole files.
 - Commit drafts saved per repository; changes synchronize between open windows.

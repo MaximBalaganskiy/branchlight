@@ -1,37 +1,54 @@
-import { INode, resolve } from 'aurelia';
+import { INode, observable, resolve, watch } from 'aurelia';
 import { WorkspaceService } from '../../services/workspace-service';
-import type { Branch } from '../../interfaces/branch';
+import { buildBranchTree } from '../../services/branch-tree';
+import type { BranchTreeNode } from '../../interfaces/branch-tree-node';
 import './repository-sidebar.css';
 
 export class RepositorySidebar {
   readonly workspace = resolve(WorkspaceService);
   private element = resolve(INode) as HTMLElement;
-  branchFilter = '';
+  private expansion = new Map<string, boolean>();
+  private repository = '';
+  selectedNode = '';
+  nodes: BranchTreeNode[] = [];
+
+  @observable
   branchSearch = '';
-
-  get localBranches() {
-    return this.filterBranches('local');
+  branchSearchChanged() {
+    this.rebuildTree();
   }
 
-  get remoteBranches() {
-    return this.filterBranches('remote');
+  binding() {
+    this.rebuildTree();
   }
 
-  get tags() {
-    return this.filterBranches('tag');
+  @watch('workspace.snapshot')
+  rebuildTree() {
+    if (this.repository !== this.workspace.repo) {
+      this.repository = this.workspace.repo;
+      this.expansion.clear();
+      this.selectedNode = '';
+    }
+    this.nodes = buildBranchTree(this.workspace.snapshot?.branches ?? [], this.branchSearch, this.expansion);
   }
 
-  filterBranches(kind: Branch['kind']) {
-    return (
-      this.workspace.snapshot?.branches.filter(
-        branch => branch.kind === kind && branch.name.toLowerCase().includes(this.branchSearch.toLowerCase())
-      ) ?? []
-    );
+  rememberExpansion(node: BranchTreeNode, expanded: boolean) {
+    if (!this.branchSearch.trim()) {
+      this.expansion.set(node.id, expanded);
+    }
   }
 
-  focusBranch(branch: Branch) {
-    this.branchFilter = branch.name;
-    this.element.dispatchEvent(new CustomEvent('branch-selected', { detail: branch, bubbles: true }));
+  selectNode(node: BranchTreeNode) {
+    if (node.branch) {
+      this.element.dispatchEvent(new CustomEvent('branch-selected', { detail: node.branch, bubbles: true }));
+    }
+  }
+
+  checkout(node: BranchTreeNode, event: Event) {
+    event.stopPropagation();
+    if (node.branch) {
+      void this.workspace.action('checkout', { name: node.branch.name });
+    }
   }
 
   manageRemotes() {

@@ -47,6 +47,62 @@ const { git } = require('./support/git.cjs');
     assert.equal((await page.locator('.commit-row').first().boundingBox()).height, 34);
     assert.equal(await page.locator('.working-row').count(), 0);
     assert.equal(await page.locator('ui-tabs').evaluate(element => getComputedStyle(element).borderTopWidth), '0px');
+    const referenceTree = page.getByRole('tree', { name: 'Repository references', exact: true });
+    const featureFolder = referenceTree.getByRole('treeitem').filter({ has: page.locator('.branch-name', { hasText: /^feature$/ }) });
+    const graphBranch = referenceTree.getByRole('treeitem').filter({ has: page.locator('[title="feature/graph"]') });
+    assert.equal(await graphBranch.getAttribute('aria-level'), '3');
+    await featureFolder.click();
+    assert.equal(await graphBranch.count(), 0);
+    await featureFolder.press('ArrowRight');
+    await graphBranch.waitFor();
+    await featureFolder.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await page.locator('.commit-row.selected').filter({ hasText: 'Draw branch lanes' }).waitFor();
+    await featureFolder.click();
+    await git(repo, ['branch', 'feat/auth/login']);
+    await git(repo, ['branch', 'feat/search']);
+    await git(repo, ['update-ref', 'refs/remotes/origin/feat/auth/login', 'HEAD']);
+    await page.keyboard.press('F5');
+    await referenceTree.locator('[title="feat/auth/login"]').first().waitFor();
+    assert.equal(await featureFolder.getAttribute('aria-expanded'), 'false');
+    const branchSearch = page.getByRole('textbox', { name: 'Find a branch', exact: true });
+    await branchSearch.fill('feature/graph');
+    await graphBranch.waitFor();
+    await branchSearch.fill('no-such-branch');
+    await page.getByText('No matching branches or tags', { exact: true }).waitFor();
+    await branchSearch.fill('');
+    await featureFolder.waitFor();
+    assert.equal(await featureFolder.getAttribute('aria-expanded'), 'false');
+    await featureFolder.click();
+    await graphBranch.waitFor();
+    await page.screenshot({ path: path.join(output, 'branch-tree.png'), animations: 'disabled' });
+    const selectedBeforeCheckout = await page.locator('.commit-row.selected').getAttribute('id');
+    const checkoutSearch = page.getByRole('button', { name: 'Switch to feat/search', exact: true });
+    await checkoutSearch.focus();
+    await checkoutSearch.press('Enter');
+    await page.getByText('Commit or stash your changes before switching branches.', { exact: true }).waitFor();
+    assert.equal((await git(repo, ['branch', '--show-current'])).stdout.trim(), 'main');
+    await page.getByRole('region', { name: 'Notifications' }).getByRole('button', { name: 'Dismiss' }).click();
+    await fs.writeFile(path.join(repo, 'README.md'), '# A clear history\n\nStart here.\n');
+    await fs.unlink(path.join(repo, 'notes.txt'));
+    assert.equal((await git(repo, ['status', '--porcelain'])).stdout.trim(), '');
+    await checkoutSearch.focus();
+    await checkoutSearch.press('Enter');
+    await page
+      .locator('.branch-pill')
+      .filter({ hasText: /^feat\/search$/ })
+      .waitFor();
+    assert.equal((await git(repo, ['branch', '--show-current'])).stdout.trim(), 'feat/search');
+    assert.equal(await page.locator('.commit-row.selected').getAttribute('id'), selectedBeforeCheckout);
+    await page.getByRole('button', { name: 'Switch to main', exact: true }).click();
+    await page
+      .locator('.branch-pill')
+      .filter({ hasText: /^main$/ })
+      .waitFor();
+    await fs.writeFile(path.join(repo, 'README.md'), '# A clear history\n\nStage only what matters.\n');
+    await fs.writeFile(path.join(repo, 'notes.txt'), 'Keep this change for later.\n');
+    await page.keyboard.press('F5');
+    await page.getByRole('button', { name: 'Commit changes 2' }).waitFor();
     const branchHeights = await page
       .locator('.branch-item')
       .evaluateAll(elements => elements.map(element => element.getBoundingClientRect().height));
@@ -165,7 +221,7 @@ const { git } = require('./support/git.cjs');
     await app.page.locator('.commit-row').first().waitFor();
     assert.equal(await app.page.locator('html').getAttribute('data-density'), 'compact');
     console.log(
-      'PASS: desktop Git workflow, inset labels, equal branch heights, stable pressed graph rows, borderless tabs, persistent density, and automatic navigation to an unloaded branch tip.'
+      'PASS: branch tree grouping, search, expansion state, keyboard selection/checkout, desktop Git workflow, stable row heights, inset labels, borderless tabs, persistent density, and automatic branch-tip navigation.'
     );
     console.log('Screenshots:', output);
   } catch (error) {
