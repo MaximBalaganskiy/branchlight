@@ -4,6 +4,8 @@ A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, its s
 
 ## Run
 
+Download the Windows executable or installer, or the Linux AppImage or Debian package, from [GitHub Releases](https://github.com/MaximBalaganskiy/branchlight/releases). Repository access is required to download these private releases.
+
 Open `app/release/windows/Branchlight.exe` after packaging, or run from source:
 
 ```powershell
