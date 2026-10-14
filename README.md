@@ -15,7 +15,7 @@ Development requires Node 24+, Rust, and the [Tauri platform prerequisites](http
 
 The Windows executable embeds the bundled, minified UI and uses the shared WebView2 runtime. The NSIS installer downloads WebView2 if it is missing. Neither Node nor Git is bundled. Linux uses WebKitGTK; build Linux packages on Linux with `npm --prefix app run pack:linux`. Linux packaging and desktop behavior have not yet been validated.
 
-Measured Windows x64 release (14 October 2026): **3.58 MiB** executable, **1.42 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
+Measured Windows x64 release (14 October 2026): **3.64 MiB** executable, **1.44 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
 
 ## Included
 
@@ -38,6 +38,7 @@ Measured Windows x64 release (14 October 2026): **3.58 MiB** executable, **1.42 
 - Create and switch local branches, add/edit/remove remotes, fetch, fast-forward pull, and push to the configured upstream. Push opens a publishing dialog when no upstream exists; choose the remote and destination branch. Remote removal confirms the name and removes its local tracking references without deleting the server repository.
 - Compact repository-name menu in the top bar switches between recent repositories and opens new ones. Full paths distinguish identical folder names.
 - Resizable panes, light/dark themes, Normal/Compact density, recent repositories, and keyboard shortcuts. Normal density is the default; appearance choices are saved and synchronized between windows.
+- Main and commit windows remember their size, position, and maximized state separately across launches. Commit windows share their layout across repositories; unavailable monitors fall back to OS placement.
 
 | Shortcut | Action |
 | --- | --- |

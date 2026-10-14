@@ -53,6 +53,12 @@ async function launchTauri(repo, profile) {
     return {
       context,
       page,
+      processId: child.pid,
+      async waitForExit() {
+        if (child.exitCode === null && child.signalCode === null) {
+          await once(child, 'exit', { signal: AbortSignal.timeout(10000) });
+        }
+      },
       async close() {
         await browser.close();
         if (child.exitCode === null && child.signalCode === null) {

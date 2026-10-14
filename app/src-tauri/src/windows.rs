@@ -1,5 +1,10 @@
 use crate::{app_state::AppState, models::window_context::WindowContext};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+
+pub const STATE_FLAGS: StateFlags = StateFlags::SIZE
+  .union(StateFlags::POSITION)
+  .union(StateFlags::MAXIMIZED);
 
 pub fn create(app: &AppHandle, label: &str, mode: &str, repo: String) -> Result<(), String> {
   app
@@ -44,6 +49,9 @@ pub fn create(app: &AppHandle, label: &str, mode: &str, repo: String) -> Result<
         if matches!(event, tauri::WindowEvent::Destroyed) {
           if let Ok(mut windows) = app.state::<AppState>().windows.lock() {
             windows.remove(&label);
+          }
+          if let Err(error) = app.save_window_state(STATE_FLAGS) {
+            eprintln!("Could not save window layout: {error}");
           }
         }
       });

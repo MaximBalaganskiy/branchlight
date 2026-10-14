@@ -14,6 +14,14 @@ pub fn run() {
       let data_dir = std::env::var_os("BRANCHLIGHT_USER_DATA")
         .map(std::path::PathBuf::from)
         .unwrap_or(app.path().app_data_dir()?);
+      std::fs::create_dir_all(&data_dir)?;
+      app.handle().plugin(
+        tauri_plugin_window_state::Builder::default()
+          .with_filename(data_dir.join("window-state.json").to_string_lossy().into_owned())
+          .with_state_flags(windows::STATE_FLAGS)
+          .map_label(|label| if label.starts_with("commit-") { "commit" } else { label })
+          .build(),
+      )?;
       let state = AppState::new(&data_dir);
       let repo = std::env::var_os("BRANCHLIGHT_REPO")
         .and_then(|path| state.git.open(std::path::Path::new(&path)).ok())
