@@ -1,87 +1,476 @@
 <import from="./diff-view"></import>
 <div class="app-shell">
   <header class="topbar">
-    <div class="brand"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M8 6v16M8 15c0-5 12-2 12-9"/><circle cx="8" cy="6" r="3"/><circle cx="8" cy="22" r="3"/><circle cx="20" cy="6" r="3"/></svg><span>Branchlight</span><span class="preview-label">PREVIEW</span></div>
-    <div class="topbar-context" if.bind="snapshot"><span class="context-divider">/</span><strong>${snapshot.name}</strong><span class="branch-pill">⑂ ${snapshot.branch}</span></div>
+    <div class="brand">
+      <svg viewBox="0 0 28 28" aria-hidden="true">
+        <path d="M8 6v16M8 15c0-5 12-2 12-9" />
+        <circle cx="8" cy="6" r="3" />
+        <circle cx="8" cy="22" r="3" />
+        <circle cx="20" cy="6" r="3" />
+      </svg>
+      <span>Branchlight</span>
+      <span class="preview-label">PREVIEW</span>
+    </div>
+    <div class="topbar-context" if.bind="snapshot">
+      <span class="context-divider">/</span>
+      <strong>${snapshot.name}</strong>
+      <span class="branch-pill">⑂ ${snapshot.branch}</span>
+    </div>
     <div class="spacer"></div>
-    <button as-element="ui-button" class="icon-button" click.trigger="toggleTheme()" title="Toggle light / dark theme" aria-label="Toggle theme">◐</button>
-    <button as-element="ui-button" if.bind="mode === 'browse'" click.trigger="open()" disabled.bind="busy" title="Open repository · Ctrl+O">Open repository <span class="key">Ctrl O</span></button>
+    <button
+      as-element="ui-button"
+      class="icon-button"
+      click.trigger="toggleTheme()"
+      title="Toggle light / dark theme"
+      aria-label="Toggle theme"
+    >
+      ◐
+    </button>
+    <button as-element="ui-button" if.bind="mode === 'browse'" click.trigger="open()" disabled.bind="busy" title="Open repository · Ctrl+O">
+      Open repository
+      <span class="key">Ctrl O</span>
+    </button>
     <button as-element="ui-button" else click.trigger="refresh()" disabled.bind="busy">↻ Refresh</button>
   </header>
-  <div class="feedback error" role="alert" if.bind="error"><span>${error}</span><button click.trigger="error = ''" aria-label="Dismiss error">×</button></div>
-  <div class="feedback success" role="status" if.bind="notice"><span>${notice}</span><button click.trigger="notice = ''" aria-label="Dismiss notification">×</button></div>
+  <div class="feedback error" role="alert" if.bind="error">
+    <span>${error}</span>
+    <button click.trigger="error = ''" aria-label="Dismiss error">×</button>
+  </div>
+  <div class="feedback success" role="status" if.bind="notice">
+    <span>${notice}</span>
+    <button click.trigger="notice = ''" aria-label="Dismiss notification">×</button>
+  </div>
   <main class="welcome" if.bind="!snapshot">
-    <div class="welcome-art" aria-hidden="true"><svg viewBox="0 0 180 140"><path d="M50 10v120M50 90C50 55 130 85 130 40V10"/><circle cx="50" cy="25" r="7"/><circle cx="50" cy="90" r="7"/><circle cx="130" cy="40" r="7"/><circle cx="50" cy="125" r="7"/></svg></div>
-    <span class="eyebrow">YOUR REPOSITORIES. A CLEARER VIEW.</span><h1>Follow the history.<br>Shape what comes next.</h1>
+    <div class="welcome-art" aria-hidden="true">
+      <svg viewBox="0 0 180 140">
+        <path d="M50 10v120M50 90C50 55 130 85 130 40V10" />
+        <circle cx="50" cy="25" r="7" />
+        <circle cx="50" cy="90" r="7" />
+        <circle cx="130" cy="40" r="7" />
+        <circle cx="50" cy="125" r="7" />
+      </svg>
+    </div>
+    <span class="eyebrow">YOUR REPOSITORIES. A CLEARER VIEW.</span>
+    <h1>
+      Follow the history.
+      <br />
+      Shape what comes next.
+    </h1>
     <p>A focused Git workspace with a commit graph and a dedicated place to prepare your next commit.</p>
-    <button as-element="ui-button" class="primary large" click.trigger="open()" disabled.bind="busy || !api">Open a local repository <span>↗</span></button>
-    <div class="recent" if.bind="recent.length"><h2>RECENT REPOSITORIES</h2><button repeat.for="item of recent" click.trigger="open(item)" disabled.bind="busy"><span class="repo-icon">⑂</span><span><strong>${basename(item)}</strong><small>${item}</small></span><span class="recent-arrow">→</span></button></div>
+    <button as-element="ui-button" class="primary large" click.trigger="open()" disabled.bind="busy || !api">
+      Open a local repository
+      <span>↗</span>
+    </button>
+    <div class="recent" if.bind="recent.length">
+      <h2>RECENT REPOSITORIES</h2>
+      <button repeat.for="item of recent" click.trigger="open(item)" disabled.bind="busy">
+        <span class="repo-icon">⑂</span>
+        <span>
+          <strong>${basename(item)}</strong>
+          <small>${item}</small>
+        </span>
+        <span class="recent-arrow">→</span>
+      </button>
+    </div>
     <span class="welcome-footnote">Local by design · No account required</span>
   </main>
   <template if.bind="snapshot && mode === 'browse'">
     <div class="toolbar">
-      <div class="toolbar-group"><button as-element="ui-button" click.trigger="action('fetch')" disabled.bind="busy">↓ Fetch</button><button as-element="ui-button" click.trigger="action('pull')" disabled.bind="busy" title="Pull with fast-forward only">↙ Pull</button><button as-element="ui-button" click.trigger="action('push')" disabled.bind="busy">↑ Push</button></div>
-      <span class="toolbar-divider"></span><button as-element="ui-button" click.trigger="branchDialog.showModal()" disabled.bind="busy">⑂ New branch</button>
-      <div class="spacer"></div><button as-element="ui-button" class="icon-button" click.trigger="refresh()" disabled.bind="busy || refreshing" title="Refresh · F5">↻</button>
-      <button as-element="ui-button" class="primary" click.trigger="openCommit()" title="Open commit window · Ctrl+K">✓ Commit changes <span class="count">${snapshot.files.length}</span></button>
+      <div class="toolbar-group">
+        <button as-element="ui-button" click.trigger="action('fetch')" disabled.bind="busy">↓ Fetch</button>
+        <button as-element="ui-button" click.trigger="action('pull')" disabled.bind="busy" title="Pull with fast-forward only">
+          ↙ Pull
+        </button>
+        <button as-element="ui-button" click.trigger="action('push')" disabled.bind="busy">↑ Push</button>
+      </div>
+      <span class="toolbar-divider"></span>
+      <button as-element="ui-button" click.trigger="branchDialog.showModal()" disabled.bind="busy">⑂ New branch</button>
+      <div class="spacer"></div>
+      <button as-element="ui-button" class="icon-button" click.trigger="refresh()" disabled.bind="busy || refreshing" title="Refresh · F5">
+        ↻
+      </button>
+      <button as-element="ui-button" class="primary" click.trigger="openCommit()" title="Open commit window · Ctrl+K">
+        ✓ Commit changes
+        <span class="count">${snapshot.files.length}</span>
+      </button>
     </div>
     <div class="workspace">
       <aside class="sidebar">
         <div class="sidebar-heading">REPOSITORY</div>
-        <button class="nav-item active" click.trigger="branchFilter = ''"><span>◉</span> All history <span class="muted">${snapshot.commits.length}</span></button>
-        <button class="nav-item" click.trigger="openCommit()"><span>▤</span> Working directory <span class="count">${snapshot.files.length}</span></button>
-        <div class="branch-search"><input value.bind="branchSearch" placeholder="Find a branch…" aria-label="Find a branch"></div>
-        <details open><summary>LOCAL BRANCHES <span>${localBranches.length}</span></summary><div class="branch-item ${branchFilter === branch.name ? 'chosen' : ''}" repeat.for="branch of localBranches; key: fullName"><button class="branch-name" click.trigger="focusBranch(branch)" title.bind="branch.name"><span class="branch-dot ${branch.name === snapshot.branch ? 'current' : ''}"></span><span>${branch.name}</span><small>${branch.tracking}</small></button><button class="checkout" if.bind="branch.name !== snapshot.branch" disabled.bind="busy" click.trigger="action('checkout', { name: branch.name })" title="Switch to ${branch.name}" aria-label="Switch to ${branch.name}">↪</button></div></details>
-        <details open><summary>REMOTES <span>${remoteBranches.length}</span></summary><button class="branch-name remote" repeat.for="branch of remoteBranches; key: fullName" click.trigger="focusBranch(branch)" title.bind="branch.name"><span>⑂</span><span>${branch.name}</span></button><div class="sidebar-empty" if.bind="!remoteBranches.length">No remote branches</div></details>
-        <details><summary>TAGS <span>${tags.length}</span></summary><button class="branch-name remote" repeat.for="branch of tags; key: fullName" click.trigger="focusBranch(branch)"><span>◇</span><span>${branch.name}</span></button></details>
-        <div class="sidebar-bottom"><span class="status-dot"></span> LOCAL WORKSPACE<small title.bind="repo">${repo}</small></div>
+        <button class="nav-item active" click.trigger="branchFilter = ''">
+          <span>◉</span>
+          All history
+          <span class="muted">${snapshot.commits.length}</span>
+        </button>
+        <button class="nav-item" click.trigger="openCommit()">
+          <span>▤</span>
+          Working directory
+          <span class="count">${snapshot.files.length}</span>
+        </button>
+        <div class="branch-search"><input value.bind="branchSearch" placeholder="Find a branch…" aria-label="Find a branch" /></div>
+        <details open>
+          <summary>
+            LOCAL BRANCHES
+            <span>${localBranches.length}</span>
+          </summary>
+          <div class="branch-item ${branchFilter === branch.name ? 'chosen' : ''}" repeat.for="branch of localBranches; key: fullName">
+            <button class="branch-name" click.trigger="focusBranch(branch)" title.bind="branch.name">
+              <span class="branch-dot ${branch.name === snapshot.branch ? 'current' : ''}"></span>
+              <span>${branch.name}</span>
+              <small>${branch.tracking}</small>
+            </button>
+            <button
+              class="checkout"
+              if.bind="branch.name !== snapshot.branch"
+              disabled.bind="busy"
+              click.trigger="action('checkout', { name: branch.name })"
+              title="Switch to ${branch.name}"
+              aria-label="Switch to ${branch.name}"
+            >
+              ↪
+            </button>
+          </div>
+        </details>
+        <details open>
+          <summary>
+            REMOTES
+            <span>${remoteBranches.length}</span>
+          </summary>
+          <button
+            class="branch-name remote"
+            repeat.for="branch of remoteBranches; key: fullName"
+            click.trigger="focusBranch(branch)"
+            title.bind="branch.name"
+          >
+            <span>⑂</span>
+            <span>${branch.name}</span>
+          </button>
+          <div class="sidebar-empty" if.bind="!remoteBranches.length">No remote branches</div>
+        </details>
+        <details>
+          <summary>
+            TAGS
+            <span>${tags.length}</span>
+          </summary>
+          <button class="branch-name remote" repeat.for="branch of tags; key: fullName" click.trigger="focusBranch(branch)">
+            <span>◇</span>
+            <span>${branch.name}</span>
+          </button>
+        </details>
+        <div class="sidebar-bottom">
+          <span class="status-dot"></span>
+          LOCAL WORKSPACE
+          <small title.bind="repo">${repo}</small>
+        </div>
       </aside>
-      <ui-splitter direction="horizontal" size.bind="220" min.bind="160" max.bind="400" storage-key="sidebar" aria-label="Resize branches sidebar"></ui-splitter>
+      <ui-splitter
+        direction="horizontal"
+        size.bind="220"
+        min.bind="160"
+        max.bind="400"
+        storage-key="sidebar"
+        aria-label="Resize branches sidebar"
+      ></ui-splitter>
       <section class="repository-content">
         <section class="history-panel">
-          <div class="panel-toolbar"><h2>History <span class="muted">/ All branches</span></h2><div class="spacer"></div><form class="history-search" submit.trigger:prevent="findNext()"><span>⌕</span><input value.bind="query" aria-label="Search commits" placeholder="Find a commit, author or hash…"><small if.bind="query">${matchCount} matches</small><button type="submit" title="Next match">↵</button></form></div>
-          <div class="history-head" css="--graph-width: ${rows[0] ? rows[0].width : 74}px"><span>GRAPH</span><span>COMMIT</span><span>AUTHOR</span><span>DATE</span><span>SHA</span></div>
+          <div class="panel-toolbar">
+            <h2>
+              History
+              <span class="muted">/ All branches</span>
+            </h2>
+            <div class="spacer"></div>
+            <form class="history-search" submit.trigger:prevent="findNext()">
+              <span>⌕</span>
+              <input value.bind="query" aria-label="Search commits" placeholder="Find a commit, author or hash…" />
+              <small if.bind="query">${matchCount} matches</small>
+              <button type="submit" title="Next match">↵</button>
+            </form>
+          </div>
+          <div class="history-head" css="--graph-width: ${rows[0] ? rows[0].width : 74}px">
+            <span>GRAPH</span>
+            <span>COMMIT</span>
+            <span>AUTHOR</span>
+            <span>DATE</span>
+            <span>SHA</span>
+          </div>
           <div class="history-scroll">
-            <button class="working-row" click.trigger="openCommit()"><span class="working-node">◌</span><strong>Working directory</strong><span class="muted">${snapshot.files.length ? snapshot.files.length + ' changed files' : 'Clean working tree'}</span><span class="spacer"></span><span class="working-link">Prepare commit ↗</span></button>
+            <button class="working-row" click.trigger="openCommit()">
+              <span class="working-node">◌</span>
+              <strong>Working directory</strong>
+              <span class="muted">${snapshot.files.length ? snapshot.files.length + ' changed files' : 'Clean working tree'}</span>
+              <span class="spacer"></span>
+              <span class="working-link">Prepare commit ↗</span>
+            </button>
             <div class="commit-rows" css="--graph-width: ${rows[0] ? rows[0].width : 74}px" role="list" aria-label="Commit history">
-              <button repeat.for="row of rows; key: commit.hash" id="commit-${row.commit.hash}" class="commit-row ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}" click.trigger="selectCommit(row.commit)" aria-label.bind="row.commit.subject" title.bind="row.commit.subject">
-                <svg class="graph" width.bind="row.width" height="34" aria-hidden="true"><path repeat.for="edge of row.edges" d.bind="edge.d" stroke.bind="edge.color" fill="none" stroke-width="1.8"></path><circle cx.bind="row.x" cy="17" r.bind="row.commit.parents.length > 1 ? 4.5 : 3.5" fill.bind="row.color" stroke="var(--panel)" stroke-width="1.5"></circle></svg>
-                <span class="commit-subject"><span class="ref-label ${ref.startsWith('tag:') ? 'tag-label' : ''}" repeat.for="ref of row.commit.refs">${ref.replace('HEAD -> ', '⑂ ').replace('tag: ', '◇ ')}</span><span>${row.commit.subject}</span></span><span class="author">${row.commit.author}</span><time title.bind="fullDate(row.commit.date)">${date(row.commit.date)}</time><code class="hash">${short(row.commit.hash)}</code>
+              <button
+                repeat.for="row of rows; key: commit.hash"
+                id="commit-${row.commit.hash}"
+                class="commit-row ${selected && selected.hash === row.commit.hash ? 'selected' : ''} ${!matches(row.commit) ? 'dimmed' : ''}"
+                click.trigger="selectCommit(row.commit)"
+                aria-label.bind="row.commit.subject"
+                title.bind="row.commit.subject"
+              >
+                <svg class="graph" width.bind="row.width" height="34" aria-hidden="true">
+                  <path repeat.for="edge of row.edges" d.bind="edge.d" stroke.bind="edge.color" fill="none" stroke-width="1.8"></path>
+                  <circle
+                    cx.bind="row.x"
+                    cy="17"
+                    r.bind="row.commit.parents.length > 1 ? 4.5 : 3.5"
+                    fill.bind="row.color"
+                    stroke="var(--panel)"
+                    stroke-width="1.5"
+                  ></circle>
+                </svg>
+                <span class="commit-subject">
+                  <span class="ref-label ${ref.startsWith('tag:') ? 'tag-label' : ''}" repeat.for="ref of row.commit.refs">
+                    ${ref.replace('HEAD -> ', '⑂ ').replace('tag: ', '◇ ')}
+                  </span>
+                  <span>${row.commit.subject}</span>
+                </span>
+                <span class="author">${row.commit.author}</span>
+                <time title.bind="fullDate(row.commit.date)">${date(row.commit.date)}</time>
+                <code class="hash">${short(row.commit.hash)}</code>
               </button>
             </div>
             <div class="history-empty" if.bind="!rows.length">No commits yet. Open the commit window to create the first one.</div>
-            <button class="load-more" if.bind="snapshot.hasMore && limit < 5000" click.trigger="loadMore()" disabled.bind="refreshing">${refreshing ? 'Loading…' : 'Load 300 more commits'}</button>
+            <button class="load-more" if.bind="snapshot.hasMore && limit < 5000" click.trigger="loadMore()" disabled.bind="refreshing">
+              ${refreshing ? 'Loading…' : 'Load 300 more commits'}
+            </button>
           </div>
         </section>
-        <ui-splitter direction="vertical" size.bind="410" min.bind="150" max.bind="1000" storage-key="history" aria-label="Resize commit history"></ui-splitter>
+        <ui-splitter
+          direction="vertical"
+          size.bind="410"
+          min.bind="150"
+          max.bind="1000"
+          storage-key="history"
+          aria-label="Resize commit history"
+        ></ui-splitter>
         <section class="detail-panel">
-          <div class="detail-tabs"><button class.bind="tab === 'diff' ? 'active' : ''" click.trigger="tab = 'diff'">Changes <span class="count">${detail ? detail.files.length : 0}</span></button><button class.bind="tab === 'message' ? 'active' : ''" click.trigger="tab = 'message'">Commit details</button><button class.bind="tab === 'log' ? 'active' : ''" click.trigger="showLog()">Command log</button><span class="spacer"></span><code if.bind="selected">${short(selected.hash)}</code></div>
-          <div class="detail-body" if.bind="tab === 'diff'">
-            <div class="file-list"><div class="list-caption">CHANGED FILES <small if.bind="selected && selected.parents.length > 1">Compared with first parent</small></div><button repeat.for="file of detail.files; key: path" class="file-item ${selectedFile === file.path ? 'selected' : ''}" click.trigger="selectFile(file.path)" title.bind="file.path"><span class="file-status ${file.status}">${file.status}</span><span>${file.path}</span></button><p class="empty-small" if.bind="detail && !detail.files.length">No changed files.</p></div>
-            <ui-splitter direction="horizontal" size.bind="280" min.bind="150" max.bind="650" storage-key="changed-files" aria-label="Resize changed files"></ui-splitter>
-            <div class="diff-panel"><div class="diff-heading"><span>${selectedFile || 'File preview'}</span><span class="muted">Unified diff</span></div><diff-view text.bind="diff" is-loading.bind="diffLoading"></diff-view></div>
+          <div class="detail-tabs">
+            <button class.bind="tab === 'diff' ? 'active' : ''" click.trigger="tab = 'diff'">
+              Changes
+              <span class="count">${detail ? detail.files.length : 0}</span>
+            </button>
+            <button class.bind="tab === 'message' ? 'active' : ''" click.trigger="tab = 'message'">Commit details</button>
+            <button class.bind="tab === 'log' ? 'active' : ''" click.trigger="showLog()">Command log</button>
+            <span class="spacer"></span>
+            <code if.bind="selected">${short(selected.hash)}</code>
           </div>
-          <div class="commit-message" if.bind="tab === 'message' && selected"><span class="eyebrow">COMMIT ${short(selected.hash)}</span><h2>${selected.subject}</h2><p>${selected.author} · ${fullDate(selected.date)}</p><pre>${detail.message}</pre><div class="metadata"><span>Commit</span><code>${selected.hash}</code><span>Parents</span><code>${selected.parents.join(' · ') || 'Root commit'}</code></div></div>
-          <div class="command-log" if.bind="tab === 'log'"><div repeat.for="entry of commandLog" class="log-entry"><span class="log-exit ${entry.exitCode ? 'failed' : ''}">${entry.exitCode === 0 ? '✓' : entry.exitCode}</span><code>${entry.command}</code><span>${entry.duration} ms</span><pre if.bind="entry.error">${entry.error}</pre></div></div>
+          <div class="detail-body" if.bind="tab === 'diff'">
+            <div class="file-list">
+              <div class="list-caption">
+                CHANGED FILES
+                <small if.bind="selected && selected.parents.length > 1">Compared with first parent</small>
+              </div>
+              <button
+                repeat.for="file of detail.files; key: path"
+                class="file-item ${selectedFile === file.path ? 'selected' : ''}"
+                click.trigger="selectFile(file.path)"
+                title.bind="file.path"
+              >
+                <span class="file-status ${file.status}">${file.status}</span>
+                <span>${file.path}</span>
+              </button>
+              <p class="empty-small" if.bind="detail && !detail.files.length">No changed files.</p>
+            </div>
+            <ui-splitter
+              direction="horizontal"
+              size.bind="280"
+              min.bind="150"
+              max.bind="650"
+              storage-key="changed-files"
+              aria-label="Resize changed files"
+            ></ui-splitter>
+            <div class="diff-panel">
+              <div class="diff-heading">
+                <span>${selectedFile || 'File preview'}</span>
+                <span class="muted">Unified diff</span>
+              </div>
+              <diff-view text.bind="diff" is-loading.bind="diffLoading"></diff-view>
+            </div>
+          </div>
+          <div class="commit-message" if.bind="tab === 'message' && selected">
+            <span class="eyebrow">COMMIT ${short(selected.hash)}</span>
+            <h2>${selected.subject}</h2>
+            <p>${selected.author} · ${fullDate(selected.date)}</p>
+            <pre>${detail.message}</pre>
+            <div class="metadata">
+              <span>Commit</span>
+              <code>${selected.hash}</code>
+              <span>Parents</span>
+              <code>${selected.parents.join(' · ') || 'Root commit'}</code>
+            </div>
+          </div>
+          <div class="command-log" if.bind="tab === 'log'">
+            <div repeat.for="entry of commandLog" class="log-entry">
+              <span class="log-exit ${entry.exitCode ? 'failed' : ''}">${entry.exitCode === 0 ? '✓' : entry.exitCode}</span>
+              <code>${entry.command}</code>
+              <span>${entry.duration} ms</span>
+              <pre if.bind="entry.error">${entry.error}</pre>
+            </div>
+          </div>
         </section>
       </section>
     </div>
   </template>
   <template if.bind="snapshot && mode === 'commit'">
-    <div class="commit-toolbar"><div><span class="eyebrow">WORKING DIRECTORY</span><h1>Prepare your commit</h1></div><div class="spacer"></div><span class="branch-pill">⑂ ${snapshot.branch}</span></div>
-    <div class="operation-banner" if.bind="snapshot.operation">${snapshot.operation} in progress. Resolve conflicts before committing. Use your terminal to continue or abort a rebase.</div>
+    <div class="commit-toolbar">
+      <div>
+        <span class="eyebrow">WORKING DIRECTORY</span>
+        <h1>Prepare your commit</h1>
+      </div>
+      <div class="spacer"></div>
+      <span class="branch-pill">⑂ ${snapshot.branch}</span>
+    </div>
+    <div class="operation-banner" if.bind="snapshot.operation">
+      ${snapshot.operation} in progress. Resolve conflicts before committing. Use your terminal to continue or abort a rebase.
+    </div>
     <div class="commit-workspace">
       <aside class="staging-sidebar">
-        <section class="stage-section"><div class="stage-heading"><h2>Unstaged <span class="count">${unstaged.length}</span></h2><button as-element="ui-button" class="small" click.trigger="stageAll(false)" disabled.bind="busy || !unstaged.length">Stage all ↓</button></div><div class="stage-files"><div repeat.for="file of unstaged; key: path" class="stage-file ${workingFile && workingFile.path === file.path && !workingStaged ? 'selected' : ''}"><button class="file-item" click.trigger="selectWorking(file, false)" title.bind="file.path"><span class="file-status ${statusLabel(file, false)}">${statusLabel(file, false)}</span><span>${file.path}</span></button><button class="file-action" click.trigger="stage(file, false)" disabled.bind="busy" title="Stage ${file.path}" aria-label="Stage ${file.path}">+</button></div><div class="empty-small" if.bind="!unstaged.length"><span class="empty-check">✓</span>No unstaged changes</div></div></section>
-        <section class="stage-section"><div class="stage-heading"><h2>Staged <span class="count accent">${staged.length}</span></h2><button as-element="ui-button" class="small" click.trigger="stageAll(true)" disabled.bind="busy || !staged.length">Unstage all ↑</button></div><div class="stage-files"><div repeat.for="file of staged; key: path" class="stage-file ${workingFile && workingFile.path === file.path && workingStaged ? 'selected' : ''}"><button class="file-item" click.trigger="selectWorking(file, true)" title.bind="file.path"><span class="file-status ${statusLabel(file, true)}">${statusLabel(file, true)}</span><span>${file.path}</span></button><button class="file-action" click.trigger="stage(file, true)" disabled.bind="busy" title="Unstage ${file.path}" aria-label="Unstage ${file.path}">−</button></div><div class="empty-small" if.bind="!staged.length">Stage changes to include<br>them in your next commit.</div></div></section>
+        <section class="stage-section">
+          <div class="stage-heading">
+            <h2>
+              Unstaged
+              <span class="count">${unstaged.length}</span>
+            </h2>
+            <button as-element="ui-button" class="small" click.trigger="stageAll(false)" disabled.bind="busy || !unstaged.length">
+              Stage all ↓
+            </button>
+          </div>
+          <div class="stage-files">
+            <div
+              repeat.for="file of unstaged; key: path"
+              class="stage-file ${workingFile && workingFile.path === file.path && !workingStaged ? 'selected' : ''}"
+            >
+              <button class="file-item" click.trigger="selectWorking(file, false)" title.bind="file.path">
+                <span class="file-status ${statusLabel(file, false)}">${statusLabel(file, false)}</span>
+                <span>${file.path}</span>
+              </button>
+              <button
+                class="file-action"
+                click.trigger="stage(file, false)"
+                disabled.bind="busy"
+                title="Stage ${file.path}"
+                aria-label="Stage ${file.path}"
+              >
+                +
+              </button>
+            </div>
+            <div class="empty-small" if.bind="!unstaged.length">
+              <span class="empty-check">✓</span>
+              No unstaged changes
+            </div>
+          </div>
+        </section>
+        <section class="stage-section">
+          <div class="stage-heading">
+            <h2>
+              Staged
+              <span class="count accent">${staged.length}</span>
+            </h2>
+            <button as-element="ui-button" class="small" click.trigger="stageAll(true)" disabled.bind="busy || !staged.length">
+              Unstage all ↑
+            </button>
+          </div>
+          <div class="stage-files">
+            <div
+              repeat.for="file of staged; key: path"
+              class="stage-file ${workingFile && workingFile.path === file.path && workingStaged ? 'selected' : ''}"
+            >
+              <button class="file-item" click.trigger="selectWorking(file, true)" title.bind="file.path">
+                <span class="file-status ${statusLabel(file, true)}">${statusLabel(file, true)}</span>
+                <span>${file.path}</span>
+              </button>
+              <button
+                class="file-action"
+                click.trigger="stage(file, true)"
+                disabled.bind="busy"
+                title="Unstage ${file.path}"
+                aria-label="Unstage ${file.path}"
+              >
+                −
+              </button>
+            </div>
+            <div class="empty-small" if.bind="!staged.length">
+              Stage changes to include
+              <br />
+              them in your next commit.
+            </div>
+          </div>
+        </section>
       </aside>
-      <ui-splitter direction="horizontal" size.bind="330" min.bind="220" max.bind="600" storage-key="staging-files" aria-label="Resize staging lists"></ui-splitter>
-      <section class="commit-editor"><div class="diff-panel"><div class="diff-heading"><span>${workingFile ? workingFile.path : 'Review your changes'}</span><span class="diff-mode ${workingStaged ? 'accent-text' : ''}">${workingFile ? workingStaged ? 'STAGED' : 'UNSTAGED' : ''}</span><button as-element="ui-button" class="small" if.bind="workingFile" disabled.bind="busy" click.trigger="stage(workingFile, workingStaged)">${workingStaged ? '↑ Unstage file' : '↓ Stage file'}</button></div><diff-view text.bind="diff" is-loading.bind="diffLoading"></diff-view></div>
-        <section class="message-composer"><div class="composer-label"><label for="commit-message">Commit message</label><span class="muted ${summaryLength > 72 ? 'warning-text' : ''}">${summaryLength} / 72</span></div><textarea id="commit-message" value.bind="message" placeholder="A short summary of what changed&#10;&#10;Add more context on the following lines…" spellcheck="false" disabled.bind="busy"></textarea><div class="composer-actions"><span class="muted">${staged.length} file${staged.length === 1 ? '' : 's'} staged · <kbd>Ctrl Enter</kbd> to commit</span><div class="spacer"></div><button as-element="ui-button" class="primary" click.trigger="commit()" disabled.bind="!canCommit">${busy ? 'Working…' : '✓ Commit to ' + snapshot.branch}</button></div></section>
+      <ui-splitter
+        direction="horizontal"
+        size.bind="330"
+        min.bind="220"
+        max.bind="600"
+        storage-key="staging-files"
+        aria-label="Resize staging lists"
+      ></ui-splitter>
+      <section class="commit-editor">
+        <div class="diff-panel">
+          <div class="diff-heading">
+            <span>${workingFile ? workingFile.path : 'Review your changes'}</span>
+            <span class="diff-mode ${workingStaged ? 'accent-text' : ''}">${workingFile ? workingStaged ? 'STAGED' : 'UNSTAGED' : ''}</span>
+            <button
+              as-element="ui-button"
+              class="small"
+              if.bind="workingFile"
+              disabled.bind="busy"
+              click.trigger="stage(workingFile, workingStaged)"
+            >
+              ${workingStaged ? '↑ Unstage file' : '↓ Stage file'}
+            </button>
+          </div>
+          <diff-view text.bind="diff" is-loading.bind="diffLoading"></diff-view>
+        </div>
+        <section class="message-composer">
+          <div class="composer-label">
+            <label for="commit-message">Commit message</label>
+            <span class="muted ${summaryLength > 72 ? 'warning-text' : ''}">${summaryLength} / 72</span>
+          </div>
+          <textarea
+            id="commit-message"
+            value.bind="message"
+            placeholder="A short summary of what changed&#10;&#10;Add more context on the following lines…"
+            spellcheck="false"
+            disabled.bind="busy"
+          ></textarea>
+          <div class="composer-actions">
+            <span class="muted">
+              ${staged.length} file${staged.length === 1 ? '' : 's'} staged ·
+              <kbd>Ctrl Enter</kbd>
+              to commit
+            </span>
+            <div class="spacer"></div>
+            <button as-element="ui-button" class="primary" click.trigger="commit()" disabled.bind="!canCommit">
+              ${busy ? 'Working…' : '✓ Commit to ' + snapshot.branch}
+            </button>
+          </div>
+        </section>
       </section>
     </div>
   </template>
-  <footer class="statusbar"><span class="status-dot ${busy || refreshing ? 'pulsing' : ''}"></span><span>${busy ? 'Running Git operation…' : refreshing ? 'Refreshing…' : snapshot ? 'Ready' : 'Local Git workspace'}</span><span if.bind="snapshot" class="status-branch">⑂ ${snapshot.branch} ${currentTracking}</span><div class="spacer"></div><span if.bind="snapshot">${snapshot.files.length} changes</span><span>Branchlight 0.1</span></footer>
+  <footer class="statusbar">
+    <span class="status-dot ${busy || refreshing ? 'pulsing' : ''}"></span>
+    <span>${busy ? 'Running Git operation…' : refreshing ? 'Refreshing…' : snapshot ? 'Ready' : 'Local Git workspace'}</span>
+    <span if.bind="snapshot" class="status-branch">⑂ ${snapshot.branch} ${currentTracking}</span>
+    <div class="spacer"></div>
+    <span if.bind="snapshot">${snapshot.files.length} changes</span>
+    <span>Branchlight 0.1</span>
+  </footer>
 </div>
-<dialog ref="branchDialog" class="branch-dialog"><form submit.trigger:prevent="createBranch()"><span class="eyebrow">BRANCH FROM CURRENT HEAD</span><h2>Create a branch</h2><label for="branch-name">Branch name</label><input id="branch-name" value.bind="branchName" placeholder="feature/my-change" required><p class="muted">The new branch will be checked out. Commit your working changes first.</p><div class="dialog-actions"><button type="button" click.trigger="branchDialog.close()">Cancel</button><button class="primary" type="submit" disabled.bind="busy || !branchName.trim()">Create branch</button></div></form></dialog>
-
+<dialog ref="branchDialog" class="branch-dialog">
+  <form submit.trigger:prevent="createBranch()">
+    <span class="eyebrow">BRANCH FROM CURRENT HEAD</span>
+    <h2>Create a branch</h2>
+    <label for="branch-name">Branch name</label>
+    <input id="branch-name" value.bind="branchName" placeholder="feature/my-change" required />
+    <p class="muted">The new branch will be checked out. Commit your working changes first.</p>
+    <div class="dialog-actions">
+      <button type="button" click.trigger="branchDialog.close()">Cancel</button>
+      <button class="primary" type="submit" disabled.bind="busy || !branchName.trim()">Create branch</button>
+    </div>
+  </form>
+</dialog>

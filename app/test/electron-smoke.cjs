@@ -36,10 +36,15 @@ const { GitService } = require('../electron/git-service.cjs');
   const errors = [];
   try {
     const packaged = process.argv.includes('--packaged');
-    app = await electron.launch({ ...(packaged ? { executablePath: path.resolve('release/win-unpacked/Branchlight.exe'), args: [] } : { args: ['.'] }), env });
+    app = await electron.launch({
+      ...(packaged ? { executablePath: path.resolve('release/win-unpacked/Branchlight.exe'), args: [] } : { args: ['.'] }),
+      env
+    });
     const page = await app.firstWindow();
     page.on('pageerror', e => errors.push(e.message));
-    page.on('console', m => { if (m.type() === 'error') console.log('Renderer:', m.text()); });
+    page.on('console', m => {
+      if (m.type() === 'error') console.log('Renderer:', m.text());
+    });
     await page.locator('.commit-row').first().waitFor({ timeout: 30000 });
     assert.equal(await page.locator('.commit-row').count(), 4);
     assert.equal(await page.locator('.graph circle').count(), 4);
@@ -62,19 +67,30 @@ const { GitService } = require('../electron/git-service.cjs');
     await page.getByRole('button', { name: 'Refine the getting started guide', exact: true }).waitFor();
     const state = await git.snapshot(repo);
     assert.equal(state.commits[0].subject, 'Refine the getting started guide');
-    assert.deepEqual(state.files.map(f => f.path), ['notes.txt']);
+    assert.deepEqual(
+      state.files.map(f => f.path),
+      ['notes.txt']
+    );
     await commit.close();
     await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
     await page.screenshot({ path: path.join(output, 'history-light.png') });
     assert.deepEqual(errors, []);
-    console.log('PASS: Electron renders real history and graph, opens a separate commit window, stages one file, commits, preserves unselected files, refreshes main window, and switches theme.');
+    console.log(
+      'PASS: Electron renders real history and graph, opens a separate commit window, stages one file, commits, preserves unselected files, refreshes main window, and switches theme.'
+    );
     console.log('Screenshots:', output);
   } catch (error) {
     console.log('Renderer errors:', errors);
-    if (app) for (const [index, page] of app.windows().entries()) {
-      console.log('Window', index, (await page.locator('body').innerText()).slice(-8000));
-      await page.screenshot({ path: path.join(output, `failure-${index}.png`) });
-    }
+    if (app)
+      for (const [index, page] of app.windows().entries()) {
+        console.log('Window', index, (await page.locator('body').innerText()).slice(-8000));
+        await page.screenshot({ path: path.join(output, `failure-${index}.png`) });
+      }
     throw error;
-  } finally { if (app) await app.close(); }
-})().catch(error => { console.error(error); process.exitCode = 1; });
+  } finally {
+    if (app) await app.close();
+  }
+})().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

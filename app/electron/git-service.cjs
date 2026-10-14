@@ -8,25 +8,41 @@ function parseStatus(output) {
   for (let i = 0; i < records.length; i++) {
     const line = records[i];
     if (!line) continue;
-    const x = line[0], y = line[1], filePath = line.slice(3);
+    const x = line[0],
+      y = line[1],
+      filePath = line.slice(3);
     const originalPath = x === 'R' || x === 'C' || y === 'R' || y === 'C' ? records[++i] : undefined;
-    files.push({ path: filePath, originalPath, index: x, worktree: y,
-      staged: x !== ' ' && x !== '?', unstaged: y !== ' ' || x === '?',
-      conflict: ['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU'].includes(x + y) });
+    files.push({
+      path: filePath,
+      originalPath,
+      index: x,
+      worktree: y,
+      staged: x !== ' ' && x !== '?',
+      unstaged: y !== ' ' || x === '?',
+      conflict: ['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU'].includes(x + y)
+    });
   }
   return files;
 }
 function parseLog(output) {
-  const fields = output.split('\0'), commits = [];
+  const fields = output.split('\0'),
+    commits = [];
   for (let i = 0; i + 5 < fields.length; i += 6) {
     if (!fields[i]) continue;
-    commits.push({ hash: fields[i], parents: fields[i + 1].split(' ').filter(Boolean), author: fields[i + 2],
-      date: fields[i + 3], subject: fields[i + 4], refs: fields[i + 5].split(', ').filter(Boolean) });
+    commits.push({
+      hash: fields[i],
+      parents: fields[i + 1].split(' ').filter(Boolean),
+      author: fields[i + 2],
+      date: fields[i + 3],
+      subject: fields[i + 4],
+      refs: fields[i + 5].split(', ').filter(Boolean)
+    });
   }
   return commits;
 }
 function validPath(value) {
-  if (typeof value !== 'string' || !value || value.includes('\0') || path.isAbsolute(value) || value.split(/[\\/]/).includes('..')) throw new Error('Invalid repository-relative path.');
+  if (typeof value !== 'string' || !value || value.includes('\0') || path.isAbsolute(value) || value.split(/[\\/]/).includes('..'))
+    throw new Error('Invalid repository-relative path.');
   return value;
 }
 function validHash(value) {
@@ -34,15 +50,27 @@ function validHash(value) {
   return value;
 }
 class GitService {
-  constructor() { this.logs = []; this.locks = new Map(); }
+  constructor() {
+    this.logs = [];
+    this.locks = new Map();
+  }
   async run(repo, args, options = {}) {
     const started = Date.now();
-    const result = await exec(['--no-pager', '--literal-pathspecs', '-c', 'color.ui=false', ...args], repo,
-      { maxBuffer: 32 * 1024 * 1024, ...options, env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never', ...options.env } });
-    this.logs.unshift({ command: 'git ' + args.map((a, i) => args[i - 1] === '-m' ? '[commit message]' : a).join(' '),
-      time: new Date().toISOString(), duration: Date.now() - started, exitCode: result.exitCode, error: result.exitCode ? result.stderr.slice(0, 3000) : '' });
+    const result = await exec(['--no-pager', '--literal-pathspecs', '-c', 'color.ui=false', ...args], repo, {
+      maxBuffer: 32 * 1024 * 1024,
+      ...options,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never', ...options.env }
+    });
+    this.logs.unshift({
+      command: 'git ' + args.map((a, i) => (args[i - 1] === '-m' ? '[commit message]' : a)).join(' '),
+      time: new Date().toISOString(),
+      duration: Date.now() - started,
+      exitCode: result.exitCode,
+      error: result.exitCode ? result.stderr.slice(0, 3000) : ''
+    });
     this.logs.length = Math.min(this.logs.length, 100);
-    if (result.exitCode !== 0 && !options.allowFailure) throw new Error(result.stderr.trim() || result.stdout.trim() || `Git exited with code ${result.exitCode}.`);
+    if (result.exitCode !== 0 && !options.allowFailure)
+      throw new Error(result.stderr.trim() || result.stdout.trim() || `Git exited with code ${result.exitCode}.`);
     return result;
   }
   async open(directory) {
@@ -54,38 +82,91 @@ class GitService {
     limit = Math.max(1, Math.min(Number(limit) || 300, 5000));
     const [status, refs, head, symbolic] = await Promise.all([
       this.run(repo, ['status', '--porcelain=v1', '-z', '--untracked-files=all'], { env: { GIT_OPTIONAL_LOCKS: '0' } }),
-      this.run(repo, ['for-each-ref', '--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(upstream:track)%00%(*objectname)', 'refs/heads', 'refs/remotes', 'refs/tags']),
+      this.run(repo, [
+        'for-each-ref',
+        '--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(upstream:track)%00%(*objectname)',
+        'refs/heads',
+        'refs/remotes',
+        'refs/tags'
+      ]),
       this.run(repo, ['rev-parse', '--verify', 'HEAD'], { allowFailure: true }),
       this.run(repo, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { allowFailure: true })
     ]);
-    const branches = refs.stdout.trim().split('\n').filter(Boolean).map(line => {
-      const [fullName, hash, upstream, tracking, peeled] = line.replace(/\r$/, '').split('\0');
-      return { fullName, name: fullName.replace(/^refs\/(heads|remotes|tags)\//, ''), hash: peeled || hash, upstream, tracking,
-        kind: fullName.startsWith('refs/heads/') ? 'local' : fullName.startsWith('refs/remotes/') ? 'remote' : 'tag' };
-    });
+    const branches = refs.stdout
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map(line => {
+        const [fullName, hash, upstream, tracking, peeled] = line.replace(/\r$/, '').split('\0');
+        return {
+          fullName,
+          name: fullName.replace(/^refs\/(heads|remotes|tags)\//, ''),
+          hash: peeled || hash,
+          upstream,
+          tracking,
+          kind: fullName.startsWith('refs/heads/') ? 'local' : fullName.startsWith('refs/remotes/') ? 'remote' : 'tag'
+        };
+      });
     const hasRefs = branches.length > 0 || head.exitCode === 0;
-    const history = hasRefs ? await this.run(repo, ['log', '--all', ...(head.exitCode === 0 ? ['HEAD'] : []), '--date-order', '--topo-order', `--max-count=${limit + 1}`, '-z', '--format=%H%x00%P%x00%an%x00%aI%x00%s%x00%D']) : { stdout: '' };
+    const history = hasRefs
+      ? await this.run(repo, [
+          'log',
+          '--all',
+          ...(head.exitCode === 0 ? ['HEAD'] : []),
+          '--date-order',
+          '--topo-order',
+          `--max-count=${limit + 1}`,
+          '-z',
+          '--format=%H%x00%P%x00%an%x00%aI%x00%s%x00%D'
+        ])
+      : { stdout: '' };
     const commits = parseLog(history.stdout);
     const gitDir = (await this.run(repo, ['rev-parse', '--absolute-git-dir'])).stdout.trim();
     let operation = '';
-    for (const [file, name] of [['MERGE_HEAD','Merge'],['CHERRY_PICK_HEAD','Cherry-pick'],['REVERT_HEAD','Revert'],['rebase-merge','Rebase'],['rebase-apply','Rebase']]) {
+    for (const [file, name] of [
+      ['MERGE_HEAD', 'Merge'],
+      ['CHERRY_PICK_HEAD', 'Cherry-pick'],
+      ['REVERT_HEAD', 'Revert'],
+      ['rebase-merge', 'Rebase'],
+      ['rebase-apply', 'Rebase']
+    ]) {
       if (await fs.stat(path.join(gitDir, file)).catch(() => null)) operation = name;
     }
-    return { path: repo, name: path.basename(repo), branch: symbolic.exitCode === 0 ? symbolic.stdout.trim() : 'Detached HEAD',
-      head: head.exitCode === 0 ? head.stdout.trim() : '', files: parseStatus(status.stdout), branches,
-      commits: commits.slice(0, limit), hasMore: commits.length > limit, operation };
+    return {
+      path: repo,
+      name: path.basename(repo),
+      branch: symbolic.exitCode === 0 ? symbolic.stdout.trim() : 'Detached HEAD',
+      head: head.exitCode === 0 ? head.stdout.trim() : '',
+      files: parseStatus(status.stdout),
+      branches,
+      commits: commits.slice(0, limit),
+      hasMore: commits.length > limit,
+      operation
+    };
   }
   async detail(repo, hash) {
     validHash(hash);
     const [message, names] = await Promise.all([
       this.run(repo, ['show', '-s', '--format=%B', hash]),
-      this.run(repo, ['diff-tree', '--root', '--no-commit-id', '--name-status', '-r', '-z', '--no-renames', ...(await this.parents(repo, hash)).length ? [hash + '^', hash] : [hash]])
+      this.run(repo, [
+        'diff-tree',
+        '--root',
+        '--no-commit-id',
+        '--name-status',
+        '-r',
+        '-z',
+        '--no-renames',
+        ...((await this.parents(repo, hash)).length ? [hash + '^', hash] : [hash])
+      ])
     ]);
-    const fields = names.stdout.split('\0'), files = [];
+    const fields = names.stdout.split('\0'),
+      files = [];
     for (let i = 0; i + 1 < fields.length; i += 2) if (fields[i]) files.push({ status: fields[i], path: fields[i + 1] });
     return { message: message.stdout.trimEnd(), files };
   }
-  async parents(repo, hash) { return (await this.run(repo, ['show', '-s', '--format=%P', hash])).stdout.trim().split(' ').filter(Boolean); }
+  async parents(repo, hash) {
+    return (await this.run(repo, ['show', '-s', '--format=%P', hash])).stdout.trim().split(' ').filter(Boolean);
+  }
   async diff(repo, request) {
     const file = validPath(request.path);
     if (request.hash) {
@@ -108,7 +189,9 @@ class GitService {
       if (lines.at(-1) === '') lines.pop();
       return `--- /dev/null\n+++ b/${file}\n@@ -0,0 +1,${lines.length} @@\n` + lines.map(line => '+' + line).join('\n');
     }
-    return (await this.run(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', ...(request.staged ? ['--cached'] : []), '--', file])).stdout;
+    return (
+      await this.run(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', ...(request.staged ? ['--cached'] : []), '--', file])
+    ).stdout;
   }
   async mutate(repo, action, payload = {}) {
     if (this.locks.has(repo)) throw new Error('Another Git operation is running for this repository.');
@@ -139,7 +222,9 @@ class GitService {
       else if (action === 'push') await this.run(repo, ['push']);
       else throw new Error('Unsupported Git operation.');
       return true;
-    } finally { this.locks.delete(repo); }
+    } finally {
+      this.locks.delete(repo);
+    }
   }
 }
 module.exports = { GitService, parseStatus, parseLog, validPath };

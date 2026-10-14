@@ -8,5 +8,9 @@ contextBridge.exposeInMainWorld('gitClient', {
   mutate: (action, payload) => ipcRenderer.invoke('mutate', action, payload),
   log: () => ipcRenderer.invoke('command-log'),
   openCommit: () => ipcRenderer.invoke('commit-window'),
-  onChanged: callback => { const listener = () => callback(); ipcRenderer.on('repository-changed', listener); return () => ipcRenderer.removeListener('repository-changed', listener); }
+  onChanged: callback => {
+    const listener = () => callback();
+    ipcRenderer.on('repository-changed', listener);
+    return () => ipcRenderer.removeListener('repository-changed', listener);
+  }
 });

@@ -83,7 +83,10 @@ test('literal pathspecs do not accidentally stage other files; rename unstage wo
   const file = state.files.find((f: any) => f.index === 'R');
   assert.equal(file.originalPath, '[abc].txt');
   await git.mutate(repo, 'unstage', { paths: [file.path, file.originalPath] });
-  assert.equal((await git.snapshot(repo)).files.some((f: any) => f.staged), false);
+  assert.equal(
+    (await git.snapshot(repo)).files.some((f: any) => f.staged),
+    false
+  );
   await assert.rejects(git.mutate(repo, 'stage', { paths: ['../outside'] }), /Invalid/);
   await assert.rejects(git.mutate(repo, 'commit', { message: 'Nothing staged' }), /Stage changes/);
 });
