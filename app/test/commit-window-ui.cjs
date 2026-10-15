@@ -116,14 +116,12 @@ const path = require('node:path');
     for (const name of ['Resize unstaged and staged files', 'Resize diff and commit message']) {
       await commit.getByRole('separator', { name, exact: true }).press('End');
     }
-    assert.ok(
-      await commit.evaluate(() =>
-        [...document.querySelectorAll('.stage-section, .diff-panel, .message-composer')].every(element => {
-          const rect = element.getBoundingClientRect();
-          return rect.height >= 80 && rect.bottom <= innerHeight;
-        })
-      ),
-      'Both panes must remain usable when splitters reach the limit in a small window'
+    // Native viewport changes and the ResizeObserver's bound splitter limits settle on later frames.
+    await commit.waitForFunction(() =>
+      [...document.querySelectorAll('.stage-section, .diff-panel, .message-composer')].every(element => {
+        const rect = element.getBoundingClientRect();
+        return rect.height >= 80 && rect.bottom <= innerHeight;
+      })
     );
     assert.deepEqual(errors, []);
     console.log(
@@ -131,6 +129,14 @@ const path = require('node:path');
     );
   } catch (error) {
     if (commit && !commit.isClosed()) {
+      console.log(
+        'Pane bounds:',
+        await commit
+          .locator('.staging-sidebar, .stage-section, .diff-panel, .message-composer')
+          .evaluateAll(elements =>
+            elements.map(element => ({ class: element.className, bounds: element.getBoundingClientRect().toJSON(), viewport: innerHeight }))
+          )
+      );
       await commit.screenshot({ path: path.resolve('test-results/commit-window-failure.png') });
     }
     console.log('Renderer errors:', errors);

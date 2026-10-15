@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
 
 if (process.platform !== 'linux') throw new Error('Collect Linux runtime notices on the packaging host.');
@@ -46,7 +46,10 @@ for (const name of [...packages].sort()) {
 if (unknown.size) throw new Error(`Review bundled libraries without Ubuntu provenance: ${[...unknown].join(', ')}`);
 const appImages = fs.readdirSync(bundle).filter(name => name.endsWith('.AppImage'));
 if (appImages.length !== 1) throw new Error('Expected one AppImage runtime to inspect.');
-const runtimeVersion = execFileSync(path.join(bundle, appImages[0]), ['--appimage-version'], { encoding: 'utf8' }).trim();
+const runtime = spawnSync(path.join(bundle, appImages[0]), ['--appimage-version'], { encoding: 'utf8' });
+if (runtime.error) throw runtime.error;
+if (runtime.status !== 0) throw new Error(`AppImage runtime inspection failed: ${runtime.stderr}`);
+const runtimeVersion = `${runtime.stdout}\n${runtime.stderr}`.trim();
 if (!runtimeVersion.includes('/8f39b89')) throw new Error(`Review updated AppImage runtime licenses: ${runtimeVersion}`);
 const sourceRoot = path.resolve('../licenses/upstream');
 const launcherSources = JSON.parse(fs.readFileSync(path.join(sourceRoot, 'linux-sources.json'), 'utf8'));
