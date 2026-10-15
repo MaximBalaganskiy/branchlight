@@ -1,4 +1,4 @@
-import { Compartment } from '@codemirror/state';
+import { Compartment, type Text } from '@codemirror/state';
 import { Decoration, EditorView, type ViewUpdate } from '@codemirror/view';
 import { isolateHistory } from '@codemirror/commands';
 import { Chunk } from '@codemirror/merge';
@@ -7,6 +7,8 @@ import type { ConflictContent } from '../../interfaces/conflict-content';
 import { conflictChoice } from '../../services/merge-conflicts';
 import { mergeDocument, prepareMerge, setMergeRegions } from './merge-document';
 import { differenceDecorations, mapMergePosition } from './merge-differences';
+import { mergeAlignment } from './merge-alignment';
+import { applyMergeSpacers, mergeSpacers } from './merge-spacers';
 
 export class MergeSession {
   readonly result: EditorSession;
@@ -21,9 +23,14 @@ export class MergeSession {
   private expectedScroll = new Map<EditorView, { top: number; left: number }>();
   private frame = 0;
   private refreshFrame = 0;
+  private alignmentFrame = 0;
+  private revealFrame = 0;
+  private alignmentDoc?: Text;
+  private alignmentPlan?: ReturnType<typeof mergeAlignment>;
   private scrollSource?: EditorView;
   private destroyed = false;
   syncScroll = true;
+  alignmentLimited = false;
 
   get regions() {
     return this.result.view.state.field(this.document.field);
@@ -34,7 +41,7 @@ export class MergeSession {
   }
 
   get current() {
-    return this.remaining.find(region => region.id === this.activeId) ?? this.remaining[0];
+    return this.regions.find(region => region.id === this.activeId) ?? this.regions[0];
   }
 
   get value() {
@@ -57,6 +64,7 @@ export class MergeSession {
     this.result = new EditorSession(hosts[0], prepared.text, 'Resolved content', false, undefined, undefined, [
       this.document.field,
       this.document.history,
+      mergeSpacers,
       this.highlights[0].of([]),
       EditorView.updateListener.of(update => this.updated(update))
     ]);
@@ -72,7 +80,7 @@ export class MergeSession {
             const translated = mapMergePosition(this.chunks[index], position, true);
             this.setActive(translated);
           },
-          this.highlights[index + 1].of([])
+          [mergeSpacers, this.highlights[index + 1].of([])]
         )
     );
     this.chunks = this.sources.map(source => Chunk.build(this.result.view.state.doc, source.view.state.doc, this.diffConfig));
@@ -83,6 +91,7 @@ export class MergeSession {
       this.scrollListeners.push(() => session.view.scrollDOM.removeEventListener('scroll', listener));
     }
     this.refreshHighlights();
+    this.scheduleAlignment();
   }
 
   private updated(update: ViewUpdate) {
@@ -94,9 +103,28 @@ export class MergeSession {
         Chunk.updateA(this.chunks[index], update.state.doc, source.view.state.doc, update.changes, this.diffConfig)
       );
     }
+    if (update.docChanged || update.geometryChanged) {
+      this.scheduleAlignment();
+    }
     const regionsChanged = update.transactions.some(transaction => transaction.effects.some(effect => effect.is(setMergeRegions)));
     if (update.selectionSet) {
       this.setActive(update.state.selection.main.head, false);
+    }
+    if (update.transactions.some(transaction => transaction.isUserEvent('undo') || transaction.isUserEvent('redo'))) {
+      const previous = update.startState.field(this.document.field);
+      const changed = this.regions.find(region => region.resolved !== previous.find(item => item.id === region.id)?.resolved);
+      if (changed) {
+        this.activeId = changed.id;
+        if (changed.resolved && this.remaining.length && update.transactions.some(transaction => transaction.isUserEvent('redo'))) {
+          this.activeId = (this.remaining.find(region => region.id > changed.id) ?? this.remaining[0]).id;
+        }
+        cancelAnimationFrame(this.revealFrame);
+        this.revealFrame = requestAnimationFrame(() => {
+          if (!this.destroyed) {
+            this.revealCurrent();
+          }
+        });
+      }
     }
     if (update.docChanged || regionsChanged || update.selectionSet) {
       this.activeId = this.current?.id ?? 0;
@@ -106,7 +134,7 @@ export class MergeSession {
   }
 
   private setActive(position: number, notify = true) {
-    const region = this.remaining.find(region => position >= region.from && position <= region.to);
+    const region = this.regions.find(region => position >= region.from && (position < region.to || position === region.from));
     if (region) {
       this.activeId = region.id;
       if (notify) {
@@ -138,8 +166,36 @@ export class MergeSession {
       annotations: isolateHistory.of('full'),
       userEvent: 'input.merge'
     });
+    if (!region.resolved) {
+      this.activeId = (this.remaining.find(item => item.id > region.id) ?? this.remaining[0])?.id ?? region.id;
+    }
     this.revealCurrent();
+    this.onUpdate();
+    this.scheduleHighlights();
     view.focus();
+  }
+
+  selectRegion(id: number) {
+    if (this.regions.some(region => region.id === id)) {
+      this.activeId = id;
+      this.revealCurrent();
+      this.onUpdate();
+      this.scheduleHighlights();
+    }
+  }
+
+  reopen() {
+    const region = this.current;
+    if (!region?.resolved || this.result.view.state.readOnly) {
+      return;
+    }
+    this.result.view.dispatch({
+      effects: setMergeRegions.of(this.regions.map(item => (item.id === region.id ? { ...item, resolved: false } : item))),
+      selection: { anchor: region.from },
+      annotations: isolateHistory.of('full'),
+      userEvent: 'input.merge'
+    });
+    this.revealCurrent();
   }
 
   navigate(direction: number) {
@@ -147,8 +203,11 @@ export class MergeSession {
     if (!pending.length) {
       return;
     }
-    const index = pending.findIndex(region => region.id === this.current?.id);
-    this.activeId = pending[(index + direction + pending.length) % pending.length].id;
+    const next =
+      direction > 0
+        ? (pending.find(region => region.id > this.activeId) ?? pending[0])
+        : (pending.filter(region => region.id < this.activeId).at(-1) ?? pending[pending.length - 1]);
+    this.activeId = next.id;
     this.revealCurrent();
     this.onUpdate();
     this.scheduleHighlights();
@@ -177,7 +236,7 @@ export class MergeSession {
     for (const [index, view] of views.entries()) {
       // Sources are compared with the result; the result is compared with the ancestor.
       const decorations = differenceDecorations(this.chunks[index === 0 ? 2 : index - 1], view.state.doc, index === 0 ? 'a' : 'b');
-      const regions = index === 0 ? this.regions : this.remaining;
+      const regions = this.regions;
       for (const region of regions) {
         const from = this.translate(this.result.view, view, region.from);
         const to = this.translate(this.result.view, view, region.to);
@@ -201,6 +260,31 @@ export class MergeSession {
     const resultPosition = sourceIndex < 0 ? position : mapMergePosition(this.chunks[sourceIndex], position, true);
     const translated = targetIndex < 0 ? resultPosition : mapMergePosition(this.chunks[targetIndex], resultPosition);
     return Math.max(0, Math.min(to.state.doc.length, translated));
+  }
+
+  private scheduleAlignment() {
+    if (this.destroyed) {
+      return;
+    }
+    cancelAnimationFrame(this.alignmentFrame);
+    this.alignmentFrame = requestAnimationFrame(() => {
+      if (this.destroyed) {
+        return;
+      }
+      if (this.alignmentDoc !== this.result.view.state.doc || !this.alignmentPlan) {
+        this.alignmentDoc = this.result.view.state.doc;
+        this.alignmentPlan = mergeAlignment(
+          this.alignmentDoc,
+          this.sources.map(source => source.view.state.doc)
+        );
+        this.alignmentLimited = !this.alignmentPlan.precise;
+        this.onUpdate();
+      }
+      const lineHeight = this.result.view.defaultLineHeight;
+      [this.result, ...this.sources].forEach((session, index) =>
+        applyMergeSpacers(session.view, this.alignmentPlan!.plans[index], lineHeight)
+      );
+    });
   }
 
   private scrolled(view: EditorView) {
@@ -228,15 +312,11 @@ export class MergeSession {
     if (!from || this.destroyed || !this.syncScroll) {
       return;
     }
-    const anchor = from.lineBlockAtHeight(from.scrollDOM.scrollTop);
-    const offset = from.scrollDOM.scrollTop - anchor.top;
     for (const view of [this.result.view, ...this.sources.map(source => source.view)]) {
       if (view === from || !view.scrollDOM.clientHeight) {
         continue;
       }
-      const position = this.translate(from, view, anchor.from);
-      const top = view.lineBlockAt(position).top + offset;
-      view.scrollDOM.scrollTop = top;
+      view.scrollDOM.scrollTop = from.scrollDOM.scrollTop;
       view.scrollDOM.scrollLeft = from.scrollDOM.scrollLeft;
       this.expectedScroll.set(view, { top: view.scrollDOM.scrollTop, left: view.scrollDOM.scrollLeft });
     }
@@ -244,8 +324,10 @@ export class MergeSession {
 
   destroy() {
     this.destroyed = true;
+    cancelAnimationFrame(this.revealFrame);
     cancelAnimationFrame(this.frame);
     cancelAnimationFrame(this.refreshFrame);
+    cancelAnimationFrame(this.alignmentFrame);
     this.scrollListeners.forEach(remove => remove());
     [this.result, ...this.sources].forEach(session => session.destroy());
   }

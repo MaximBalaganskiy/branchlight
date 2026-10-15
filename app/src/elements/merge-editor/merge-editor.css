@@ -62,5 +62,13 @@ merge-editor {
 
   & .cm-editor .merge-current {
     box-shadow: inset 0 0 0 1px var(--color-warning-border);
+
+    &.merge-resolved {
+      box-shadow: inset 0 0 0 1px var(--color-success-border);
+    }
+  }
+
+  & .merge-spacer {
+    background: repeating-linear-gradient(135deg, transparent 0 6px, var(--color-subtle-overlay) 6px 7px);
   }
 }

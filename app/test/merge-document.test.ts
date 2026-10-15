@@ -79,3 +79,37 @@ test('diff anchors follow unchanged context across unequal insertions and repeat
   assert.equal(mapMergePosition(chunks, target, true), source);
   assert.equal(mapMergePosition(chunks, a.length), b.length);
 });
+
+test('revisiting a resolved region preserves later decisions and edits at its boundary', () => {
+  const prepared = prepareMerge(
+    '<<<<<<< ours\none\n=======\nother one\n>>>>>>> theirs\ncontext\n<<<<<<< ours\ntwo\n=======\nother two\n>>>>>>> theirs\ntail\n'
+  );
+  const document = mergeDocument(prepared.regions);
+  let state = EditorState.create({ doc: prepared.text, extensions: [history(), document.field, document.history] });
+  const dispatch = (transaction: Transaction) => {
+    state = transaction.state;
+  };
+  dispatch(state.update({ effects: setMergeRegions.of(prepared.regions.map(region => ({ ...region, resolved: true }))) }));
+  const first = state.field(document.field)[0];
+  dispatch(state.update({ changes: { from: first.to, insert: '// keep this edit\n' }, annotations: isolateHistory.of('full') }));
+  const before = state.doc.toString();
+  const regions = state.field(document.field);
+  assert.equal(regions[0].to, first.to, 'An edit after a conflict must not become part of the conflict');
+  dispatch(
+    state.update({
+      effects: setMergeRegions.of(regions.map(region => (region.id === 0 ? { ...region, resolved: false } : region))),
+      annotations: isolateHistory.of('full')
+    })
+  );
+  assert.equal(state.doc.toString(), before, 'Reopening keeps the edited result');
+  assert.equal(state.field(document.field)[1].resolved, true, 'Later decisions stay resolved');
+  const current = state.field(document.field)[0];
+  dispatch(
+    state.update({ changes: { from: current.from, to: current.to, insert: current.theirs }, annotations: isolateHistory.of('full') })
+  );
+  assert.equal(state.doc.toString(), 'other one\n// keep this edit\ncontext\ntwo\ntail\n');
+  assert.ok(undo({ state, dispatch }));
+  assert.equal(state.doc.toString(), before);
+  assert.ok(undo({ state, dispatch }));
+  assert.ok(state.field(document.field).every(region => region.resolved));
+});

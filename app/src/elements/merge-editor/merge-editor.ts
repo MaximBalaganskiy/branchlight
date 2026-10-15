@@ -1,5 +1,6 @@
 import { bindable, INode, resolve } from 'aurelia';
 import type { ConflictContent } from '../../interfaces/conflict-content';
+import type { MergeConflictOption } from '../../interfaces/merge-conflict-option';
 import type { MergeSession } from './merge-session';
 import { hasConflictMarkers } from '../../services/merge-conflicts';
 import '../code-editor/code-editor.css';
@@ -30,10 +31,14 @@ export class MergeEditor {
   value = '';
   remaining = 0;
   active = 0;
+  choices: MergeConflictOption[] = [];
+  selectedConflict = 0;
+  currentResolved = false;
   dirty = false;
   ready = false;
   showBase = false;
   syncScroll = true;
+  alignmentLimited = false;
   error = '';
   oursSize = Math.max(180, Math.min(420, Math.round(window.innerWidth * 0.27)));
   theirsSize = this.oursSize;
@@ -43,6 +48,9 @@ export class MergeEditor {
       return 'Loading merge editor…';
     }
     if (this.remaining) {
+      if (this.currentResolved) {
+        return `Conflict ${this.selectedConflict + 1} resolved · ${this.remaining} remaining`;
+      }
       return `Conflict ${this.active + 1} of ${this.remaining} remaining`;
     }
     return hasConflictMarkers(this.value)
@@ -75,7 +83,14 @@ export class MergeEditor {
       this.value = this.session.value;
       this.remaining = this.session.remaining.length;
       this.active = this.session.remaining.findIndex(region => region.id === this.session?.current?.id);
+      this.selectedConflict = this.session.current?.id ?? 0;
+      this.currentResolved = this.session.current?.resolved ?? false;
+      this.choices = this.session.regions.map(region => ({
+        id: region.id,
+        label: `Conflict ${region.id + 1} · ${region.resolved ? 'Resolved' : 'Unresolved'}`
+      }));
       this.dirty = this.session.dirty;
+      this.alignmentLimited = this.session.alignmentLimited;
       if (changed) {
         this.host.dispatchEvent(new CustomEvent('resolution-changed', { bubbles: true }));
       }
@@ -90,6 +105,16 @@ export class MergeEditor {
 
   navigate(direction: number) {
     this.session?.navigate(direction);
+  }
+
+  selectConflict() {
+    this.session?.selectRegion(this.selectedConflict);
+  }
+
+  reopen() {
+    if (!this.busy) {
+      this.session?.reopen();
+    }
   }
 
   undo() {

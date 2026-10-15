@@ -21,7 +21,9 @@ export function mapRegions(regions: readonly MergeRegion[], changes: ChangeDesc)
   return regions.map(region => ({
     ...region,
     from: changes.mapPos(region.from, -1),
-    to: changes.mapPos(region.to, 1)
+    // The end is the start of the following line. Typing there must stay outside
+    // this region when an earlier resolution is revisited.
+    to: changes.mapPos(region.to, region.from === region.to ? 1 : -1)
   }));
 }
 

@@ -26,7 +26,8 @@ const path = require('node:path');
   await git(repo, ['switch', '-c', 'feature']);
   const theirs = base
     .replaceAll('"base"', '"theirs"')
-    .replace('// tail', '// automatic merge')
+    .replace('const last = "theirs";\r\n', 'const last = "theirs";\r\nconst extra = 1;\r\nconst more = 2;\r\n')
+    .replace('// tail\r\n', '// automatic merge\r\n')
     .replace('// context 30\r\n', '// inserted A\r\n// inserted B\r\n// context 30\r\n');
   await fs.writeFile(file, theirs);
   await git(repo, ['commit', '-am', 'Theirs']);
@@ -49,6 +50,18 @@ const path = require('node:path');
     await commit.getByRole('button', { name: 'Resolve conflict…', exact: true }).click();
     const dialog = commit.getByRole('dialog');
     const result = dialog.getByRole('textbox', { name: 'Resolved content', exact: true });
+    const assertAligned = async labels => {
+      await commit.waitForFunction(expected => {
+        const panes = [...document.querySelectorAll('.merge-panes .cm-scroller')];
+        return expected.every(text => {
+          const tops = panes.map(pane => {
+            const line = [...pane.querySelectorAll('.cm-line')].find(line => line.textContent === text);
+            return line ? line.getBoundingClientRect().top - pane.getBoundingClientRect().top : null;
+          });
+          return tops.length === 3 && tops.every(top => top !== null && Math.abs(top - tops[0]) < 1);
+        });
+      }, labels);
+    };
     await result.waitFor();
     await dialog.getByText('Conflict 1 of 2 remaining', { exact: true }).waitFor();
     assert.ok(!(await result.innerText()).includes('<<<<<<<'), 'The result should contain code, not Git markers');
@@ -69,6 +82,12 @@ const path = require('node:path');
     await commit.keyboard.press('Control+Home');
     // Follow corresponding lines through source-only/automatically merged insertions.
     const scroller = dialog.locator('.merge-result .cm-scroller');
+    await scroller.evaluate(element => {
+      element.scrollTop = 500;
+    });
+    await assertAligned(['// context 28', '// context 32']);
+    await dialog.locator('.merge-side .merge-spacer').first().waitFor({ state: 'attached' });
+    await commit.screenshot({ path: path.resolve('test-results/merge-alignment.png') });
     await scroller.evaluate(element => {
       element.scrollTop = 1050;
     });
@@ -144,6 +163,7 @@ const path = require('node:path');
     await result.focus();
     await commit.keyboard.press('F7');
     await dialog.getByText('Conflict 2 of 2 remaining', { exact: true }).waitFor();
+    await assertAligned(['// tail context 0', '// tail context 3']);
     await commit.keyboard.press('Shift+F7');
     await dialog.getByText('Conflict 1 of 2 remaining', { exact: true }).waitFor();
     await dialog.getByRole('button', { name: 'Accept ours', exact: true }).click();
@@ -169,6 +189,30 @@ const path = require('node:path');
     await result.focus();
     await commit.keyboard.press('Control+End');
     await commit.keyboard.insertText('// reviewed\n');
+    // Editing outside the first region must survive changing that earlier decision.
+    await result.press('Control+Home');
+    await result.press('ArrowDown');
+    await result.press('Home');
+    await commit.keyboard.insertText('// keep boundary edit\n');
+    await dialog.getByRole('button', { name: 'Review conflict', exact: true }).click();
+    await dialog.getByRole('option', { name: 'Conflict 1 · Resolved', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Accept theirs', exact: true }).click();
+    await dialog.getByText('All conflicts resolved — review the result', { exact: true }).waitFor();
+    assert.ok((await result.innerText()).includes('// keep boundary edit'));
+    await dialog.getByRole('button', { name: 'Reopen conflict', exact: true }).click();
+    await dialog.getByText('Conflict 1 of 1 remaining', { exact: true }).waitFor();
+    await dialog.getByRole('button', { name: 'Save result and stage', exact: true }).click();
+    await dialog
+      .getByRole('alert')
+      .getByText(/Resolve each conflict before saving/)
+      .waitFor();
+    await dialog.getByRole('button', { name: 'Undo', exact: true }).click();
+    await dialog.getByText('All conflicts resolved — review the result', { exact: true }).waitFor();
+    await dialog.getByRole('button', { name: 'Reopen conflict', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Accept ours', exact: true }).click();
+    await dialog.getByText('All conflicts resolved — review the result', { exact: true }).waitFor();
+    await commit.screenshot({ path: path.resolve('test-results/merge-revisited.png') });
+    await result.press('Control+End');
     await commit.screenshot({ path: path.resolve('test-results/internal-resolver.png') });
     // Explicit decisions must not bypass Git's marker check after a manual edit.
     await commit.keyboard.insertText('<<<<<<< manual\n');
@@ -193,7 +237,8 @@ const path = require('node:path');
     await fs.writeFile(file, conflicted);
     await dialog.getByRole('button', { name: 'Save result and stage', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
-    const expected = theirs.replace('const first = "theirs";', 'const first = "ours";') + '// reviewed\r\n';
+    const expected =
+      theirs.replace('const first = "theirs";\r\n', 'const first = "ours";\r\n// keep boundary edit\r\n') + '// reviewed\r\n';
     assert.equal(await fs.readFile(file, 'utf8'), expected);
     assert.equal((await git(repo, ['show', ':sample.ts'])).stdout, expected);
     assert.equal((await git(repo, ['ls-files', '-u'])).stdout, '');
