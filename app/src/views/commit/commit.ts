@@ -25,6 +25,8 @@ export class Commit extends ValidatedForm {
   private diffGeneration = 0;
   private resizeObserver?: ResizeObserver;
   stagingPane!: HTMLElement;
+  fileSearchForm!: HTMLElement;
+  filesSplitter!: HTMLElement;
   editorPane!: HTMLElement;
   unstagedHeight = 300;
   messageHeight = 300;
@@ -158,12 +160,14 @@ export class Commit extends ValidatedForm {
   attached() {
     window.addEventListener('keydown', this.onKey);
     this.resizeObserver = new ResizeObserver(() => {
-      this.unstagedMax = Math.max(80, this.stagingPane.clientHeight - 160);
+      const availableFilesHeight = this.stagingPane.clientHeight - this.fileSearchForm.offsetHeight - this.filesSplitter.offsetHeight;
+      this.unstagedMax = Math.max(80, availableFilesHeight - 100);
       this.messageMax = Math.max(180, this.editorPane.clientHeight - 140);
       this.unstagedHeight = Math.min(this.unstagedHeight, this.unstagedMax);
       this.messageHeight = Math.min(this.messageHeight, this.messageMax);
     });
     this.resizeObserver.observe(this.stagingPane);
+    this.resizeObserver.observe(this.fileSearchForm);
     this.resizeObserver.observe(this.editorPane);
   }
 

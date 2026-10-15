@@ -140,7 +140,7 @@ const path = require('node:path');
     await dialog.getByRole('textbox', { name: 'Remote name', exact: true }).fill('bad name');
     await dialog.getByRole('textbox', { name: 'Remote URL', exact: true }).fill(other);
     await dialog.getByRole('button', { name: 'Create remote', exact: true }).click();
-    await dialog.getByRole('alert').waitFor();
+    await dialog.locator('.ui-input__error').filter({ hasText: 'must not contain spaces' }).waitFor();
     await dialog.getByRole('textbox', { name: 'Remote name', exact: true }).fill('upstream');
     await dialog.getByRole('textbox', { name: 'Remote URL', exact: true }).press('Enter');
     await dialog.waitFor({ state: 'hidden' });

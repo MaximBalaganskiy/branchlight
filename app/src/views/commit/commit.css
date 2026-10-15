@@ -16,10 +16,6 @@
   }
 }
 
-.unstaged-section {
-  max-height: calc(100% - 160px);
-}
-
 .message-composer {
   max-height: calc(100% - 140px);
 

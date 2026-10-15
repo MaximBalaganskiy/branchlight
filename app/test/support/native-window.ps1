@@ -94,16 +94,16 @@ switch ($Action) {
       $edgeBounds = New-Object int[] 4
       [void][NativeWindow]::GetWindowRect($script:targetWindow, $edgeBounds)
       $origin.Y = [int](($edgeBounds[1] + $edgeBounds[3]) / 2)
-      $foundEdge = $false
+      $edgePoints = @()
       for ($offset = 1; $offset -le 24; $offset++) {
         $origin.X = $edgeBounds[2] - $offset
         $pointValue = (($origin.Y -band 0xFFFF) -shl 16) -bor ($origin.X -band 0xFFFF)
         if ([NativeWindow]::SendMessage($script:targetWindow, 0x84, [IntPtr]::Zero, [IntPtr]$pointValue).ToInt64() -eq 11) {
-          $foundEdge = $true
-          break
+          $edgePoints += $origin.X
         }
       }
-      if (-not $foundEdge) { throw 'No native right resize edge was found on the test window.' }
+      if (-not $edgePoints.Count) { throw 'No native right resize edge was found on the test window.' }
+      $origin.X = $edgePoints[[int][Math]::Floor($edgePoints.Count / 2)]
     } else {
       $origin.X = $StartX
       $origin.Y = $StartY
@@ -126,6 +126,8 @@ switch ($Action) {
       }
     } finally {
       [NativeWindow]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero)
+      # Let the native move/size loop consume button-up before restoring the cursor.
+      Start-Sleep -Milliseconds 150
       [void][NativeWindow]::SetCursorPos($cursor.X, $cursor.Y)
     }
     Start-Sleep -Milliseconds 150

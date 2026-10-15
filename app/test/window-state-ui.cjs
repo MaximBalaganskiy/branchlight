@@ -98,7 +98,10 @@ const execute = promisify(execFile);
       '-DeltaY',
       '20'
     ]);
-    assert.ok(afterDrag.x >= beforeDrag.x + 15 && afterDrag.y >= beforeDrag.y + 10, 'Dragging the header must move the native window');
+    assert.ok(
+      afterDrag.x >= beforeDrag.x + 15 && afterDrag.y >= beforeDrag.y + 10,
+      `Dragging the header must move the native window: ${JSON.stringify({ beforeDrag, afterDrag, dragBounds, scale, display })}`
+    );
     const afterResize = await windowAction('main', 'resize-edge', ['-DeltaX', '40', '-DeltaY', '0']);
     assert.ok(
       afterResize.width >= afterDrag.width + 20,

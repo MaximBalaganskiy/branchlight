@@ -19,7 +19,7 @@
 </div>
 <div class="commit-workspace flex min-h-0 flex-1 bg-card">
   <aside ref="stagingPane" class="staging-sidebar flex w-[330px] min-h-0 shrink-0 flex-col bg-card-muted">
-    <ui-form class="block shrink-0 px-2">
+    <ui-form ref="fileSearchForm" class="block shrink-0 px-2">
       <ui-input class="col-span-12" label="Find changed files" value.bind="fileQuery">
         <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="10" cy="10" r="6"></circle>
@@ -44,7 +44,7 @@
         </div>
       </div>
     </section>
-    <ui-splitter direction="vertical" size.bind="unstagedHeight" min.bind="80" max.bind="unstagedMax" storage-key="commit-unstaged" aria-label="Resize unstaged and staged files"></ui-splitter>
+    <ui-splitter ref="filesSplitter" direction="vertical" size.bind="unstagedHeight" min.bind="80" max.bind="unstagedMax" storage-key="commit-unstaged" aria-label="Resize unstaged and staged files"></ui-splitter>
     <section class="stage-section flex min-h-0 flex-1 flex-col">
       <div class="stage-heading flex shrink-0 items-center justify-between gap-2 px-2.5 py-2">
         <h2>

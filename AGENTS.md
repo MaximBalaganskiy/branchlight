@@ -7,6 +7,7 @@ Follow the Aurelia 2 and desktop UI conventions below.
 - Prefer inline Tailwind utilities for local layout. Use nested CSS for reusable styles, component internals, and states that are clearer as selectors.
 - Keep opening-tag attributes on one line. Do not format one attribute per line.
 - Use `button ui-button`, `button ui-icon-button`, and `ui-input`; do not manually add `as-element`.
+- Put input groups in `ui-form`. Form buttons must be direct children so the shipped theme aligns them with the controls. Put field hints in helper subscripts and use Aurelia Validation with the Headless presenter.
 - Use inset labels by default through headless field configuration. Offer Normal and Compact density using the shipped theme; Normal is the default.
 - Use `UiToastService` for notifications. It creates its own region; never mount a second host or region.
 - Put views in their own folders. Put each named class or interface in its own file.
