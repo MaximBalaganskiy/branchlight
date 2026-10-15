@@ -1,4 +1,8 @@
 import type { Snapshot } from './snapshot';
+import type { ReflogEntry } from './reflog-entry';
+import type { Tag } from './tag';
+import type { Submodule } from './submodule';
+import type { LfsStatus } from './lfs-status';
 import type { Detail } from './detail';
 import type { DiffRequest } from './diff-request';
 import type { CommandEntry } from './command-entry';
@@ -14,6 +18,10 @@ import type { RebaseStep } from './rebase-step';
 import type { RepositoryRequest } from './repository-request';
 
 export interface GitClient {
+  reflog(): Promise<ReflogEntry[]>;
+  tags(): Promise<Tag[]>;
+  submodules(): Promise<Submodule[]>;
+  lfsStatus(): Promise<LfsStatus>;
   createRepository(request: RepositoryRequest): Promise<string>;
   chooseDirectory(): Promise<string | null>;
   rebasePlan(reference: string): Promise<RebaseStep[]>;

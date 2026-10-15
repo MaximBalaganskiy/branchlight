@@ -15,6 +15,44 @@ use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
+pub async fn reflog(
+  app: AppHandle,
+  window: WebviewWindow,
+) -> Result<Vec<crate::models::reflog_entry::ReflogEntry>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.reflog(&repo))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn tags(app: AppHandle, window: WebviewWindow) -> Result<Vec<crate::models::tag::Tag>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.tags(&repo))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn submodules(
+  app: AppHandle,
+  window: WebviewWindow,
+) -> Result<Vec<crate::models::submodule::Submodule>, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.submodules(&repo))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn lfs_status(app: AppHandle, window: WebviewWindow) -> Result<crate::models::lfs_status::LfsStatus, String> {
+  let repo = app.state::<AppState>().repo(window.label())?;
+  tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().git.lfs_status(&repo))
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
 pub async fn create_repository(
   app: AppHandle,
   window: WebviewWindow,

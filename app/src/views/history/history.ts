@@ -11,6 +11,11 @@ import { PublishDialog } from './publish-dialog/publish-dialog';
 import { StashesDialog } from './stashes-dialog/stashes-dialog';
 import { BranchDialog } from './branch-dialog/branch-dialog';
 import { HistoryOperationDialog } from './history-operation-dialog/history-operation-dialog';
+import { ReflogDialog } from './reflog-dialog/reflog-dialog';
+import { TagsDialog } from './tags-dialog/tags-dialog';
+import { SubmodulesDialog } from './submodules-dialog/submodules-dialog';
+import { LfsDialog } from './lfs-dialog/lfs-dialog';
+import type { RepositoryToolDialog } from './repository-tool-dialog';
 import type { UiMenu } from '@aurelia-ui-toolkits/headless';
 import type { Commit } from '../../interfaces/commit';
 import type { Branch } from '../../interfaces/branch';
@@ -25,6 +30,19 @@ import './details.css';
 import './commit-details.css';
 
 export class History {
+  toolsOpen = false;
+  toolsAnchor!: HTMLElement;
+
+  async repositoryTool(action: string) {
+    const component = { reflog: ReflogDialog, tags: TagsDialog, submodules: SubmodulesDialog, lfs: LfsDialog }[action];
+    if (component) {
+      try {
+        await this.dialogs.open<RepositoryToolDialog>({ component });
+      } catch (error) {
+        this.workspace.fail(error);
+      }
+    }
+  }
   readonly workspace = resolve(WorkspaceService);
   readonly appearance = resolve(AppearanceService);
   private dialogs = resolve(IDialogService);
@@ -71,6 +89,8 @@ export class History {
       }
     } else if (action === 'branch') {
       await this.createBranch(commit.hash);
+    } else if (action === 'tag') {
+      await this.dialogs.open({ component: TagsDialog, model: commit.hash });
     } else if (action === 'merge') {
       await this.mergeReference(commit.hash, commit.subject);
     } else if (['cherry-pick', 'revert', 'reset', 'rebase', 'rebase-plan'].includes(action)) {

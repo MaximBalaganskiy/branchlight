@@ -5,6 +5,7 @@ pub mod parsers;
 mod partial;
 pub mod process;
 mod repositories;
+mod repository_tools;
 pub mod sequence_editor;
 pub mod service;
 mod tree;

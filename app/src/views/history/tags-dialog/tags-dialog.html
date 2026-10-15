@@ -1,0 +1,41 @@
+<template class="repository-tool-dialog flex w-[780px] max-w-[90vw] max-h-[90vh] min-w-0 flex-col gap-3 overflow-hidden p-5">
+  <h2 class="text-xl!">Tags</h2>
+  <ui-input label="Search tags" value.bind="query"><span au-slot="leading">⌕</span></ui-input>
+  <div class="min-h-0 max-h-60 overflow-auto">
+    <ui-list items.bind="filtered" selected.bind="selected" typeahead-field="name" aria-label="Tags">
+      <ui-list-item repeat.for="tag of filtered; key: name" value.bind="tag">
+        <div class="min-w-0">
+          <strong>${tag.name}</strong>
+          <div class="break-words text-sm text-ink-500">${tag.target.slice(0, 10)} · ${tag.annotated ? 'Annotated' : 'Lightweight'} · ${tag.message}</div>
+        </div>
+      </ui-list-item>
+    </ui-list>
+    <p if.bind="!filtered.length">${loading ? 'Loading…' : 'No tags found.'}</p>
+  </div>
+  <div if.bind="selected" class="flex flex-wrap items-center gap-2">
+    <div class="w-48 min-w-0 shrink-0">
+      <ui-select label="Tag remote" items.bind="remotes" value.bind="remote" value-field="name" label-field="name">
+        <ui-list><ui-list-item repeat.for="remote of $host.items; key: name" value.bind="remote">${remote.name}</ui-list-item></ui-list>
+      </ui-select>
+    </div>
+    <button ui-button click.trigger="selectedAction('tag-push')" disabled.bind="!remote || workspace.busy">Push selected tag</button>
+    <button ui-button danger click.trigger="deletingRemote = true" disabled.bind="!remote || workspace.busy">Delete remote tag…</button>
+    <button ui-button danger if.bind="deletingRemote" click.trigger="selectedAction('tag-delete-remote')" disabled.bind="!remote || workspace.busy">Delete ${selected.name} from ${remote}</button>
+    <button ui-button danger click.trigger="deleting = true" disabled.bind="workspace.busy">Delete local tag…</button>
+    <button ui-button danger if.bind="deleting" click.trigger="selectedAction('tag-delete')" disabled.bind="workspace.busy">Delete ${selected.name}</button>
+  </div>
+  <form class="grid shrink-0 gap-3 border-t border-card-border pt-3" submit.trigger:prevent="create()">
+    <div class="flex gap-3">
+      <ui-input class="min-w-0 flex-1" label="Tag name" value.bind="name"></ui-input>
+      <ui-input class="min-w-0 flex-1" label="Tag target" value.bind="reference"></ui-input>
+    </div>
+    <ui-input label="Annotation (leave empty for a lightweight tag)" value.bind="message"></ui-input>
+    <button ui-button primary type="submit" disabled.bind="!name || !reference || workspace.busy || loading">Create tag</button>
+  </form>
+  <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+  <p role="status" class="text-sm">${status}</p>
+  <div class="flex justify-end gap-2">
+    <button ui-button click.trigger="refresh()" disabled.bind="loading || workspace.busy">Refresh tags</button>
+    <button ui-button click.trigger="close()" disabled.bind="loading || workspace.busy">Close</button>
+  </div>
+</template>

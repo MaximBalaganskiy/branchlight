@@ -1,4 +1,8 @@
 import { resolve } from 'aurelia';
+import type { ReflogEntry } from '../interfaces/reflog-entry';
+import type { Tag } from '../interfaces/tag';
+import type { Submodule } from '../interfaces/submodule';
+import type { LfsStatus } from '../interfaces/lfs-status';
 import { AlertService } from '@aurelia-ui-toolkits/headless';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -20,6 +24,22 @@ import type { RepositoryRequest } from '../interfaces/repository-request';
 
 export class TauriGitClient implements GitClient {
   private alerts = resolve(AlertService);
+
+  reflog() {
+    return this.request<ReflogEntry[]>('reflog');
+  }
+
+  tags() {
+    return this.request<Tag[]>('tags');
+  }
+
+  submodules() {
+    return this.request<Submodule[]>('submodules');
+  }
+
+  lfsStatus() {
+    return this.request<LfsStatus>('lfs_status');
+  }
 
   createRepository(request: RepositoryRequest) {
     return this.request<string>('create_repository', { request });

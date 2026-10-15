@@ -354,6 +354,11 @@ impl GitService {
       .try_lock()
       .map_err(|_| "Another Git operation is running for this repository.")?;
     match action {
+      "reflog-recover" | "tag-create" | "tag-delete" | "tag-push" | "tag-delete-remote" | "submodule-add"
+      | "submodule-update" | "submodule-sync" | "submodule-remove" | "lfs-install" | "lfs-track" | "lfs-untrack"
+      | "lfs-pull" | "lfs-fetch" | "lfs-push" => {
+        self.repository_tool_action(repo, action, payload)?;
+      }
       "branch-rename" | "branch-delete" | "branch-upstream" | "reset" | "cherry-pick" | "revert" | "rebase"
       | "rebase-plan" | "operation-continue" | "operation-skip" | "operation-abort" => {
         self.history_action(repo, action, payload)?;
