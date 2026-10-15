@@ -1,6 +1,7 @@
 import { INode, observable, resolve, watch } from 'aurelia';
 import { WorkspaceService } from '../../services/workspace-service';
 import { buildBranchTree } from '../../services/branch-tree';
+import { BranchTreeState } from '../../services/branch-tree-state';
 import type { BranchTreeNode } from '../../interfaces/branch-tree-node';
 import type { Branch } from '../../interfaces/branch';
 import type { Remote } from '../../interfaces/remote';
@@ -10,6 +11,7 @@ import './repository-sidebar.css';
 export class RepositorySidebar {
   readonly workspace = resolve(WorkspaceService);
   private element = resolve(INode) as HTMLElement;
+  private treeState = resolve(BranchTreeState);
   private expansion = new Map<string, boolean>();
   private repository = '';
   private unsubscribe?: () => void;
@@ -118,7 +120,7 @@ export class RepositorySidebar {
   rebuildTree() {
     if (this.repository !== this.workspace.repo) {
       this.repository = this.workspace.repo;
-      this.expansion.clear();
+      this.expansion = this.treeState.load(this.repository);
       this.selectedNode = '';
       this.remotes = [];
       this.contextRemote = null;
@@ -129,6 +131,7 @@ export class RepositorySidebar {
   rememberExpansion(node: BranchTreeNode, expanded: boolean) {
     if (!this.branchSearch.trim()) {
       this.expansion.set(node.id, expanded);
+      this.treeState.save(this.repository, this.expansion);
     }
   }
 

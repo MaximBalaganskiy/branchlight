@@ -21,6 +21,8 @@ const path = require('node:path');
     await fs.writeFile(path.join(directory, 'binary.bin'), Buffer.from([0, 1, 2]));
     await git(directory, ['add', '--all']);
     await git(directory, ['commit', '-m', directory === repo ? 'Original snapshot' : 'Other repository']);
+    await git(directory, ['branch', 'feat/auth/login']);
+    await git(directory, ['tag', 'release/v1']);
   }
   await fs.writeFile(path.join(repo, 'src', 'sample.ts'), 'export const version = 2;\n');
   await git(repo, ['rm', 'removed.txt']);
@@ -34,11 +36,16 @@ const path = require('node:path');
   const missing = path.join(root, 'missing');
   await fs.mkdir(profile);
   await fs.writeFile(path.join(profile, 'repositories.json'), JSON.stringify([repo, other, missing]));
-  const app = await launchTauri(repo, profile);
+  let app = await launchTauri(repo, profile);
   const errors = [];
-  const page = app.page;
+  let page = app.page;
   page.setDefaultTimeout(10000);
   page.on('pageerror', error => errors.push(error.message));
+  const branchRow = id =>
+    page
+      .getByRole('tree', { name: 'Repository references', exact: true })
+      .getByRole('treeitem')
+      .filter({ has: page.locator(`[data-reference-id="${id}"]`) });
   try {
     await page.locator('.commit-row').first().waitFor();
     await page.getByRole('tab', { name: 'Files', exact: true }).click();
@@ -64,6 +71,18 @@ const path = require('node:path');
     await files.locator('[title="binary.bin"]').click();
     await page.getByText('Binary or non-UTF-8 file — no text preview available.', { exact: true }).waitFor();
 
+    const authFolder = branchRow('folder:local:feat/auth/');
+    await authFolder.focus();
+    await authFolder.press('ArrowLeft');
+    assert.equal(await authFolder.getAttribute('aria-expanded'), 'false');
+    await branchRow('section:tag').click();
+    await branchRow('section:remote').click();
+    const search = page.getByRole('textbox', { name: 'Find a branch', exact: true });
+    await search.fill('feat/auth/login');
+    assert.equal(await authFolder.getAttribute('aria-expanded'), 'true');
+    await authFolder.click();
+    await search.fill('');
+    assert.equal(await authFolder.getAttribute('aria-expanded'), 'false');
     const dropdown = page.getByRole('button', { name: 'Repository menu', exact: true });
     assert.equal(
       await page
@@ -77,6 +96,9 @@ const path = require('node:path');
     await page.screenshot({ path: path.resolve('test-results/repository-menu.png') });
     await page.getByText(other, { exact: true }).click();
     await page.getByRole('button', { name: 'Other repository', exact: true }).waitFor();
+    assert.equal(await authFolder.getAttribute('aria-expanded'), 'true', 'Repositories with the same basename have independent state');
+    assert.equal(await branchRow('section:tag').getAttribute('aria-expanded'), 'false');
+    await branchRow('section:local').click();
     assert.equal(await page.getByRole('button', { name: 'Updated snapshot', exact: true }).count(), 0);
     await dropdown.click();
     await page.getByText(missing, { exact: true }).click();
@@ -85,6 +107,10 @@ const path = require('node:path');
     await dropdown.click();
     await page.getByText(repo, { exact: true }).click();
     await page.getByRole('button', { name: 'Updated snapshot', exact: true }).waitFor();
+    assert.equal(await authFolder.getAttribute('aria-expanded'), 'false');
+    assert.equal(await branchRow('section:tag').getAttribute('aria-expanded'), 'true');
+    assert.equal(await branchRow('section:remote').getAttribute('aria-expanded'), 'false');
+    await branchRow('section:remote').click();
     await dropdown.focus();
     await dropdown.press('ArrowDown');
     await page.getByRole('option').filter({ hasText: 'Open repository…' }).waitFor();
@@ -139,9 +165,33 @@ const path = require('node:path');
     await page.getByRole('option', { name: 'Fetch remote', exact: true }).click();
     await page.locator('[data-reference-id="refs/remotes/upstream/main"]').waitFor();
     await page.screenshot({ path: path.resolve('test-results/remotes-tree.png') });
+    await app.close();
+    app = await launchTauri(repo, profile);
+    page = app.page;
+    page.setDefaultTimeout(10000);
+    page.on('pageerror', error => errors.push(error.message));
+    await page.locator('.commit-row').first().waitFor();
+    assert.equal(await branchRow('folder:local:feat/auth/').getAttribute('aria-expanded'), 'false');
+    assert.equal(await branchRow('section:tag').getAttribute('aria-expanded'), 'true');
+    await page.getByRole('button', { name: 'Repository menu', exact: true }).click();
+    await page.getByText(other, { exact: true }).click();
+    await page.waitForFunction(
+      directory =>
+        document.querySelector('repository-switcher button')?.getAttribute('title')?.replaceAll('\\', '/') ===
+        directory.replaceAll('\\', '/'),
+      other
+    );
+    await page.getByRole('button', { name: 'Other repository', exact: true }).waitFor();
+    assert.equal(await branchRow('section:local').getAttribute('aria-expanded'), 'false');
+    await page.evaluate(directory => {
+      localStorage.setItem(`branchlight:branch-tree:${directory.replaceAll('\\', '/').toLowerCase()}`, '{invalid');
+    }, other);
+    await page.reload();
+    await page.locator('.commit-row').first().waitFor();
+    assert.equal(await branchRow('section:local').getAttribute('aria-expanded'), 'true', 'Unreadable preferences fall back to defaults');
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: historical file tree, highlighted contents, empty/binary previews, repository switching/recovery, remote tree CRUD, unfetched remotes, keyboard actions, validation, and fetch.'
+      'PASS: file browsing, repository switching, remote CRUD, and per-repository tree state across search, switching, restart, and invalid preferences.'
     );
   } catch (error) {
     console.log('Renderer errors:', errors);
