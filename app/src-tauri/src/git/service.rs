@@ -281,6 +281,9 @@ impl GitService {
       } else {
         vec!["show", "--format=", hash]
       };
+      if request.full_file {
+        args.push("--unified=2147483647");
+      }
       args.extend([
         "--no-ext-diff",
         "--no-textconv",
@@ -331,6 +334,9 @@ impl GitService {
     ];
     if request.staged {
       args.push("--cached");
+    }
+    if request.full_file {
+      args.push("--unified=2147483647");
     }
     args.extend(["--", &request.path]);
     self.text(repo, &args)

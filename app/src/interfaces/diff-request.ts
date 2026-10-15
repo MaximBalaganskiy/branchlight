@@ -3,4 +3,5 @@ export interface DiffRequest {
   hash?: string;
   staged?: boolean;
   untracked?: boolean;
+  fullFile?: boolean;
 }

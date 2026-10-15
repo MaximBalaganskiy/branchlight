@@ -69,6 +69,7 @@
       <div class="diff-heading flex min-h-8 shrink-0 items-center justify-between gap-2.5 border-b border-card-border px-3.5 text-[11px]">
         <span>${workingFile ? workingFile.path : 'Review your changes'}</span>
         <span class="diff-mode ml-auto text-[9px] tracking-widest ${workingStaged ? 'text-accent' : ''}">${workingFile ? workingStaged ? 'STAGED' : 'UNSTAGED' : ''}</span>
+        <button ui-button click.trigger="toggleFullFile()" disabled.bind="!workingFile || diffLoading || workspace.busy" aria-pressed.bind="fullFile">${fullFile ? 'Show changes only' : 'Show full file'}</button>
         <button ui-button class="text-[11px]!" if.bind="workingFile && !workingFile.conflict" disabled.bind="workspace.busy" click.trigger="stage(workingFile, workingStaged)">${workingStaged ? '↑ Unstage file' : '↓ Stage file'}</button>
         <button ui-button if.bind="workingFile.index === '?'" click.trigger="ignore(workingFile)" disabled.bind="workspace.busy">Add to .gitignore</button>
         <button ui-button primary if.bind="workingFile.conflict" click.trigger="resolveConflict(workingFile)" disabled.bind="workspace.busy">Resolve conflict…</button>

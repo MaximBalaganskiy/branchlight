@@ -9,4 +9,6 @@ pub struct DiffRequest {
   pub staged: bool,
   #[serde(default)]
   pub untracked: bool,
+  #[serde(default)]
+  pub full_file: bool,
 }

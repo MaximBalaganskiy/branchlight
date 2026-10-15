@@ -23,6 +23,7 @@ export class Commit {
   workingStaged = false;
   diff = '';
   diffLoading = false;
+  fullFile = false;
   amendHead = '';
   private previousDraft = '';
 
@@ -183,6 +184,14 @@ export class Commit {
     }
   }
 
+  async toggleFullFile() {
+    this.fullFile = !this.fullFile;
+    if (this.workingFile) {
+      this.diffLoading = true;
+      await this.selectWorking(this.workingFile, this.workingStaged);
+    }
+  }
+
   async selectWorking(file: ChangedFile, staged: boolean) {
     const generation = ++this.diffGeneration;
     const changed = this.workingFile?.path !== file.path || this.workingStaged !== staged;
@@ -194,7 +203,7 @@ export class Commit {
     }
 
     try {
-      const text = await this.workspace.client.diff({ path: file.path, staged, untracked: file.index === '?' });
+      const text = await this.workspace.client.diff({ path: file.path, staged, untracked: file.index === '?', fullFile: this.fullFile });
       if (generation === this.diffGeneration) {
         this.diff = text || 'No text changes. This may be a rename, mode change or submodule.';
       }
@@ -292,6 +301,7 @@ export class Commit {
     return this.workspace.action('partial-stage', {
       paths: [this.workingFile?.path],
       staged: this.workingStaged,
+      full_file: this.fullFile,
       original: this.diff,
       lines
     });

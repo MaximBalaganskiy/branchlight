@@ -13,6 +13,7 @@ pub struct Mutation {
   pub original: Option<String>,
   pub lines: Option<Vec<usize>>,
   pub staged: Option<bool>,
+  pub full_file: Option<bool>,
   pub include_untracked: Option<bool>,
   pub expected_head: Option<String>,
   pub expected_branch: Option<String>,

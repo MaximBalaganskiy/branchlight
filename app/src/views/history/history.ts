@@ -40,6 +40,7 @@ export class History {
   selectedFile = '';
   diff = '';
   diffLoading = false;
+  fullFile = false;
   query = '';
   commandLog: CommandEntry[] = [];
   commitMenu!: UiMenu;
@@ -218,6 +219,13 @@ export class History {
     }
   }
 
+  async toggleFullFile() {
+    this.fullFile = !this.fullFile;
+    if (this.selectedFile) {
+      await this.selectFile(this.selectedFile);
+    }
+  }
+
   async selectFile(path: string) {
     if (!this.selected) {
       return;
@@ -229,7 +237,7 @@ export class History {
     this.diff = '';
 
     try {
-      const text = await this.workspace.client.diff({ path, hash: this.selected.hash });
+      const text = await this.workspace.client.diff({ path, hash: this.selected.hash, fullFile: this.fullFile });
       if (generation === this.diffGeneration) {
         this.diff = text || 'No text changes for this file.';
       }

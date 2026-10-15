@@ -36,6 +36,9 @@ impl GitService {
     if staged {
       args.push("--cached");
     }
+    if payload.full_file.unwrap_or(false) {
+      args.push("--unified=2147483647");
+    }
     args.extend(["--", path]);
     let current = String::from_utf8(self.run(repo, &args, false)?.stdout)
       .map_err(|_| "Partial staging requires UTF-8 text. Stage this file as a whole.")?;

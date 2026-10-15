@@ -195,6 +195,99 @@ fn amend_and_soft_undo_preserve_working_edits_and_reject_stale_head() {
 }
 
 #[test]
+fn full_file_diffs_keep_context_and_partial_staging_safe() {
+  let (temp, git) = repo();
+  let repo = temp.path();
+  let original = (1..=80).map(|n| format!("line {n}\n")).collect::<String>();
+  commit(&git, repo, &original, "Base");
+  let working = original
+    .replace("line 40\n", "changed 40\n")
+    .replace("line 70\n", "changed 70\n");
+  fs::write(repo.join("file.txt"), &working).unwrap();
+  assert!(!diff(&git, repo, false).contains(" line 1\n"));
+  let request = DiffRequest {
+    path: "file.txt".into(),
+    full_file: true,
+    ..Default::default()
+  };
+  let expanded = git.diff(repo, &request).unwrap();
+  assert!(expanded.contains(" line 1\n"));
+  assert!(expanded.contains(" line 80\n"));
+  let selected: Vec<_> = expanded
+    .lines()
+    .enumerate()
+    .filter(|(_, line)| ["-line 40", "+changed 40"].contains(line))
+    .map(|(index, _)| index)
+    .collect();
+  assert_eq!(selected.len(), 2);
+  action(
+    &git,
+    repo,
+    "partial-stage",
+    json!({
+      "paths":["file.txt"], "original":expanded, "lines":selected, "full_file":true
+    }),
+  );
+  assert_eq!(
+    content(&git, repo, ":file.txt"),
+    original.replace("line 40\n", "changed 40\n")
+  );
+  let staged = git
+    .diff(
+      repo,
+      &DiffRequest {
+        staged: true,
+        ..request
+      },
+    )
+    .unwrap();
+  assert!(staged.contains(" line 80\n"));
+  let selected: Vec<_> = staged
+    .lines()
+    .enumerate()
+    .filter(|(_, line)| ["-line 40", "+changed 40"].contains(line))
+    .map(|(index, _)| index)
+    .collect();
+  action(
+    &git,
+    repo,
+    "partial-stage",
+    json!({
+      "paths":["file.txt"], "original":staged, "lines":selected, "staged":true, "full_file":true
+    }),
+  );
+  assert_eq!(content(&git, repo, ":file.txt"), original);
+  fs::write(repo.join("file.txt"), "external change\n").unwrap();
+  let result = git.mutate(
+    repo,
+    "partial-stage",
+    &serde_json::from_value(json!({
+      "paths":["file.txt"], "original":expanded, "lines":[5], "full_file":true
+    }))
+    .unwrap(),
+  );
+  assert!(result.unwrap_err().contains("diff changed"));
+  commit(&git, repo, &working, "Changed middle");
+  let hash = git.resolve_reference(repo, "HEAD").unwrap();
+  fs::write(repo.join("file.txt"), "unrelated working copy\n").unwrap();
+  let historical = git
+    .diff(
+      repo,
+      &DiffRequest {
+        path: "file.txt".into(),
+        hash: Some(hash),
+        full_file: true,
+        ..Default::default()
+      },
+    )
+    .unwrap();
+  assert!(historical.contains(" line 1\n"));
+  assert!(historical.contains(" line 80\n"));
+  assert!(historical.contains("+changed 40\n"));
+  assert!(!historical.contains("unrelated working copy"));
+}
+
+#[test]
 fn partial_stage_and_unstage_preserve_other_changes_across_hunks() {
   let (temp, git) = repo();
   let repo = temp.path();
