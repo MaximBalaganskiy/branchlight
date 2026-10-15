@@ -63,8 +63,8 @@ const path = require('node:path');
     await commit.getByRole('button', { name: 'Resolve conflict…', exact: true }).waitFor();
     await commit.getByRole('button', { name: 'Resolve conflict…', exact: true }).click();
     const resolver = commit.getByRole('dialog');
-    assert.ok((await resolver.getByRole('textbox', { name: 'Ours', exact: true }).inputValue()).includes('ours'));
-    assert.ok((await resolver.getByRole('textbox', { name: 'Theirs', exact: true }).inputValue()).includes('theirs'));
+    assert.ok((await resolver.getByRole('textbox', { name: 'Ours', exact: true }).innerText()).includes('ours'));
+    assert.ok((await resolver.getByRole('textbox', { name: 'Theirs', exact: true }).innerText()).includes('theirs'));
     assert.ok(
       await resolver.evaluate(dialog => {
         const bounds = dialog.getBoundingClientRect();

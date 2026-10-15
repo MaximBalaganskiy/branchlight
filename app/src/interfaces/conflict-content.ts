@@ -4,4 +4,5 @@ export interface ConflictContent {
   theirs: string;
   working: string;
   editable: boolean;
+  preview: string | null;
 }

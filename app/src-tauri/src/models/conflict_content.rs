@@ -7,4 +7,5 @@ pub struct ConflictContent {
   pub theirs: String,
   pub working: String,
   pub editable: bool,
+  pub preview: Option<String>,
 }

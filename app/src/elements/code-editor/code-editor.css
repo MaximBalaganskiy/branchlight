@@ -1,0 +1,60 @@
+code-editor {
+  display: block;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+
+  & .cm-editor {
+    height: 100%;
+    background: var(--color-canvas);
+    color: var(--color-ink-900);
+
+    &.cm-focused {
+      outline: 1px solid var(--color-ring);
+      outline-offset: -1px;
+    }
+  }
+
+  & .cm-scroller {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 21px;
+    overflow: auto;
+  }
+
+  & .cm-editor .cm-gutters {
+    background: var(--color-canvas);
+    color: var(--color-ink-500);
+    border-right: 1px solid var(--color-card-border);
+  }
+
+  & .cm-editor .cm-activeLine {
+    background: var(--color-subtle-overlay);
+  }
+
+  & .cm-editor .merge-unresolved {
+    background: var(--color-warning-bg);
+    border-left: 3px solid var(--color-warning-border);
+  }
+
+  & .cm-editor .cm-cursor {
+    border-left-color: var(--color-ink-900);
+  }
+
+  & .cm-editor .cm-scroller .cm-selectionLayer .cm-selectionBackground,
+  & .cm-editor.cm-focused .cm-scroller .cm-selectionLayer .cm-selectionBackground {
+    background: var(--color-selected);
+  }
+}
+
+:root[data-theme='dark'] code-editor {
+  & .cm-editor {
+    color: var(--color-code-text);
+  }
+
+  & .cm-editor .cm-scroller .cm-selectionLayer .cm-selectionBackground,
+  & .cm-editor.cm-focused .cm-scroller .cm-selectionLayer .cm-selectionBackground {
+    background: #264e77;
+  }
+}

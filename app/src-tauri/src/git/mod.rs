@@ -1,3 +1,4 @@
+mod conflict_preview;
 mod daily;
 mod history;
 pub mod parsers;

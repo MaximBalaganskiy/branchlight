@@ -90,10 +90,12 @@ impl GitService {
     let destination = safe_working_path(repo, path)?;
     self.ensure_conflict(repo, path)?;
     let mut editable = true;
+    let mut all_sides = true;
     let mut stage_text = |stage: u8| -> Result<String, String> {
       let object = format!(":{stage}:{path}");
       let size = self.run(repo, &["cat-file", "-s", &object], true)?;
       if !size.status.success() {
+        all_sides = false;
         return Ok("[File absent on this side]".into());
       }
       if String::from_utf8_lossy(&size.stdout)
@@ -123,12 +125,18 @@ impl GitService {
         String::new()
       }
     };
+    let preview = if editable && all_sides {
+      self.conflict_preview(repo, &base, &ours, &theirs)
+    } else {
+      None
+    };
     Ok(ConflictContent {
       base,
       ours,
       theirs,
       working,
       editable,
+      preview,
     })
   }
 
@@ -305,10 +313,14 @@ impl GitService {
 }
 
 fn check_markers(text: &str) -> Result<(), String> {
-  if text
-    .lines()
-    .any(|line| line.starts_with("<<<<<<< ") || line == "=======" || line.starts_with(">>>>>>> "))
-  {
+  if text.lines().any(|line| {
+    let marker = line.as_bytes().first().copied().unwrap_or_default();
+    if !b"<|=>".contains(&marker) {
+      return false;
+    }
+    let width = line.bytes().take_while(|byte| *byte == marker).count();
+    width >= 7 && (width == line.len() || line.as_bytes()[width].is_ascii_whitespace())
+  }) {
     return Err("Remove conflict markers before marking the file resolved.".into());
   }
   Ok(())

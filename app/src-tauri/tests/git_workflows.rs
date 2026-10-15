@@ -36,6 +36,25 @@ fn merge_resolution_abort_and_stale_editor_protection() {
   assert_eq!(content.ours, "ours\n");
   assert_eq!(content.theirs, "theirs\n");
   assert!(content.editable);
+  let preview = content.preview.as_ref().unwrap();
+  assert!(preview.contains("||||||| Base\nbase\n=======\n"));
+  assert_eq!(fs::read_to_string(repo.join("conflict.txt")).unwrap(), content.working);
+  for text in [
+    "<<<<<<<<< ours\nleft\n=========\nright\n>>>>>>>>> theirs\n",
+    "||||||| base\n",
+    "=======\n",
+  ] {
+    assert!(service
+      .mutate(
+        repo,
+        "resolve",
+        &serde_json::from_value(serde_json::json!({
+          "paths": ["conflict.txt"], "choice": "edit", "original": content.working, "text": text
+        }))
+        .unwrap()
+      )
+      .is_err());
+  }
   assert!(service
     .mutate(
       repo,

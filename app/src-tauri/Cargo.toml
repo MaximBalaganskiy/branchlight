@@ -20,8 +20,6 @@ serde_json = "1"
 dunce = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 tauri-plugin-window-state = "2"
-
-[dev-dependencies]
 tempfile = "3"
 
 [features]
