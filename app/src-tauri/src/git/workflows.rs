@@ -442,6 +442,12 @@ fn read_text(path: &Path) -> Result<String, String> {
 
 fn safe_working_path(repo: &Path, path: &str) -> Result<PathBuf, String> {
   validation::path(path)?;
+  if path
+    .split(['/', '\\'])
+    .any(|part| part.trim_end_matches(['.', ' ']).eq_ignore_ascii_case(".git"))
+  {
+    return Err("Choose a working-file path outside Git's metadata directory.".into());
+  }
   let target = repo.join(path);
   let parent = dunce::canonicalize(target.parent().ok_or("Invalid path.")?).map_err(|error| error.to_string())?;
   let root = dunce::canonicalize(repo).map_err(|error| error.to_string())?;

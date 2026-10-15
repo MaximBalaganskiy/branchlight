@@ -222,6 +222,14 @@ fn binary_and_deleted_sides_are_explicit_and_rename_keeps_content() {
     &git,
     repo,
     "resolve",
+    json!({"paths":["file"],"choice":"ours","directory":".git/resolution"})
+  )
+  .is_err());
+  assert!(!repo.join(".git/resolution").exists());
+  assert!(action(
+    &git,
+    repo,
+    "resolve",
     json!({"paths":["file"],"choice":"ours","directory":"existing"})
   )
   .is_err());
