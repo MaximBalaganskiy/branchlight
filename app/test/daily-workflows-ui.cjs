@@ -58,6 +58,9 @@ const path = require('node:path');
     await commit.getByRole('button', { name: 'Unstage hunk', exact: true }).click();
     await commit.locator('.stage-section').nth(1).locator('.file-item[title="file.txt"]').waitFor({ state: 'hidden' });
     assert.equal((await git(repo, ['show', ':file.txt'])).stdout, original);
+    await commit.waitForFunction(() =>
+      [...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Show full file' && !button.disabled)
+    );
     await commit.getByRole('button', { name: 'Show full file', exact: true }).focus();
     await commit.keyboard.press('Enter');
     await commit.locator('.diff-content').getByText('line 12', { exact: true }).waitFor();
