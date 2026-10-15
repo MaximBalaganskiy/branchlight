@@ -1,0 +1,56 @@
+/* Rider's Visual Studio Code Dark Plus 2.9.0 by Alexander Makarov:
+   visual_studio_code_dark_plus.theme.json and its bundled editor scheme.
+   Override the shipped headless colour tokens; keep its components and densities. */
+:root[data-theme='dark'] {
+  --color-canvas: #1e1e1e;
+  --color-card: #252526;
+  --color-card-muted: #2d2d2d;
+  --color-card-border: #454545;
+  --color-ink-900: #c2c2c2;
+  --color-ink-700: #acacac;
+  --color-ink-500: #acacac;
+  --color-primary-600: #094770;
+  --color-primary-700: #264e77;
+  --color-primary-800: #094770;
+  --color-on-primary: #ffffff;
+  --color-accent: #4a88c7;
+  --color-accent-raised: #4a88c7;
+  --color-ring: #4a88c7;
+  --color-outline-hover: #2a2d2e;
+  --color-outline-active: #094770;
+  --color-selected: #094770;
+  --color-selected-hover: #264e77;
+  --color-on-selected: #ffffff;
+  --color-info-bg: #264e77;
+  --color-info-text: #d4d4d4;
+  --color-info-border: #4a88c7;
+  --color-code-bg: #1e1e1e;
+  --color-code-text: #d4d4d4;
+
+  & .diff-code,
+  & .file-content {
+    color: var(--color-code-text);
+
+    & code {
+      color: var(--color-code-text);
+    }
+
+    & .line-number {
+      color: #848484;
+      opacity: 1;
+    }
+
+    & ::selection {
+      background: #264e77;
+      color: #ffffff;
+    }
+  }
+
+  & ::-webkit-scrollbar-thumb {
+    background: #414141;
+
+    &:hover {
+      background: #4e4e4e;
+    }
+  }
+}

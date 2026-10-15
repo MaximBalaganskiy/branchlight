@@ -38,7 +38,7 @@
       <div if.bind="!fileLoading && (!selectedPath || message)" class="p-8 text-center text-sm text-ink-500">${message || 'Select a file to view its contents at this commit.'}</div>
       <div if.bind="!fileLoading && lines.length" class="file-content min-w-max py-2 text-xs leading-[21px]" tabindex="0" aria-label="File contents" code-selection="code">
         <div repeat.for="line of lines" data-line.bind="$index" class="flex min-h-[21px] whitespace-pre ${matchLine === $index ? 'bg-warning-bg' : ''}">
-          <span class="w-12 shrink-0 pr-3 text-right font-mono text-ink-500 select-none">${$index + 1}</span>
+          <span class="line-number w-12 shrink-0 pr-3 text-right font-mono text-ink-500 select-none">${$index + 1}</span>
           <code class="pr-4 [tab-size:4]" innerhtml.bind="line"></code>
         </div>
         <p if.bind="truncated" class="p-4 text-ink-500">Preview limited to 12,000 lines.</p>

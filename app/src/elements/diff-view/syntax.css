@@ -1,82 +1,105 @@
+/* Map the existing lowlight tokens to Rider's bundled Dark Plus editor palette.
+   Token categories follow lowlight; no additional syntax parser is involved. */
+:root {
+  --syntax-keyword: #499cd5;
+  --syntax-string: #cd9069;
+  --syntax-number: #b4cda8;
+  --syntax-function: #dcdcaa;
+  --syntax-type: #39c8b0;
+  --syntax-variable: #94dbfd;
+  --syntax-property: #9cdcfe;
+  --syntax-comment: #699856;
+  --syntax-tag: #569cd6;
+  --syntax-tag-punctuation: #808080;
+  --syntax-tag-string: #ce9178;
+  --syntax-selector: #d7ba7d;
+}
+
+:root[data-theme='light'] {
+  --syntax-keyword: #7c3197;
+  --syntax-string: #9b391a;
+  --syntax-number: #176d45;
+  --syntax-function: #805a17;
+  --syntax-type: #14599b;
+  --syntax-variable: #14599b;
+  --syntax-property: #14599b;
+  --syntax-comment: #557744;
+  --syntax-tag: #14599b;
+  --syntax-tag-punctuation: #616161;
+  --syntax-tag-string: #9b391a;
+  --syntax-selector: #7c3197;
+}
+
 .hljs-keyword,
-.hljs-selector-tag,
 .hljs-literal {
-  color: #c7a0e8;
+  color: var(--syntax-keyword);
 }
 
 .hljs-string,
-.hljs-regexp,
-.hljs-attribute {
-  color: #dbb58e;
+.hljs-regexp {
+  color: var(--syntax-string);
 }
 
 .hljs-number,
 .hljs-symbol {
-  color: #a9cfa1;
+  color: var(--syntax-number);
 }
 
 .hljs-title,
-.hljs-function,
 .hljs-section {
-  color: #d9d6a0;
+  color: var(--syntax-function);
 }
 
+.hljs-title.class_,
 .hljs-type,
 .hljs-built_in,
-.hljs-tag,
-.hljs-name {
-  color: #82c6d5;
+.hljs-meta {
+  color: var(--syntax-type);
+}
+
+.hljs-variable {
+  color: var(--syntax-variable);
 }
 
 .hljs-attr,
-.hljs-variable,
+.hljs-attribute,
 .hljs-property {
-  color: #a7ccef;
+  color: var(--syntax-property);
+}
+
+:where(.hljs-params) {
+  color: var(--syntax-property);
 }
 
 .hljs-comment,
 .hljs-quote {
-  color: #88a779;
+  color: var(--syntax-comment);
 }
 
-.hljs-meta {
-  color: #b5bac2;
+.hljs-name {
+  color: var(--syntax-tag);
 }
 
-:root[data-theme='light'] .hljs-keyword,
-:root[data-theme='light'] .hljs-selector-tag,
-:root[data-theme='light'] .hljs-literal {
-  color: #7c3197;
+.hljs-tag {
+  color: var(--syntax-tag-punctuation);
 }
 
-:root[data-theme='light'] .hljs-string,
-:root[data-theme='light'] .hljs-regexp,
-:root[data-theme='light'] .hljs-attribute {
-  color: #9b391a;
+/* The highlighter flattens nested token classes onto each span. */
+.hljs-tag.hljs-name {
+  color: var(--syntax-tag);
 }
 
-:root[data-theme='light'] .hljs-number,
-:root[data-theme='light'] .hljs-symbol {
-  color: #176d45;
+.hljs-tag.hljs-attr {
+  color: var(--syntax-property);
 }
 
-:root[data-theme='light'] .hljs-title,
-:root[data-theme='light'] .hljs-function,
-:root[data-theme='light'] .hljs-section {
-  color: #805a17;
+.hljs-tag.hljs-string {
+  color: var(--syntax-tag-string);
 }
 
-:root[data-theme='light'] .hljs-type,
-:root[data-theme='light'] .hljs-built_in,
-:root[data-theme='light'] .hljs-tag,
-:root[data-theme='light'] .hljs-name,
-:root[data-theme='light'] .hljs-attr,
-:root[data-theme='light'] .hljs-variable,
-:root[data-theme='light'] .hljs-property {
-  color: #14599b;
-}
-
-:root[data-theme='light'] .hljs-comment,
-:root[data-theme='light'] .hljs-quote {
-  color: #557744;
+.hljs-selector-tag,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-selector-pseudo {
+  color: var(--syntax-selector);
 }

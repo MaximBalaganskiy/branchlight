@@ -1,4 +1,5 @@
 @import '@aurelia-ui-toolkits/headless-tailwind';
+@import './dark-plus.css';
 @source '../';
 
 /* Both densities use the shipped headless tokens. */
