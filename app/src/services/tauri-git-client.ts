@@ -1,3 +1,5 @@
+import { resolve } from 'aurelia';
+import { AlertService } from '@aurelia-ui-toolkits/headless';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { GitClient } from '../interfaces/git-client';
@@ -17,79 +19,85 @@ import type { RebaseStep } from '../interfaces/rebase-step';
 import type { RepositoryRequest } from '../interfaces/repository-request';
 
 export class TauriGitClient implements GitClient {
+  private alerts = resolve(AlertService);
+
   createRepository(request: RepositoryRequest) {
-    return invoke<string>('create_repository', { request });
+    return this.request<string>('create_repository', { request });
   }
 
   chooseDirectory() {
-    return invoke<string | null>('choose_directory');
+    return this.request<string | null>('choose_directory');
   }
 
   rebasePlan(reference: string) {
-    return invoke<RebaseStep[]>('rebase_plan', { reference });
+    return this.request<RebaseStep[]>('rebase_plan', { reference });
   }
 
   stashes() {
-    return invoke<Stash[]>('stashes');
+    return this.request<Stash[]>('stashes');
   }
 
   stashDiff(hash: string) {
-    return invoke<string>('stash_diff', { hash });
+    return this.request<string>('stash_diff', { hash });
   }
 
   worktrees() {
-    return invoke<Worktree[]>('worktrees');
+    return this.request<Worktree[]>('worktrees');
   }
 
   conflictContent(path: string) {
-    return invoke<ConflictContent>('conflict_content', { path });
+    return this.request<ConflictContent>('conflict_content', { path });
   }
 
   messageOptions() {
-    return invoke<MessageOptions>('message_options');
+    return this.request<MessageOptions>('message_options');
   }
   commitTree(hash: string) {
-    return invoke<TreeEntry[]>('commit_tree', { hash });
+    return this.request<TreeEntry[]>('commit_tree', { hash });
   }
 
   commitFile(hash: string, path: string) {
-    return invoke<FilePreview>('commit_file', { hash, path });
+    return this.request<FilePreview>('commit_file', { hash, path });
   }
 
   remotes() {
-    return invoke<Remote[]>('remotes');
+    return this.request<Remote[]>('remotes');
   }
 
   bootstrap() {
-    return invoke<BootstrapState>('bootstrap');
+    return this.request<BootstrapState>('bootstrap');
   }
 
   open(directory?: string) {
-    return invoke<string | null>('open_repository', { directory });
+    return this.request<string | null>('open_repository', { directory });
   }
 
   snapshot(limit: number) {
-    return invoke<Snapshot>('snapshot', { limit });
+    return this.request<Snapshot>('snapshot', { limit });
   }
 
   detail(hash: string) {
-    return invoke<Detail>('detail', { hash });
+    return this.request<Detail>('detail', { hash });
   }
 
   diff(request: DiffRequest) {
-    return invoke<string>('diff', { request });
+    return this.request<string>('diff', { request });
   }
 
   mutate(action: string, payload: Record<string, unknown> = {}) {
-    return invoke<boolean>('mutate', { action, payload });
+    return this.request<boolean>('mutate', { action, payload });
   }
 
   log() {
-    return invoke<CommandEntry[]>('command_log');
+    return this.request<CommandEntry[]>('command_log');
   }
 
   openCommit() {
-    return invoke<void>('commit_window');
+    return this.request<void>('commit_window');
+  }
+
+  private request<T>(command: string, args?: Record<string, unknown>) {
+    return this.alerts.usingProgress(() => invoke<T>(command, args));
   }
 
   async onChanged(callback: () => void) {

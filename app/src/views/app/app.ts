@@ -1,4 +1,6 @@
 import { resolve } from 'aurelia';
+import { AlertService } from '@aurelia-ui-toolkits/headless';
+import { distinctUntilChanged, type Subscription } from 'rxjs';
 import { WorkspaceService } from '../../services/workspace-service';
 import { AppearanceService } from '../../services/appearance-service';
 import './app.css';
@@ -6,7 +8,30 @@ import './app.css';
 export class App {
   readonly workspace = resolve(WorkspaceService);
   readonly appearance = resolve(AppearanceService);
+  private alerts = resolve(AlertService);
   private timer?: ReturnType<typeof setInterval>;
+  private progressTimer?: ReturnType<typeof setTimeout>;
+  private progressSubscription?: Subscription;
+  working = false;
+
+  binding() {
+    this.progressSubscription = this.alerts.busy$.pipe(distinctUntilChanged()).subscribe(busy => {
+      clearTimeout(this.progressTimer);
+      if (busy) {
+        this.progressTimer = setTimeout(() => {
+          this.working = true;
+        }, 200);
+      } else {
+        this.working = false;
+      }
+    });
+  }
+
+  unbinding() {
+    this.progressSubscription?.unsubscribe();
+    clearTimeout(this.progressTimer);
+    this.working = false;
+  }
 
   get tracking() {
     const snapshot = this.workspace.snapshot;
