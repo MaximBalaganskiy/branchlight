@@ -107,13 +107,10 @@ export class Commit {
 
   async closeCompletedOperation() {
     if (!this.workspace.snapshot?.operation) {
-      try {
-        await getCurrentWindow().close();
-      } catch (error) {
-        this.workspace.fail(error);
-      }
+      await this.closeWindow();
     }
   }
+
   get unstaged() {
     return this.workspace.snapshot?.files.filter(file => file.unstaged) ?? [];
   }
@@ -241,19 +238,13 @@ export class Commit {
       if (closed.status === 'ok') {
         this.amendHead = '';
         this.message = '';
+        await this.closeWindow();
       }
       return;
     }
-    const completingMerge = this.workspace.snapshot?.operation === 'Merge';
     if (this.canCommit && (await this.workspace.action('commit', { message: this.message }))) {
       this.message = '';
-      if (completingMerge) {
-        try {
-          await getCurrentWindow().close();
-        } catch (error) {
-          this.workspace.fail(error);
-        }
-      }
+      await this.closeWindow();
     }
   }
 
@@ -309,6 +300,14 @@ export class Commit {
   statusLabel(file: ChangedFile, staged: boolean) {
     const status = staged ? file.index : file.worktree;
     return file.conflict ? '!' : status === '?' ? 'A' : status;
+  }
+
+  private async closeWindow() {
+    try {
+      await getCurrentWindow().close();
+    } catch (error) {
+      this.workspace.fail(error);
+    }
   }
 
   private onKey = (event: KeyboardEvent) => {

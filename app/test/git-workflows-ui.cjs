@@ -144,9 +144,8 @@ const path = require('node:path');
     await commit.getByRole('button', { name: 'Show flat file list', exact: true }).click();
     await commit.getByRole('button', { name: 'Stage .gitignore', exact: true }).click();
     await commit.locator('#commit-message').fill('Ignore build log');
-    await commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click();
+    await Promise.all([commit.waitForEvent('close'), commit.getByRole('button', { name: '✓ Commit to main', exact: true }).click()]);
     await page.getByRole('button', { name: 'Ignore build log', exact: true }).waitFor();
-    await commit.close();
     commit = undefined;
 
     const sidebar = page.locator('worktree-sidebar');
