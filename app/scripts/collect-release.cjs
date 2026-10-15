@@ -10,6 +10,10 @@ fs.mkdirSync(directory, { recursive: true });
 const destination = path.join(directory, filename);
 fs.copyFileSync(source, destination);
 console.log(`App: ${destination} (${(fs.statSync(destination).size / 1024 ** 2).toFixed(2)} MiB)`);
+for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.txt']) {
+  fs.copyFileSync(path.resolve('..', name), path.join(directory, name));
+  fs.copyFileSync(path.resolve('..', name), path.resolve('release', name));
+}
 
 const bundle = path.resolve('src-tauri/target/release/bundle');
 const kinds = windows ? ['nsis'] : ['deb', 'appimage'];

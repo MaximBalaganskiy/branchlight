@@ -2,9 +2,11 @@
 
 A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, its shipped Tailwind theme, and **Tauri 2**. Inspired by GitExtensions' commit graph and separate staging window.
 
+**Preview software — Windows x64 and Linux x64.** Branchlight is MIT licensed. It uses your installed Git and authentication configuration. Windows binaries are unsigned; Linux GNOME/KDE desktop validation is still pending. See [platform coverage](docs/platform-testing.md), [known limitations](#preview-scope), and [security reporting](SECURITY.md).
+
 ## Run
 
-Download the Windows executable or installer, or the Linux AppImage or Debian package, from [GitHub Releases](https://github.com/MaximBalaganskiy/branchlight/releases). Repository access is required to download these private releases.
+Download the Windows executable or installer, or the Linux AppImage or Debian package, from [GitHub Releases](https://github.com/MaximBalaganskiy/branchlight/releases). Download visibility follows repository access. Keep the accompanying license and third-party notices when redistributing binaries.
 
 Open `app/release/windows/Branchlight.exe` after packaging, or run from source:
 
@@ -24,7 +26,7 @@ The GTK/WebKitGTK shell supports native Wayland and X11. GTK selects the availab
 To explicitly select native Wayland when launching an AppImage from your Wayland session:
 
 ```bash
-GDK_BACKEND=wayland ./Branchlight_0.3.0_amd64.AppImage
+GDK_BACKEND=wayland ./Branchlight_0.4.0-beta.1_amd64.AppImage
 ```
 
 Use the filename of your downloaded AppImage. For a Debian installation, run `GDK_BACKEND=wayland branchlight`. `GDK_BACKEND=x11` selects X11 instead (requiring XWayland in a Wayland session). Wayland compositors control window placement; restoring exact screen coordinates is not guaranteed, while size and maximized state remain saved.
@@ -88,7 +90,7 @@ This is an initial usable version, not full GitExtensions parity. Editable rebas
 
 ### Automated binaries and releases
 
-The **Build desktop binaries** GitHub Actions workflow builds Windows x64 and Linux x64 on every push to `main`, pull request, or manual run. Each build runs formatting, source checks, renderer tests, Git integration tests, and Clippy before packaging. Download the two platform artifacts from the workflow run; they are retained for 14 days.
+The **Build desktop binaries** GitHub Actions workflow builds Windows x64 and Linux x64 on every push to `main`, pull request, or manual run. Each build runs formatting, source checks, renderer tests, Git integration tests, and Clippy before packaging. Windows desktop workflows and Linux X11/Wayland smoke tests then run against the native executable. A separate job scans Git history and audits npm/Rust dependencies. Download the two platform artifacts from the workflow run; they are retained for 14 days.
 
 Push a version tag such as `v0.1.0` to publish a GitHub Release after both platforms pass. The tag must match the versions in `app/package.json`, `app/src-tauri/tauri.conf.json`, and `app/src-tauri/Cargo.toml`. Tags containing a suffix such as `-beta.1` create prereleases. Releases contain:
 
@@ -96,8 +98,9 @@ Push a version tag such as `v0.1.0` to publish a GitHub Release after both platf
 - `Branchlight_<version>_x64-setup.exe`: Windows NSIS installer.
 - Linux `.AppImage` and `.deb` packages.
 - `SHA256SUMS.txt`: checksums for all four downloads.
+- `LICENSE`, `THIRD_PARTY_NOTICES.txt`, and `LINUX_RUNTIME_NOTICES.txt`: redistribution notices and dependency source links.
 
-Release assets remain available independently of Actions artifact retention and inherit the repository's private visibility. Windows binaries are unsigned. Git must be installed separately; Windows uses the shared WebView2 runtime. On Linux, mark the downloaded AppImage executable with `chmod +x *.AppImage`. Linux packages are built on Ubuntu 22.04 for compatibility with systems providing WebKitGTK 4.1.
+Release assets remain available independently of Actions artifact retention and inherit repository visibility. Windows binaries are unsigned. Git must be installed separately; Windows uses the shared WebView2 runtime. On Linux, mark the downloaded AppImage executable with `chmod +x *.AppImage`. Linux packages are built on Ubuntu 22.04 for compatibility with systems providing WebKitGTK 4.1.
 
 ### Local commands
 
@@ -124,4 +127,8 @@ Build caches (`app/src-tauri/target/`), `node_modules`, and optional workspace t
 
 Headless supplies buttons, inputs, tabs, splitters, dialogs, and service-created toast notifications. The app imports `@aurelia-ui-toolkits/headless-tailwind` and uses its Normal and Compact density tokens, with inset field labels enabled globally. Templates use inline Tailwind layout utilities; reusable app selectors use nested CSS. `AGENTS.md` and the formatter record these conventions.
 
-Dark mode uses the UI and editor palette from Alexander Makarov's **Visual Studio Code Dark Plus** theme for Rider (plugin 2.9.0, `visual_studio_code_dark_plus.theme.json` and `visual_studio_code_dark_plus.xml`). The colours override headless semantic tokens in `app/src/styles/dark-plus.css`; `syntax.css` maps the editor palette to Lowlight's token categories. Syntax classification remains Lowlight's, so it does not reproduce Rider's language-aware semantic highlighting exactly. Light mode retains its separate palette.
+Dark mode uses the UI and editor palette from Alexander Makarov's [Visual Studio Code Dark Plus theme](https://github.com/samdark/intellij-visual-studio-code-dark-plus/tree/v2.9.0) for Rider (plugin 2.9.0, BSD-3-Clause). The colours override headless semantic tokens in `app/src/styles/dark-plus.css`; the diff styles map the editor palette to Lowlight's token categories. Syntax classification remains Lowlight's, so it does not reproduce Rider's language-aware semantic highlighting exactly. Light mode retains its separate palette.
+
+## Contributing and licensing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [release guide](docs/releasing.md). Branchlight's source is [MIT licensed](LICENSE); third-party components retain their own licenses and attribution in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). GitExtensions inspired the workflow; its application code is not bundled. The [publication review](docs/publication-audit.md) records audit scope, dependency warnings, and remaining platform checks.

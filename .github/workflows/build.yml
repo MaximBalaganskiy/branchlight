@@ -30,12 +30,15 @@ jobs:
             files: |
               app/release/windows/Branchlight.exe
               app/release/*-setup.exe
+              app/release/LICENSE
+              app/release/THIRD_PARTY_NOTICES.txt
           - platform: linux
             runner: ubuntu-22.04
             bundles: deb,appimage
             files: |
               app/release/*.deb
               app/release/*.AppImage
+              app/release/LINUX_RUNTIME_NOTICES.txt
     defaults:
       run:
         working-directory: app
@@ -71,7 +74,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 xdg-utils
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 xdg-utils webkit2gtk-driver xvfb weston dbus-x11
 
       - name: Install frontend dependencies
         run: npm ci
@@ -85,6 +88,9 @@ jobs:
       - name: Check conventions
         run: npm run check:conventions
 
+      - name: Check dependency notices
+        run: npm run check:notices
+
       - name: Run renderer and Git integration tests
         run: npm test
 
@@ -93,6 +99,39 @@ jobs:
 
       - name: Build executable and installers
         run: node scripts/native.cjs tauri build --ci --bundles ${{ matrix.bundles }} -- --locked
+
+      - name: Test Windows desktop workflows
+        if: runner.os == 'Windows'
+        run: npm run test:e2e
+
+      - name: Install Linux desktop driver
+        if: runner.os == 'Linux'
+        run: cargo install tauri-driver --version 2.1.0 --locked
+
+      - name: Test Linux X11 desktop
+        if: runner.os == 'Linux'
+        run: dbus-run-session -- xvfb-run -a env GDK_BACKEND=x11 npm run test:linux
+
+      - name: Test Linux native Wayland desktop
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_RUNTIME_DIR="$(mktemp -d)"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          weston --backend=headless-backend.so --socket=branchlight-test --idle-time=0 --width=1600 --height=1000 > test-results/weston.log 2>&1 &
+          compositor_pid=$!
+          trap 'kill "$compositor_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..50}; do
+            test -S "$XDG_RUNTIME_DIR/branchlight-test" && break
+            sleep 0.1
+          done
+          test -S "$XDG_RUNTIME_DIR/branchlight-test"
+          dbus-run-session -- env -u DISPLAY WAYLAND_DISPLAY=branchlight-test GDK_BACKEND=wayland npm run test:linux
+
+      - name: Collect Linux runtime notices
+        if: runner.os == 'Linux'
+        run: node scripts/linux-runtime-notices.cjs
 
       - name: Collect distribution files
         run: node scripts/collect-release.cjs --bundles
@@ -105,10 +144,47 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Upload desktop test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-tests-${{ matrix.platform }}
+          path: app/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  security:
+    name: Security checks
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+      - name: Scan all Git history
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error -o /tmp/gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz' | sha256sum --check
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks git . --log-opts='--all --full-history' --redact
+      - name: Audit npm dependencies
+        run: npm --prefix app audit --audit-level=moderate
+      - name: Audit Rust dependencies
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked
+          cargo audit --file app/src-tauri/Cargo.lock
+
   release:
     name: Publish release assets
     if: github.event_name == 'push' && github.ref_type == 'tag'
-    needs: build
+    needs: [build, security]
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     permissions:
@@ -139,6 +215,10 @@ jobs:
             (cd "$(dirname "$asset")" && sha256sum "$(basename "$asset")")
           done > artifacts/SHA256SUMS.txt
           assets+=(artifacts/SHA256SUMS.txt)
+          for notice in LICENSE THIRD_PARTY_NOTICES.txt LINUX_RUNTIME_NOTICES.txt; do
+            test -s "artifacts/$notice"
+            assets+=("artifacts/$notice")
+          done
           if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
           else

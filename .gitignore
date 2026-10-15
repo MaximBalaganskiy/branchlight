@@ -6,3 +6,11 @@ app/test-results/
 .toolchains/
 app/src-tauri/target/
 app/src-tauri/gen/
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+*.key
+*.log

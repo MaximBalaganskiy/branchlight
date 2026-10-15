@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a reproducible problem with a disposable repository.
+body:
+  - type: markdown
+    attributes:
+      value: "For vulnerabilities, follow SECURITY.md instead. Remove private paths, source code, remote credentials, and tokens from attachments."
+  - type: input
+    id: version
+    attributes:
+      label: Branchlight version
+      placeholder: 0.4.0-beta.1
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system and desktop
+      description: Include architecture, package type, and X11/Wayland plus compositor on Linux.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Prefer commands that create a small disposable Git repository.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or logs
+      description: Review and redact private data before attaching anything.

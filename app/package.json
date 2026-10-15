@@ -1,6 +1,7 @@
 {
   "name": "branchlight",
-  "version": "0.3.0",
+  "version": "0.4.0-beta.1",
+  "license": "MIT",
   "private": true,
   "description": "A local Git client with a graph workspace and dedicated commit window.",
   "type": "module",
@@ -8,6 +9,9 @@
     "esbuild@0.28.2": true
   },
   "scripts": {
+    "notices": "node scripts/third-party-notices.cjs",
+    "check:notices": "node scripts/third-party-notices.cjs --check",
+    "test:linux": "node test/linux-desktop.cjs",
     "start": "node scripts/native.cjs tauri dev",
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",

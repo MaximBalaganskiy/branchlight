@@ -1,6 +1,7 @@
 {
   "name": "branchlight-workspace",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "start": "npm --prefix app start",
     "build": "npm --prefix app run build",
