@@ -1,5 +1,5 @@
 <template class="w-[600px] max-w-[90vw] max-h-[90vh] overflow-auto p-6">
-  <h2 class="mb-5 text-xl!">${editing ? 'Edit remote ' + name : 'Add remote'}</h2>
+  <h2 class="text-xl!">${editing ? 'Edit remote ' + name : 'Add remote'}</h2>
   <ui-form class="block" submit.trigger:prevent="save()">
     <ui-input class="col-span-12" label="Remote name" value.bind="name & validate" readonly.bind="editing" disabled.bind="workspace.busy" required></ui-input>
     <ui-input class="col-span-12" label="Remote URL" value.bind="url & validate" disabled.bind="workspace.busy" required></ui-input>

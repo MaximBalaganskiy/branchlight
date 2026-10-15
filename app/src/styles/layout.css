@@ -25,6 +25,19 @@ kbd {
   color: var(--color-ink-500);
 }
 
+/* Live filters have no validation row to reserve. Keep any supplied messages visible. */
+.search-form {
+  & > .ui-form {
+    padding-block: 4px;
+    column-gap: 8px;
+  }
+
+  & .ui-input__subscript {
+    min-height: 0;
+    margin-top: 0;
+  }
+}
+
 /* Shared file rows appear in both history and the commit window. */
 .file-item {
   & > span:last-child {

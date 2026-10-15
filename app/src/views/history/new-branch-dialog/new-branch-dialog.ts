@@ -2,7 +2,6 @@ import { ValidatedForm } from '../../../services/validated-form';
 import { resolve } from 'aurelia';
 import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
-import './new-branch-dialog.css';
 
 export class NewBranchDialog extends ValidatedForm {
   constructor() {

@@ -1,5 +1,5 @@
 <template class="w-[540px] max-w-[90vw] max-h-[85vh] overflow-auto p-6">
-  <h2 class="mb-4 text-xl!">Create worktree</h2>
+  <h2 class="text-xl!">Create worktree</h2>
   <ui-form class="block" submit.trigger:prevent="create()">
     <ui-input class="col-span-12" label="New branch" value.bind="name & validate" required></ui-input>
     <ui-input class="col-span-12" label="Worktree folder" value.bind="directory & validate" required><span au-slot="helper">Use an absolute path for the new worktree.</span></ui-input>

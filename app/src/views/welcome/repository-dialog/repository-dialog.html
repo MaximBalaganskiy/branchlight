@@ -1,5 +1,5 @@
 <template class="w-[560px] max-w-[90vw] max-h-[90vh] overflow-auto p-6">
-  <h2 class="mb-4 text-xl!">${mode === 'clone' ? 'Clone repository' : 'Create repository'}</h2>
+  <h2 class="text-xl!">${mode === 'clone' ? 'Clone repository' : 'Create repository'}</h2>
   <ui-form class="block" submit.trigger:prevent="create()">
     <ui-input class="col-span-12" if.bind="mode === 'clone'" label="Repository URL or local path" value.bind="url & validate" disabled.bind="working" required><span au-slot="helper">Authentication uses your configured Git credential helper or SSH agent.</span></ui-input>
     <ui-input class="col-span-9 min-w-0" label="Destination folder" value.bind="directory & validate" disabled.bind="working" required>

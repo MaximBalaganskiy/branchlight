@@ -1,7 +1,7 @@
 <template class="repository-tool-dialog flex w-[850px] max-w-[90vw] max-h-[90vh] min-w-0 flex-col gap-3 overflow-hidden p-5">
   <h2 class="text-xl!">Reflog recovery</h2>
   <p class="text-sm text-ink-500">Recent local reference movements, including commits removed by resets and rebases. Recover a commit onto a new branch. Expired reflog entries are unavailable.</p>
-  <ui-form class="block shrink-0">
+  <ui-form class="search-form block shrink-0">
     <ui-input class="col-span-12" label="Search reflog" value.bind="query"><span au-slot="leading">⌕</span></ui-input>
   </ui-form>
   <div class="min-h-0 flex-1 overflow-auto">

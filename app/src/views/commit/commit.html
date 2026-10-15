@@ -19,7 +19,7 @@
 </div>
 <div class="commit-workspace flex min-h-0 flex-1 bg-card">
   <aside ref="stagingPane" class="staging-sidebar flex w-[330px] min-h-0 shrink-0 flex-col bg-card-muted">
-    <ui-form ref="fileSearchForm" class="block shrink-0 px-2">
+    <ui-form ref="fileSearchForm" class="search-form block shrink-0 px-2">
       <ui-input class="col-span-12" label="Find changed files" value.bind="fileQuery">
         <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="10" cy="10" r="6"></circle>
@@ -80,12 +80,12 @@
     <ui-splitter show.bind="!replaying" direction="vertical" target="next" size.bind="messageHeight" min.bind="180" max.bind="messageMax" storage-key="commit-message" aria-label="Resize diff and commit message"></ui-splitter>
     <section show.bind="!replaying" class="message-composer flex min-h-0 shrink-0 flex-col overflow-auto bg-card p-3">
       <message-picker class="shrink-0" message.bind="message" message-chosen.trigger="message = $event.detail"></message-picker>
-      <div class="mb-2 flex shrink-0 flex-wrap items-center gap-2">
+      <div class="flex shrink-0 flex-wrap items-center gap-2">
         <button ui-button click.trigger="toggleAmend()" disabled.bind="workspace.busy || !workspace.snapshot.head || !!workspace.snapshot.operation">${amendHead ? 'Cancel amend' : 'Amend last commit…'}</button>
         <button ui-button click.trigger="undoCommit()" disabled.bind="workspace.busy || !workspace.snapshot.head || !!workspace.snapshot.operation || !!amendHead">Undo last commit…</button>
       </div>
-      <ui-form class="block min-h-0 flex-1 [&>form]:h-full [&>form]:grid-rows-[1fr_auto]" submit.trigger:prevent="commit()">
-        <ui-input class="col-span-12 min-h-24" textarea id="commit-message" value.bind="message & validate" label="Commit message" rows="5" placeholder="Summary of changes" disabled.bind="workspace.busy">
+      <ui-form class="block min-h-0 flex-1 [&>form]:h-full [&>form]:pt-2 [&>form]:grid-rows-[minmax(0,1fr)_auto]" submit.trigger:prevent="commit()">
+        <ui-input class="col-span-12 min-h-24 self-stretch" textarea id="commit-message" value.bind="message & validate" label="Commit message" rows="5" placeholder="Summary of changes" disabled.bind="workspace.busy">
           <span au-slot="helper" class="flex flex-wrap justify-between gap-2">
             <span if.bind="amendHead">Amending ${amendHead.slice(0, 8)}. Staged changes will be included.</span>
             <span class="ml-auto ${summaryLength > 72 ? 'text-warning-text' : ''}" aria-label="Summary length">${summaryLength} / 72</span>

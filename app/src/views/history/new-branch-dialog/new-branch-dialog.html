@@ -1,5 +1,5 @@
 <template class="branch-dialog w-[430px] max-w-[90vw] p-6">
-  <h2>Create branch</h2>
+  <h2 class="text-xl!">Create branch</h2>
   <ui-form class="block" submit.trigger:prevent="save()">
     <ui-input class="col-span-12" label="Branch name" value.bind="name & validate" placeholder="feature/my-change" required autofocus>
       <span au-slot="helper">Create and check out a branch from ${reference || 'the current commit'}.</span>

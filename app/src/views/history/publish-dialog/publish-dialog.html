@@ -1,6 +1,6 @@
 <template class="w-[480px] max-w-[90vw] p-6">
   <h2 class="mb-4 text-xl!">Publish branch</h2>
-  <p class="mb-4 text-sm text-ink-500">Push ${source} and configure its upstream for future pulls and pushes.</p>
+  <p class="text-sm text-ink-500">Push ${source} and configure its upstream for future pulls and pushes.</p>
   <ui-form class="block" submit.trigger:prevent="publish()">
     <ui-select class="col-span-12" label="Remote" items.bind="remotes" value.bind="remote & validate" value-field="name" label-field="name" disabled.bind="workspace.busy">
       <ui-list><ui-list-item repeat.for="remote of $host.items" value.bind="remote">${remote.name}</ui-list-item></ui-list>

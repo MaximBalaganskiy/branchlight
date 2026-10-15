@@ -21,6 +21,17 @@ const { git } = require('./support/git.cjs');
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
+    const search = page.getByRole('textbox', { name: 'Search commits', exact: true });
+    await search.waitFor();
+    const toolbar = page.locator('.panel-toolbar');
+    const toolbarBefore = await toolbar.boundingBox();
+    const searchControl = await toolbar.locator('.ui-input__control').boundingBox();
+    assert.ok(toolbarBefore.height - searchControl.height <= 17, 'History search must fit a single toolbar row.');
+    await search.fill('Initial');
+    await page.getByRole('status').filter({ hasText: '1 matches' }).waitFor();
+    assert.equal((await toolbar.boundingBox()).height, toolbarBefore.height);
+    await search.press('Enter');
+    await search.fill('');
     await page.getByRole('button', { name: 'Add remote', exact: true }).click();
     const dialog = page.getByRole('dialog');
     assert.equal(await dialog.locator('ui-input:not(ui-form ui-input)').count(), 0);
@@ -51,6 +62,9 @@ const { git } = require('./support/git.cjs');
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     await page.getByRole('button', { name: '⑂ New branch', exact: true }).click();
     const branch = dialog.getByRole('textbox', { name: 'Branch name', exact: true });
+    const headingBounds = await dialog.getByRole('heading', { name: 'Create branch', exact: true }).boundingBox();
+    const fieldBounds = await dialog.locator('.ui-input__control').boundingBox();
+    assert.ok(fieldBounds.y - headingBounds.y - headingBounds.height <= 20, 'Do not stack heading margins and form padding.');
     await branch.fill('bad name');
     await branch.press('Enter');
     await dialog.locator('.ui-input__error').filter({ hasText: 'must not contain spaces' }).waitFor();
@@ -63,6 +77,12 @@ const { git } = require('./support/git.cjs');
     for (const density of ['normal', 'compact']) {
       if (density === 'compact') await commit.getByRole('button', { name: 'Toggle density', exact: true }).click();
       await commit.waitForFunction(value => document.documentElement.dataset.density === value, density);
+      const composer = await commit.locator('.message-composer').evaluate(element => {
+        const input = element.querySelector('.ui-input').getBoundingClientRect();
+        const submit = element.querySelector('button[type="submit"]').getBoundingClientRect();
+        return { gap: submit.top - input.bottom };
+      });
+      assert.ok(composer.gap >= 0 && composer.gap < 20, `Textarea should fill the composer at ${density} density: ${composer.gap}px gap.`);
       await commit.locator('.file-item').filter({ hasText: 'short.txt' }).click();
       const geometry = await commit.locator('.stage-file').evaluateAll(rows =>
         rows.map(row => {

@@ -2,7 +2,7 @@
   <import from="../../../attributes/code-selection"></import>
   <div class="w-[280px] min-w-0 shrink-0 overflow-auto">
     <div class="px-3 py-2 text-xs text-ink-500">Files at this commit · ${fileCount}</div>
-    <ui-form class="block min-w-0 px-2">
+    <ui-form class="search-form block min-w-0 px-2">
       <ui-input class="col-span-12 min-w-0" label="Find a file" value.bind="fileQuery">
         <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="10" cy="10" r="6"></circle>
@@ -23,13 +23,13 @@
   <ui-splitter direction="horizontal" size="280" min.bind="150" max.bind="650" storage-key="commit-files" aria-label="Resize commit file tree"></ui-splitter>
   <section class="flex min-h-0 min-w-0 flex-1 flex-col bg-canvas">
     <div class="min-h-8 shrink-0 truncate border-b border-card-border px-3 py-1 text-sm" title.bind="selectedPath">${selectedPath || 'File contents'}</div>
-    <ui-form if.bind="lines.length" class="block w-80 max-w-full shrink-0 px-3" submit.trigger:prevent="findInFile()">
+    <ui-form if.bind="lines.length" class="search-form block w-80 max-w-full shrink-0 px-3" submit.trigger:prevent="findInFile()">
       <ui-input class="col-span-10 min-w-0" label="Find in file" value.bind="contentQuery">
         <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="10" cy="10" r="6"></circle>
           <path d="m 15 15 5 5"></path>
         </svg>
-        <span au-slot="helper" if.bind="contentQuery">${contentMatches.length} matching lines</span>
+        <span au-slot="trailing" class="whitespace-nowrap text-xs" role="status" if.bind="contentQuery">${contentMatches.length} matches</span>
       </ui-input>
       <button ui-icon-button class="col-span-2" type="submit" title="Next matching line" aria-label="Next matching line" disabled.bind="!contentMatches.length">↓</button>
     </ui-form>
