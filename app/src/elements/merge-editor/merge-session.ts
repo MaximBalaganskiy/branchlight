@@ -9,6 +9,9 @@ import { mergeDocument, prepareMerge, setMergeRegions } from './merge-document';
 import { differenceDecorations, mapMergePosition } from './merge-differences';
 import { mergeAlignment } from './merge-alignment';
 import { applyMergeSpacers, mergeSpacers } from './merge-spacers';
+import { search, SearchQuery, setSearchQuery, findNext, findPrevious, replaceNext, replaceAll } from '@codemirror/search';
+import type { MergeDraft } from '../../interfaces/merge-draft';
+import type { MergeInlineControl } from '../../interfaces/merge-inline-control';
 
 export class MergeSession {
   readonly result: EditorSession;
@@ -29,6 +32,10 @@ export class MergeSession {
   private alignmentPlan?: ReturnType<typeof mergeAlignment>;
   private scrollSource?: EditorView;
   private destroyed = false;
+  private wrapping = [new Compartment(), new Compartment(), new Compartment(), new Compartment()];
+  private controlsFrame = 0;
+  wrapped = false;
+  controls: MergeInlineControl[] = [];
   syncScroll = true;
   alignmentLimited = false;
 
@@ -56,15 +63,18 @@ export class MergeSession {
     hosts: HTMLElement[],
     content: ConflictContent,
     path: string,
-    private onUpdate: () => void
+    private onUpdate: () => void,
+    draft?: MergeDraft
   ) {
     const prepared = prepareMerge(content.working.replaceAll('\r\n', '\n'));
     this.initial = prepared.text;
-    this.document = mergeDocument(prepared.regions);
-    this.result = new EditorSession(hosts[0], prepared.text, 'Resolved content', false, undefined, undefined, [
+    this.document = mergeDocument(draft?.regions ?? prepared.regions);
+    this.result = new EditorSession(hosts[0], draft?.value ?? prepared.text, 'Resolved content', false, undefined, undefined, [
       this.document.field,
       this.document.history,
       mergeSpacers,
+      search(),
+      this.wrapping[0].of([]),
       this.highlights[0].of([]),
       EditorView.updateListener.of(update => this.updated(update))
     ]);
@@ -80,7 +90,12 @@ export class MergeSession {
             const translated = mapMergePosition(this.chunks[index], position, true);
             this.setActive(translated);
           },
-          [mergeSpacers, this.highlights[index + 1].of([])]
+          [
+            mergeSpacers,
+            this.wrapping[index + 1].of([]),
+            this.highlights[index + 1].of([]),
+            EditorView.updateListener.of(() => this.scheduleControls())
+          ]
         )
     );
     this.chunks = this.sources.map(source => Chunk.build(this.result.view.state.doc, source.view.state.doc, this.diffConfig));
@@ -98,6 +113,7 @@ export class MergeSession {
     if (!this.sources) {
       return;
     }
+    this.scheduleControls();
     if (update.docChanged) {
       this.chunks = this.sources.map((source, index) =>
         Chunk.updateA(this.chunks[index], update.state.doc, source.view.state.doc, update.changes, this.diffConfig)
@@ -271,6 +287,11 @@ export class MergeSession {
       if (this.destroyed) {
         return;
       }
+      if (this.wrapped) {
+        [this.result, ...this.sources].forEach(session => applyMergeSpacers(session.view, [], 1));
+        this.scheduleControls();
+        return;
+      }
       if (this.alignmentDoc !== this.result.view.state.doc || !this.alignmentPlan) {
         this.alignmentDoc = this.result.view.state.doc;
         this.alignmentPlan = mergeAlignment(
@@ -284,10 +305,12 @@ export class MergeSession {
       [this.result, ...this.sources].forEach((session, index) =>
         applyMergeSpacers(session.view, this.alignmentPlan!.plans[index], lineHeight)
       );
+      this.scheduleControls();
     });
   }
 
   private scrolled(view: EditorView) {
+    this.scheduleControls();
     const expected = this.expectedScroll.get(view);
     this.expectedScroll.delete(view);
     if (
@@ -316,14 +339,66 @@ export class MergeSession {
       if (view === from || !view.scrollDOM.clientHeight) {
         continue;
       }
-      view.scrollDOM.scrollTop = from.scrollDOM.scrollTop;
+      if (this.wrapped) {
+        const block = from.lineBlockAtHeight(from.scrollDOM.scrollTop);
+        const position = this.translate(from, view, block.from);
+        view.scrollDOM.scrollTop = view.lineBlockAt(position).top + from.scrollDOM.scrollTop - block.top;
+      } else {
+        view.scrollDOM.scrollTop = from.scrollDOM.scrollTop;
+      }
       view.scrollDOM.scrollLeft = from.scrollDOM.scrollLeft;
       this.expectedScroll.set(view, { top: view.scrollDOM.scrollTop, left: view.scrollDOM.scrollLeft });
     }
   }
 
+  toggleWrap() {
+    this.wrapped = !this.wrapped;
+    [this.result, ...this.sources].forEach((session, index) => {
+      session.view.dispatch({ effects: this.wrapping[index].reconfigure(this.wrapped ? EditorView.lineWrapping : []) });
+    });
+    this.scheduleAlignment();
+    this.syncFromResult();
+  }
+
+  query(text: string, replacement: string, caseSensitive: boolean, regexp: boolean) {
+    const query = new SearchQuery({ search: text, replace: replacement, caseSensitive, regexp });
+    this.result.view.dispatch({ effects: setSearchQuery.of(query) });
+    return query.valid;
+  }
+
+  searchCommand(action: 'next' | 'previous' | 'replace' | 'all') {
+    if (this.result.view.state.readOnly && (action === 'replace' || action === 'all')) {
+      return false;
+    }
+    return { next: findNext, previous: findPrevious, replace: replaceNext, all: replaceAll }[action](this.result.view);
+  }
+
+  private scheduleControls() {
+    if (this.destroyed || !this.sources) {
+      return;
+    }
+    cancelAnimationFrame(this.controlsFrame);
+    this.controlsFrame = requestAnimationFrame(() => {
+      const controls: MergeInlineControl[] = [];
+      [this.result, ...this.sources.slice(0, 2)].forEach((session, pane) => {
+        const view = session.view;
+        const bounds = view.dom.getBoundingClientRect();
+        for (const region of this.regions) {
+          const position = this.translate(this.result.view, view, region.from);
+          const coordinates = view.coordsAtPos(position);
+          if (coordinates && coordinates.top >= bounds.top && coordinates.top < bounds.bottom - 24) {
+            controls.push({ id: region.id, pane, top: coordinates.top - bounds.top, resolved: region.resolved });
+          }
+        }
+      });
+      this.controls = controls;
+      this.onUpdate();
+    });
+  }
+
   destroy() {
     this.destroyed = true;
+    cancelAnimationFrame(this.controlsFrame);
     cancelAnimationFrame(this.revealFrame);
     cancelAnimationFrame(this.frame);
     cancelAnimationFrame(this.refreshFrame);

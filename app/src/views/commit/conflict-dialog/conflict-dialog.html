@@ -1,4 +1,4 @@
-<template class="conflict-editor flex h-[94vh] w-[94vw] min-w-0 flex-col overflow-hidden p-4">
+<template class="conflict-editor flex max-h-[94vh] max-w-[94vw] min-w-0 flex-col overflow-hidden p-4 ${content.editable ? 'h-[94vh] w-[94vw]' : 'w-[800px]'}">
   <import from="../../../elements/merge-editor/merge-editor"></import>
   <h2 class="mb-2 shrink-0 truncate text-lg!" title.bind="path">Merge editor: ${path}</h2>
   <p if.bind="workspace.snapshot.operation === 'Rebase'" class="mb-2 shrink-0 text-sm text-warning-text">During rebase, Ours is the new base plus commits already replayed. Theirs is the commit being replayed.</p>
@@ -6,12 +6,34 @@
   <ui-alert if.bind="confirmDiscard" tone="warning" class="mb-2 shrink-0">
     Discard your unsaved resolution?
     <button ui-button click.trigger="confirmDiscard = false">Keep editing</button>
+    <button ui-button click.trigger="keepDraft()">Save draft and close</button>
     <button ui-button danger click.trigger="discard()">Discard edits</button>
   </ui-alert>
+  <ui-alert if.bind="pendingDraft" tone="info" class="mb-2 shrink-0">
+    A saved resolution draft is available for this conflict.
+    <button ui-button if.bind="!staleDraft" click.trigger="restoreDraft()">Restore draft</button>
+    <button ui-button click.trigger="discardDraft()">Start again</button>
+  </ui-alert>
+  <ui-input if.bind="staleDraft" textarea readonly rows="8" label="Previous draft — copy any edits you want to keep before starting again" value.bind="pendingDraft.value"></ui-input>
   <template if.bind="content">
-    <merge-editor if.bind="content.editable" component.ref="editor" content.bind="content" file-path.bind="path" busy.bind="workspace.busy" resolution-changed.trigger="error = ''"></merge-editor>
-    <div else class="flex min-h-0 flex-1 flex-col justify-center gap-3 p-4">
-      <p>This binary, large or missing file cannot be edited here. Choose an entire side or resolve it externally.</p>
+    <div if.bind="content.kind !== 'text'" class="mb-3 grid shrink-0 gap-2 text-sm">
+      <strong>${content.kind === 'submodule' ? 'Submodule commit conflict' : content.kind === 'delete/rename' ? 'File deletion or rename conflict' : 'Binary or large file conflict'}</strong>
+      <div class="flex flex-wrap gap-4"><span repeat.for="side of sides">${side.label}: ${side.hash}</span></div>
+      <p if.bind="content.kind === 'delete/rename'">Choose which version to keep, delete this path, or save it under a new name. Resolve other renamed paths listed in the commit window separately.</p>
+      <ui-input if.bind="content.kind === 'delete/rename'" label="Resolved file path" value.bind="destination"></ui-input>
+      <template if.bind="content.kind === 'submodule'">
+        <p>Choosing a side stages that Git commit without changing the submodule checkout. To keep a merge made inside the submodule, enter its commit below.</p>
+        <ui-input label="Resolved submodule commit" value.bind="submoduleCommit"></ui-input>
+        <button ui-button click.trigger="resolve('submodule')" disabled.bind="workspace.busy">Stage submodule commit</button>
+      </template>
+      <div class="flex gap-2">
+        <button ui-button danger click.trigger="confirmDelete = true" disabled.bind="workspace.busy">Delete conflicted path…</button>
+        <button ui-button danger if.bind="confirmDelete" click.trigger="resolve('delete')" disabled.bind="workspace.busy">Confirm deletion</button>
+      </div>
+    </div>
+    <merge-editor if.bind="content.editable && !pendingDraft" component.ref="editor" content.bind="content" draft.bind="draft" file-path.bind="path" busy.bind="workspace.busy" resolution-changed.trigger="changed()"></merge-editor>
+    <div if.bind="!content.editable" class="flex min-h-0 flex-1 flex-col justify-center gap-3 p-4">
+      <p>Choose the entire version to keep. An absent side removes this path from the index.</p>
       <div class="flex gap-2">
         <button ui-button click.trigger="resolve('ours')" disabled.bind="workspace.busy">Use ours and stage</button>
         <button ui-button click.trigger="resolve('theirs')" disabled.bind="workspace.busy">Use theirs and stage</button>
@@ -19,11 +41,11 @@
     </div>
   </template>
   <div class="mt-3 flex shrink-0 flex-wrap items-center justify-end gap-2">
-    <span class="mr-auto text-xs text-ink-500">Nothing is written until saved. Ctrl+Z undoes choices and typing.</span>
+    <span class="mr-auto text-xs text-ink-500">${draftStatus || 'Working file is unchanged until saved. Ctrl+Z undoes choices and typing.'}</span>
     <button ui-button if.bind="content.editable && !hasMarkerConflicts" click.trigger="resolve('ours')" disabled.bind="workspace.busy">Use ours and stage</button>
     <button ui-button if.bind="content.editable && !hasMarkerConflicts" click.trigger="resolve('theirs')" disabled.bind="workspace.busy">Use theirs and stage</button>
     <button ui-button click.trigger="close()" disabled.bind="workspace.busy">Close</button>
-    <button ui-button click.trigger="resolve('mark')" disabled.bind="workspace.busy || !content || editor.dirty" title="Stage the working file after resolving it outside this editor">Mark externally resolved</button>
+    <button ui-button if.bind="content.kind !== 'submodule'" click.trigger="resolve(content.editable ? 'mark' : 'mark-binary')" disabled.bind="workspace.busy || !content || editor.dirty || pendingDraft" title="Stage the working file after resolving it outside this editor">Mark externally resolved</button>
     <button ui-button primary if.bind="content.editable" click.trigger="resolve('edit')" disabled.bind="workspace.busy || !editor.ready">Save result and stage</button>
   </div>
 </template>

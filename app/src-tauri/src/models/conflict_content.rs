@@ -8,4 +8,6 @@ pub struct ConflictContent {
   pub working: String,
   pub editable: bool,
   pub preview: Option<String>,
+  pub stages: Vec<super::conflict_stage::ConflictStage>,
+  pub kind: String,
 }

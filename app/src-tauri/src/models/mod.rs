@@ -4,6 +4,7 @@ pub mod command_entry;
 pub mod commit;
 pub mod commit_file;
 pub mod conflict_content;
+pub mod conflict_stage;
 pub mod detail;
 pub mod diff_request;
 pub mod file_preview;

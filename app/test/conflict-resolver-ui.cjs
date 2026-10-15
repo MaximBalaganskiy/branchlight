@@ -64,6 +64,25 @@ const path = require('node:path');
     };
     await result.waitFor();
     await dialog.getByText('Conflict 1 of 2 remaining', { exact: true }).waitFor();
+    await result.press('Control+f');
+    await dialog.getByRole('textbox', { name: 'Find in result', exact: true }).fill('[');
+    await dialog.getByRole('checkbox', { name: 'Regex', exact: true }).first().click();
+    await dialog.getByRole('button', { name: 'Next match', exact: true }).click();
+    await dialog.getByText('Invalid regular expression', { exact: true }).waitFor();
+    await dialog.getByRole('checkbox', { name: 'Regex', exact: true }).first().click();
+    await dialog.getByRole('textbox', { name: 'Find in result', exact: true }).fill('context 12');
+    await dialog.getByRole('textbox', { name: 'Replace with', exact: true }).fill('search replacement');
+    await dialog.getByRole('button', { name: 'Replace all', exact: true }).click();
+    await result.press('Escape');
+    await result.press('Control+z');
+    await result.press('Control+Home');
+    await dialog.getByRole('button', { name: 'Word wrap', exact: true }).click();
+    assert.equal(await dialog.locator('.merge-result .cm-lineWrapping').count(), 1);
+    await dialog.getByRole('button', { name: 'Word wrap', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Accept ours for conflict 1', exact: true }).click();
+    await dialog.getByText('Conflict 1 of 1 remaining', { exact: true }).waitFor();
+    await dialog.getByRole('button', { name: 'Undo', exact: true }).click();
+    await dialog.getByText('Conflict 1 of 2 remaining', { exact: true }).waitFor();
     assert.ok(!(await result.innerText()).includes('<<<<<<<'), 'The result should contain code, not Git markers');
     assert.ok(
       (await dialog.getByRole('textbox', { name: 'Ours', exact: true }).innerText()).includes('// context'),
@@ -212,6 +231,12 @@ const path = require('node:path');
     await dialog.getByRole('button', { name: 'Accept ours', exact: true }).click();
     await dialog.getByText('All conflicts resolved — review the result', { exact: true }).waitFor();
     await commit.screenshot({ path: path.resolve('test-results/merge-revisited.png') });
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Save draft and close', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    await commit.getByRole('button', { name: 'Resolve conflict…', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Restore draft', exact: true }).click();
+    await dialog.getByText('All conflicts resolved — review the result', { exact: true }).waitFor();
     await result.press('Control+End');
     await commit.screenshot({ path: path.resolve('test-results/internal-resolver.png') });
     // Explicit decisions must not bypass Git's marker check after a manual edit.

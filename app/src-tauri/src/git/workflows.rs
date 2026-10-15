@@ -9,6 +9,31 @@ use std::{
 };
 
 impl GitService {
+  fn conflict_stages(
+    &self,
+    repo: &Path,
+    path: &str,
+  ) -> Result<Vec<crate::models::conflict_stage::ConflictStage>, String> {
+    let output = self.text(repo, &["ls-files", "-u", "-z", "--", path])?;
+    let mut stages = Vec::new();
+    for record in output.split_terminator('\0') {
+      let (header, name) = record.split_once('\t').ok_or("Invalid conflict index entry.")?;
+      if name != path {
+        continue;
+      }
+      let fields: Vec<_> = header.split_whitespace().collect();
+      if fields.len() != 3 {
+        return Err("Invalid conflict index entry.".into());
+      }
+      stages.push(crate::models::conflict_stage::ConflictStage {
+        mode: fields[0].into(),
+        hash: fields[1].into(),
+        stage: fields[2].parse().map_err(|_| "Invalid stage.")?,
+      });
+    }
+    Ok(stages)
+  }
+
   pub fn resolve_reference(&self, repo: &Path, reference: &str) -> Result<String, String> {
     if reference.is_empty() || reference.starts_with('-') || reference.contains('\0') {
       return Err("Select a commit or branch.".into());
@@ -89,6 +114,8 @@ impl GitService {
   pub fn conflict_content(&self, repo: &Path, path: &str) -> Result<ConflictContent, String> {
     let destination = safe_working_path(repo, path)?;
     self.ensure_conflict(repo, path)?;
+    let stages = self.conflict_stages(repo, path)?;
+    let submodule = stages.iter().any(|stage| stage.mode == "160000");
     let mut editable = true;
     let mut all_sides = true;
     let mut stage_text = |stage: u8| -> Result<String, String> {
@@ -115,9 +142,9 @@ impl GitService {
       }
       Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     };
-    let base = stage_text(1)?;
-    let ours = stage_text(2)?;
-    let theirs = stage_text(3)?;
+    let base = if submodule { String::new() } else { stage_text(1)? };
+    let ours = if submodule { String::new() } else { stage_text(2)? };
+    let theirs = if submodule { String::new() } else { stage_text(3)? };
     let working = match read_text(&destination) {
       Ok(text) => text,
       Err(_) => {
@@ -137,6 +164,17 @@ impl GitService {
       working,
       editable,
       preview,
+      kind: if submodule {
+        "submodule"
+      } else if stages.iter().all(|stage| stage.stage != 2) || stages.iter().all(|stage| stage.stage != 3) {
+        "delete/rename"
+      } else if !editable {
+        "binary/large"
+      } else {
+        "text"
+      }
+      .into(),
+      stages,
     })
   }
 
@@ -256,13 +294,50 @@ impl GitService {
           .ok_or("Select a conflicted file.")?;
         let destination = safe_working_path(repo, path)?;
         self.ensure_conflict(repo, path)?;
+        let stages = self.conflict_stages(repo, path)?;
+        let rename = payload
+          .directory
+          .as_deref()
+          .filter(|value| !value.is_empty() && *value != path);
+        let renamed = rename.map(|value| safe_working_path(repo, value)).transpose()?;
+        if renamed.as_ref().is_some_and(|target| target.exists()) {
+          return Err("The resolution destination already exists. Choose an unused path.".into());
+        }
         match payload.choice.as_deref().unwrap_or("mark") {
+          "delete" => {
+            if stages.iter().any(|stage| stage.mode == "160000") {
+              self.run(repo, &["update-index", "--force-remove", "--", path], false)?;
+            } else {
+              self.run(repo, &["rm", "-f", "--", path], false)?;
+            }
+            return Ok(());
+          }
           "ours" | "theirs" => {
             let stage = if payload.choice.as_deref() == Some("ours") {
               "2"
             } else {
               "3"
             };
+            if stages.iter().any(|item| item.mode == "160000") {
+              if rename.is_some() {
+                return Err("Resolve the submodule before renaming it.".into());
+              }
+              if let Some(item) = stages.iter().find(|item| item.stage.to_string() == stage) {
+                self.run(
+                  repo,
+                  &[
+                    "update-index",
+                    "--add",
+                    "--cacheinfo",
+                    &format!("160000,{},{}", item.hash, path),
+                  ],
+                  false,
+                )?;
+              } else {
+                self.run(repo, &["update-index", "--force-remove", "--", path], false)?;
+              }
+              return Ok(());
+            }
             let available = self
               .run(repo, &["cat-file", "-e", &format!(":{stage}:{path}")], true)?
               .status
@@ -302,9 +377,37 @@ impl GitService {
               check_markers(&read_text(&destination)?)?;
             }
           }
+          "mark-binary" => {
+            let content = self.conflict_content(repo, path)?;
+            if content.editable || content.kind == "submodule" {
+              return Err("Use the text resolver for this file.".into());
+            }
+          }
+          "submodule" => {
+            if !stages.iter().any(|item| item.mode == "160000") {
+              return Err("This is not a submodule conflict.".into());
+            }
+            if !destination.join(".git").exists() {
+              return Err(
+                "Initialize the submodule before selecting a custom commit, or choose an indexed side.".into(),
+              );
+            }
+            let hash = self.resolve_reference(&destination, payload.reference.as_deref().unwrap_or("HEAD"))?;
+            self.run(
+              repo,
+              &["update-index", "--add", "--cacheinfo", &format!("160000,{hash},{path}")],
+              false,
+            )?;
+            return Ok(());
+          }
           _ => return Err("Unknown resolution choice.".into()),
         }
-        self.run(repo, &["add", "-A", "--", path], false)?;
+        if let (Some(target), Some(name)) = (renamed, rename) {
+          fs::rename(&destination, target).map_err(|error| error.to_string())?;
+          self.run(repo, &["add", "-A", "--", path, name], false)?;
+        } else {
+          self.run(repo, &["add", "-A", "--", path], false)?;
+        }
       }
       _ => return Err("Unknown workflow operation.".into()),
     }

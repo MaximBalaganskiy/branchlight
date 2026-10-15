@@ -1,4 +1,25 @@
 merge-editor {
+  & .merge-code-body {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  & .merge-controls {
+    position: relative;
+    width: 32px;
+    flex-shrink: 0;
+    background: var(--color-card-muted);
+
+    & button {
+      position: absolute;
+      width: 30px;
+      height: 24px;
+      min-height: 24px;
+    }
+  }
   & .merge-pane {
     display: flex;
     flex-direction: column;

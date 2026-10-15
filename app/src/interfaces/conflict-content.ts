@@ -1,3 +1,5 @@
+import type { ConflictStage } from './conflict-stage';
+
 export interface ConflictContent {
   base: string;
   ours: string;
@@ -5,4 +7,6 @@ export interface ConflictContent {
   working: string;
   editable: boolean;
   preview: string | null;
+  stages?: ConflictStage[];
+  kind?: string;
 }

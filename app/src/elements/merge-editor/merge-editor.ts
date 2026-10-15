@@ -2,6 +2,8 @@ import { bindable, INode, resolve } from 'aurelia';
 import type { ConflictContent } from '../../interfaces/conflict-content';
 import type { MergeConflictOption } from '../../interfaces/merge-conflict-option';
 import type { MergeSession } from './merge-session';
+import type { MergeDraft } from '../../interfaces/merge-draft';
+import type { MergeInlineControl } from '../../interfaces/merge-inline-control';
 import { hasConflictMarkers } from '../../services/merge-conflicts';
 import '../code-editor/code-editor.css';
 import '../diff-view/syntax.css';
@@ -15,6 +17,9 @@ export class MergeEditor {
 
   @bindable
   filePath = '';
+
+  @bindable
+  draft?: MergeDraft;
 
   @bindable
   busy = false;
@@ -40,6 +45,14 @@ export class MergeEditor {
   syncScroll = true;
   alignmentLimited = false;
   error = '';
+  controls: MergeInlineControl[] = [];
+  searchOpen = false;
+  searchText = '';
+  replacement = '';
+  matchCase = false;
+  regexp = false;
+  searchStatus = '';
+  wrapped = false;
   oursSize = Math.max(180, Math.min(420, Math.round(window.innerWidth * 0.27)));
   theirsSize = this.oursSize;
 
@@ -65,8 +78,12 @@ export class MergeEditor {
       if (generation !== this.generation) {
         return;
       }
-      this.session = new MergeSession([this.resultHost, this.oursHost, this.theirsHost, this.baseHost], this.content, this.filePath, () =>
-        this.update()
+      this.session = new MergeSession(
+        [this.resultHost, this.oursHost, this.theirsHost, this.baseHost],
+        this.content,
+        this.filePath,
+        () => this.update(),
+        this.draft
       );
       this.ready = true;
       this.busyChanged();
@@ -91,10 +108,48 @@ export class MergeEditor {
       }));
       this.dirty = this.session.dirty;
       this.alignmentLimited = this.session.alignmentLimited;
+      this.controls = this.session.controls;
       if (changed) {
         this.host.dispatchEvent(new CustomEvent('resolution-changed', { bubbles: true }));
       }
     }
+  }
+
+  get savedDraft(): MergeDraft | undefined {
+    return this.session && { content: this.content, value: this.value, regions: [...this.session.regions], savedAt: Date.now() };
+  }
+
+  inlineAccept(control: MergeInlineControl) {
+    if (this.busy) {
+      return;
+    }
+    this.session?.selectRegion(control.id);
+    if (control.pane === 0 && control.resolved) {
+      this.reopen();
+    } else {
+      this.accept(control.pane === 1 ? 'ours' : control.pane === 2 ? 'theirs' : 'manual');
+    }
+  }
+
+  toggleWrap() {
+    this.session?.toggleWrap();
+    this.wrapped = this.session?.wrapped ?? false;
+  }
+
+  openSearch() {
+    this.searchOpen = true;
+    requestAnimationFrame(() => this.host.querySelector<HTMLInputElement>('[data-merge-search] input')?.focus());
+  }
+
+  search(action: 'next' | 'previous' | 'replace' | 'all') {
+    if (!this.session || !this.searchText) {
+      return;
+    }
+    if (!this.session.query(this.searchText, this.replacement, this.matchCase, this.regexp)) {
+      this.searchStatus = 'Invalid regular expression';
+      return;
+    }
+    this.searchStatus = this.session.searchCommand(action) ? '' : 'No match';
   }
 
   accept(choice: 'ours' | 'theirs' | 'both' | 'both-reversed' | 'manual') {
@@ -141,6 +196,18 @@ export class MergeEditor {
   }
 
   onKey(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && ['f', 'h'].includes(event.key.toLowerCase())) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.openSearch();
+    }
+    if (event.key === 'Escape' && this.searchOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.searchOpen = false;
+      this.session?.query('', '', false, false);
+      this.session?.result.view.focus();
+    }
     if (event.key === 'F7') {
       event.preventDefault();
       event.stopPropagation();
