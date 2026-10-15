@@ -1,5 +1,5 @@
-export function selectedDiffCode(container: HTMLElement, selection: Selection): string {
-  const lines = container.querySelectorAll('.diff-line:is(.added, .removed, .context) .diff-content');
+export function selectedCode(container: HTMLElement, selection: Selection, selector: string): string {
+  const lines = container.querySelectorAll(selector);
   const fragments: string[] = [];
   for (let index = 0; index < selection.rangeCount; index++) {
     const selected = selection.getRangeAt(index);

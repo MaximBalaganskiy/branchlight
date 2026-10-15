@@ -1,4 +1,5 @@
 <template>
+  <import from="../../attributes/code-selection"></import>
   <div if.bind="selectable && !isLoading && !truncated" class="sticky top-0 z-10 flex items-center gap-3 border-b border-card-border bg-card px-3 py-2">
     <span class="text-xs text-ink-500">${selected.length} changed lines selected</span>
     <button ui-button click.trigger="apply()" disabled.bind="disabled || !selected.length">${staged ? 'Unstage selected lines' : 'Stage selected lines'}</button>
@@ -6,7 +7,7 @@
   </div>
   <div class="diff-empty grid h-full min-h-40 place-items-center text-xs text-ink-500" if.bind="isLoading">Loading diff…</div>
   <div class="diff-empty grid h-full min-h-40 place-items-center text-xs text-ink-500" if.bind="!isLoading && !text">Select a file to inspect its changes.</div>
-  <div class="diff-code min-w-max pt-2 pb-5 text-xs leading-[21px]" if.bind="!isLoading && text" tabindex="0" aria-label="File diff" keydown.trigger="selectAll($event)" copy.trigger="copy($event)">
+  <div class="diff-code min-w-max pt-2 pb-5 text-xs leading-[21px]" if.bind="!isLoading && text" tabindex="0" aria-label="File diff" code-selection=".diff-line.added .diff-content, .diff-line.removed .diff-content, .diff-line.context .diff-content">
     <div repeat.for="line of lines" class="diff-line flex min-h-[21px] whitespace-pre ${line.kind}">
       <div if.bind="selectable && !truncated" class="flex w-8 shrink-0 items-center justify-center">
         <button ui-icon-button size="small" if.bind="line.kind === 'added' || line.kind === 'removed'" aria-label="Select change at diff line ${$index + 1}" aria-pressed.bind="selected.includes($index)" disabled.bind="disabled" click.trigger="toggle($index)">${selected.includes($index) ? '✓' : '+'}</button>

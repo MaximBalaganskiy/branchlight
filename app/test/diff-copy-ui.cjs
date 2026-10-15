@@ -55,6 +55,36 @@ const path = require('node:path');
       true
     );
 
+    await history.getByRole('tab', { name: 'Files', exact: true }).click();
+    await history.getByRole('tree', { name: 'Commit files', exact: true }).locator('[title="sample.ts"]').click();
+    const fileContent = history.locator('.file-content');
+    await fileContent.locator('code').first().click();
+    await history.keyboard.press('Control+a');
+    assert.equal(await copy(history), original);
+    assert.equal(
+      await fileContent.evaluate(element => element.contains(window.getSelection().getRangeAt(0).commonAncestorContainer)),
+      true
+    );
+    await fileContent
+      .locator('code')
+      .nth(1)
+      .evaluate(element => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      });
+    assert.equal(await copy(history), '  const value = "old";');
+    const findInFile = history.getByRole('textbox', { name: 'Find in file', exact: true });
+    await findInFile.fill('value');
+    await findInFile.press('Control+a');
+    assert.deepEqual(await findInFile.evaluate(element => [element.selectionStart, element.selectionEnd]), [0, 5]);
+    await history.getByRole('tab', { name: /^Changes/ }).click();
+    await history.locator('.diff-code').focus();
+    await history.keyboard.press('Control+a');
+    assert.equal(await copy(history), original.trimEnd());
+
     const [commit] = await Promise.all([app.context.waitForEvent('page'), history.getByRole('button', { name: /Commit changes/ }).click()]);
     commit.setDefaultTimeout(15000);
     await commit.locator('.diff-line.added').first().waitFor();
