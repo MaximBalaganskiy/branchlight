@@ -360,7 +360,7 @@ impl GitService {
         self.repository_tool_action(repo, action, payload)?;
       }
       "branch-rename" | "branch-delete" | "branch-upstream" | "reset" | "cherry-pick" | "revert" | "rebase"
-      | "rebase-plan" | "operation-continue" | "operation-skip" | "operation-abort" => {
+      | "rebase-plan" | "rebase-amend" | "operation-continue" | "operation-skip" | "operation-abort" => {
         self.history_action(repo, action, payload)?;
       }
       "publish" | "stash-save" | "stash-apply" | "stash-pop" | "stash-drop" | "amend" | "undo-commit"

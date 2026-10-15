@@ -119,17 +119,19 @@ impl GitService {
     let mut todo = String::new();
     for step in plan {
       match step.action.as_str() {
-        "pick" => picked = true,
+        "pick" | "edit" | "reword" => picked = true,
         "drop" => {}
         "squash" | "fixup" if picked => {}
         _ => {
           return Err(
-            "Each squash/fixup needs a preceding retained commit; only pick, drop, squash and fixup are allowed."
+            "Each squash/fixup needs a preceding retained commit; choose pick, edit, reword, drop, squash or fixup."
               .into(),
           )
         }
       }
-      todo.push_str(&format!("{} {}\n", step.action, step.hash));
+      // Reword pauses in the app, where the user can review and amend the full message.
+      let action = if step.action == "reword" { "edit" } else { &step.action };
+      todo.push_str(&format!("{action} {}\n", step.hash));
     }
     let directory = self.text(repo, &["rev-parse", "--absolute-git-dir"])?;
     let plan_path = Path::new(directory.trim()).join("branchlight-rebase-plan");
@@ -169,6 +171,26 @@ impl GitService {
   }
 
   pub(super) fn history_action(&self, repo: &Path, action: &str, payload: &Mutation) -> Result<(), String> {
+    if action == "rebase-amend" {
+      if self.operation(repo)? != "Rebase" {
+        return Err("No rebase is in progress.".into());
+      }
+      let directory = self.text(repo, &["rev-parse", "--absolute-git-dir"])?;
+      if !Path::new(directory.trim()).join("rebase-merge/amend").is_file() {
+        return Err("This rebase is not paused at an edit/reword step. Resolve conflicts and continue first.".into());
+      }
+      let head = self.resolve_reference(repo, "HEAD")?;
+      if payload.expected_head.as_deref() != Some(&head) {
+        return Err("HEAD changed. Reopen the paused commit.".into());
+      }
+      let message = payload
+        .message
+        .as_deref()
+        .filter(|value| !value.trim().is_empty())
+        .ok_or("Enter a commit message.")?;
+      self.run(repo, &["commit", "--amend", "-m", message], false)?;
+      return Ok(());
+    }
     if action.starts_with("operation-") {
       let operation = self.operation(repo)?;
       if payload.choice.as_deref() != Some(&operation) {

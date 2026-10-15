@@ -1,0 +1,10 @@
+<template class="repository-tool-dialog grid w-[650px] max-w-[90vw] min-w-0 gap-4 overflow-auto p-5">
+  <h2 class="text-xl!">Edit paused commit</h2>
+  <p class="text-sm text-ink-500">Amend ${head.slice(0, 10)} with this message and any staged changes. Stage only the changes you want in this commit before amending. Then continue the rebase.</p>
+  <ui-input textarea rows="10" label="Paused commit message" value.bind="message" disabled.bind="workspace.busy || loading"></ui-input>
+  <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+  <div class="flex justify-end gap-2">
+    <button ui-button click.trigger="close()" disabled.bind="workspace.busy">Cancel</button>
+    <button ui-button primary click.trigger="amend()" disabled.bind="workspace.busy || loading || !message.trim()">Amend paused commit</button>
+  </div>
+</template>

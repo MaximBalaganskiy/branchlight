@@ -2,12 +2,17 @@ import { observable, resolve } from 'aurelia';
 import { IDialogService } from '@aurelia/dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { ConflictDialog } from './conflict-dialog/conflict-dialog';
+import { RebaseEditDialog } from './rebase-edit-dialog/rebase-edit-dialog';
 import { ActionDialog } from '../history/action-dialog/action-dialog';
 import { WorkspaceService } from '../../services/workspace-service';
 import type { ChangedFile } from '../../interfaces/changed-file';
 import './commit.css';
 
 export class Commit {
+  editPausedCommit() {
+    return this.dialogs.open({ component: RebaseEditDialog });
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private dialogs = resolve(IDialogService);
   private unsubscribe?: () => void;

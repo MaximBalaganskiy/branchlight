@@ -1,5 +1,5 @@
 export interface RebaseStep {
   hash: string;
   subject: string;
-  action: 'pick' | 'drop' | 'squash' | 'fixup';
+  action: 'pick' | 'drop' | 'squash' | 'fixup' | 'edit' | 'reword';
 }

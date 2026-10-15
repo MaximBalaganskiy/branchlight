@@ -12,6 +12,7 @@
 <div class="operation-banner flex shrink-0 items-center gap-3 bg-warning-bg px-5 py-2 text-xs text-warning-text" if.bind="workspace.snapshot.operation">
   <span class="flex-1">${workspace.snapshot.operation} in progress. ${replaying ? 'Resolve and stage conflicts, then continue. Git keeps the original commit message. Skip if the current commit is empty or unwanted.' : 'Resolve remaining conflicts, review the staged result, then commit.'}</span>
   <button ui-button if.bind="workspace.snapshot.operation === 'Merge'" click.trigger="abortMerge()" disabled.bind="workspace.busy">Abort merge…</button>
+  <button ui-button if.bind="workspace.snapshot.operation === 'Rebase'" click.trigger="editPausedCommit()" disabled.bind="!canContinue">Edit paused commit…</button>
   <button ui-button if.bind="replaying" click.trigger="controlOperation('abort')" disabled.bind="workspace.busy">Abort…</button>
   <button ui-button if.bind="replaying" click.trigger="controlOperation('skip')" disabled.bind="workspace.busy">Skip commit…</button>
   <button ui-button primary if.bind="replaying" click.trigger="continueOperation()" disabled.bind="!canContinue">Continue ${workspace.snapshot.operation.toLowerCase()}</button>

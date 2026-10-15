@@ -352,3 +352,59 @@ fn branch_delete_rejects_unmerged_and_other_worktree_branches() {
     .unwrap();
   action(&git, repo, "branch-delete", request).unwrap();
 }
+
+#[test]
+fn edit_and_reword_pause_for_review_and_reject_stale_amends() {
+  std::env::set_var("BRANCHLIGHT_EDITOR_EXE", env!("CARGO_BIN_EXE_branchlight"));
+  let (temp, git) = repo();
+  let repo = temp.path();
+  let base = commit(&git, repo, "base", "Base");
+  commit(&git, repo, "one", "One");
+  commit(&git, repo, "two", "Two");
+  let mut plan = git.rebase_plan(repo, &base).unwrap();
+  plan[0].action = "reword".into();
+  plan[1].action = "edit".into();
+  let mut request = payload(&git, repo, &base);
+  request["plan"] = serde_json::to_value(plan).unwrap();
+  action(&git, repo, "rebase-plan", request).unwrap();
+  let head = text(&git, repo, &["rev-parse", "HEAD"]);
+  assert_eq!(text(&git, repo, &["show", "-s", "--format=%s"]), "One");
+  assert!(action(
+    &git,
+    repo,
+    "rebase-amend",
+    json!({"expected_head":base,"message":"Bad"})
+  )
+  .is_err());
+  action(
+    &git,
+    repo,
+    "rebase-amend",
+    json!({"expected_head":head,"message":"Reworded\n\nDescription"}),
+  )
+  .unwrap();
+  action(&git, repo, "operation-continue", json!({"choice":"Rebase"})).unwrap();
+  fs::write(repo.join("two"), "Edited two").unwrap();
+  git.run(repo, &["add", "two"], false).unwrap();
+  let head = text(&git, repo, &["rev-parse", "HEAD"]);
+  action(
+    &git,
+    repo,
+    "rebase-amend",
+    json!({"expected_head":head,"message":"Edited"}),
+  )
+  .unwrap();
+  action(&git, repo, "operation-continue", json!({"choice":"Rebase"})).unwrap();
+  assert_eq!(text(&git, repo, &["show", "HEAD:two"]), "Edited two");
+  assert_eq!(
+    text(&git, repo, &["show", "-s", "--format=%B", "HEAD~1"]),
+    "Reworded\n\nDescription"
+  );
+  assert!(action(
+    &git,
+    repo,
+    "rebase-amend",
+    json!({"expected_head":head,"message":"Bad"})
+  )
+  .is_err());
+}

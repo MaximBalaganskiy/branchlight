@@ -3,6 +3,7 @@ import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
 import type { HistoryOperation } from '../../../interfaces/history-operation';
 import type { RebaseStep } from '../../../interfaces/rebase-step';
+import { autosquashPlan } from '../../../services/autosquash-plan';
 
 export class HistoryOperationDialog {
   readonly workspace = resolve(WorkspaceService);
@@ -16,7 +17,11 @@ export class HistoryOperationDialog {
   discard = false;
   mainline = 1;
   plan: RebaseStep[] = [];
-  readonly actions = ['pick', 'drop', 'squash', 'fixup'];
+  readonly actions = ['pick', 'edit', 'reword', 'drop', 'squash', 'fixup'];
+
+  autosquash() {
+    this.plan = autosquashPlan(this.plan);
+  }
   readonly modes = [
     { value: 'soft', label: 'Soft — keep changes staged' },
     { value: 'mixed', label: 'Mixed — keep changes unstaged' },
