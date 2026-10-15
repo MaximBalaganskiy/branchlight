@@ -4,6 +4,12 @@ import type { Tag } from '../../../interfaces/tag';
 import type { Remote } from '../../../interfaces/remote';
 
 export class TagsDialog extends RepositoryToolDialog {
+  constructor() {
+    super();
+    this.requireRef('name', 'Tag name');
+    this.requireText('reference', 'Tag target');
+  }
+
   tags: Tag[] = [];
   remotes: Remote[] = [];
   remote = '';
@@ -42,7 +48,10 @@ export class TagsDialog extends RepositoryToolDialog {
     this.remote = this.remotes.find(remote => remote.name === this.remote)?.name ?? this.remotes[0]?.name ?? '';
   }
 
-  create() {
+  async create() {
+    if (!(await this.validateFields('name', 'reference'))) {
+      return;
+    }
     return this.act('tag-create', { name: this.name, reference: this.reference, message: this.message });
   }
 

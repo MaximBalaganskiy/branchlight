@@ -2,6 +2,12 @@ import { RepositoryToolDialog } from '../repository-tool-dialog';
 import type { Submodule } from '../../../interfaces/submodule';
 
 export class SubmodulesDialog extends RepositoryToolDialog {
+  constructor() {
+    super();
+    this.requireText('url', 'Submodule URL');
+    this.requireText('path', 'Submodule path');
+  }
+
   modules: Submodule[] = [];
   url = '';
   path = '';
@@ -11,7 +17,10 @@ export class SubmodulesDialog extends RepositoryToolDialog {
     this.modules = await this.workspace.client.submodules();
   }
 
-  add() {
+  async add() {
+    if (!(await this.validateFields('url', 'path'))) {
+      return;
+    }
     return this.act('submodule-add', { name: this.path, url: this.url });
   }
 

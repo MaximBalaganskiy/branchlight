@@ -33,16 +33,16 @@
           <span class="muted text-ink-500">/ All branches</span>
         </h2>
         <div class="spacer flex-1"></div>
-        <form class="history-search flex w-[330px] items-center gap-2 text-ink-500" submit.trigger:prevent="findNext()">
-          <ui-input value.bind="query" placeholder="Find a commit, author or hash…" label="Search commits" class="search-field">
+        <ui-form class="history-search block w-[330px] text-ink-500" submit.trigger:prevent="findNext()">
+          <ui-input value.bind="query" placeholder="Find a commit, author or hash…" label="Search commits" class="search-field col-span-10">
             <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <circle cx="10" cy="10" r="6"></circle>
               <path d="m 15 15 5 5"></path>
             </svg>
+            <span au-slot="helper" if.bind="query">${matchCount} matches</span>
           </ui-input>
-          <small if.bind="query">${matchCount} matches</small>
-          <button ui-icon-button type="submit" title="Next match">↵</button>
-        </form>
+          <button ui-icon-button class="col-span-2" type="submit" title="Next match">↵</button>
+        </ui-form>
       </div>
       <div class="history-head grid h-[27px] shrink-0 items-center border-y border-card-border bg-card-muted pr-3 text-[9px] tracking-widest text-ink-500">
         <span>GRAPH / COMMIT</span>

@@ -11,33 +11,31 @@
     <button ui-button click.trigger="undo()" disabled.bind="busy || !ready" title="Undo · Ctrl+Z">Undo</button>
     <button ui-button click.trigger="redo()" disabled.bind="busy || !ready" title="Redo · Ctrl+Shift+Z">Redo</button>
   </div>
-  <div class="mb-2 flex shrink-0 flex-wrap items-center gap-2">
-    <div if.bind="choices.length" class="w-56 shrink-0">
-      <ui-select label="Review conflict" items.bind="choices" value.bind="selectedConflict" value-field="id" label-field="label" change.trigger="selectConflict()" disabled.bind="busy">
-        <ui-list><ui-list-item repeat.for="choice of $host.items; key: id" value.bind="choice">${choice.label}</ui-list-item></ui-list>
-      </ui-select>
-    </div>
-    <button ui-button click.trigger="accept('ours')" disabled.bind="!choices.length || busy">Accept ours</button>
-    <button ui-button click.trigger="accept('theirs')" disabled.bind="!choices.length || busy">Accept theirs</button>
-    <button ui-button click.trigger="accept('both')" disabled.bind="!choices.length || busy" title="Keep ours followed by theirs for this conflict">Both: ours first</button>
-    <button ui-button click.trigger="accept('both-reversed')" disabled.bind="!choices.length || busy" title="Keep theirs followed by ours for this conflict">Both: theirs first</button>
-    <button ui-button click.trigger="accept('manual')" disabled.bind="!choices.length || currentResolved || busy" title="Confirm the result you edited for the current conflict">Mark conflict resolved</button>
-    <button ui-button click.trigger="reopen()" disabled.bind="!currentResolved || busy" title="Mark this conflict unresolved while keeping its current text">Reopen conflict</button>
-  </div>
-  <form if.bind="searchOpen" class="mb-2 flex shrink-0 flex-wrap items-center gap-2" submit.trigger:prevent="search('next')">
-    <div class="w-52 min-w-0">
-      <ui-input data-merge-search label="Find in result" value.bind="searchText"><span au-slot="leading">⌕</span></ui-input>
-    </div>
-    <div class="w-52 min-w-0"><ui-input label="Replace with" value.bind="replacement"></ui-input></div>
-    <ui-checkbox checked.bind="matchCase">Match case</ui-checkbox>
-    <ui-checkbox checked.bind="regexp">Regex</ui-checkbox>
-    <button ui-button click.trigger="search('previous')">Previous match</button>
-    <button ui-button type="submit">Next match</button>
-    <button ui-button click.trigger="search('replace')" disabled.bind="busy">Replace</button>
-    <button ui-button click.trigger="search('all')" disabled.bind="busy">Replace all</button>
-    <span role="status" class="text-sm text-ink-500">${searchStatus}</span>
-    <button ui-icon-button click.trigger="searchOpen = false" aria-label="Close search">×</button>
-  </form>
+  <ui-form class="mb-2 block shrink-0">
+    <ui-select class="col-span-3 min-w-0" if.bind="choices.length" label="Review conflict" items.bind="choices" value.bind="selectedConflict" value-field="id" label-field="label" change.trigger="selectConflict()" disabled.bind="busy">
+      <ui-list><ui-list-item repeat.for="choice of $host.items; key: id" value.bind="choice">${choice.label}</ui-list-item></ui-list>
+    </ui-select>
+    <button ui-button class="col-span-2" click.trigger="accept('ours')" disabled.bind="!choices.length || busy">Accept ours</button>
+    <button ui-button class="col-span-2" click.trigger="accept('theirs')" disabled.bind="!choices.length || busy">Accept theirs</button>
+    <button ui-button class="col-span-2" click.trigger="accept('both')" disabled.bind="!choices.length || busy" title="Keep ours followed by theirs for this conflict">Both: ours first</button>
+    <button ui-button class="col-span-3" click.trigger="accept('both-reversed')" disabled.bind="!choices.length || busy" title="Keep theirs followed by ours for this conflict">Both: theirs first</button>
+    <button ui-button class="col-span-3 col-start-7" click.trigger="accept('manual')" disabled.bind="!choices.length || currentResolved || busy" title="Confirm the result you edited for the current conflict">Mark conflict resolved</button>
+    <button ui-button class="col-span-3" click.trigger="reopen()" disabled.bind="!currentResolved || busy" title="Mark this conflict unresolved while keeping its current text">Reopen conflict</button>
+  </ui-form>
+  <ui-form if.bind="searchOpen" class="mb-2 block shrink-0" submit.trigger:prevent="search('next')">
+    <ui-input class="col-span-3 min-w-0" data-merge-search label="Find in result" value.bind="searchText">
+      <span au-slot="leading">⌕</span>
+      <span au-slot="helper" role="status">${searchStatus}</span>
+    </ui-input>
+    <ui-input class="col-span-3 min-w-0" label="Replace with" value.bind="replacement"></ui-input>
+    <button ui-button class="col-span-3" click.trigger="search('previous')">Previous match</button>
+    <button ui-button class="col-span-3" type="submit">Next match</button>
+    <ui-checkbox class="col-span-3" checked.bind="matchCase">Match case</ui-checkbox>
+    <ui-checkbox class="col-span-3" checked.bind="regexp">Regex</ui-checkbox>
+    <button ui-button class="col-span-3" click.trigger="search('replace')" disabled.bind="busy">Replace</button>
+    <button ui-button class="col-span-3" click.trigger="search('all')" disabled.bind="busy">Replace all</button>
+    <button ui-icon-button class="col-span-1 col-start-12 justify-self-end" click.trigger="searchOpen = false" aria-label="Close search">×</button>
+  </ui-form>
   <div class="merge-panes flex min-h-0 min-w-0 flex-1 overflow-hidden rounded border border-card-border">
     <section class="merge-pane merge-side">
       <h3 title="Read only · differences from the result">

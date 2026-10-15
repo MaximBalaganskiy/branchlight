@@ -4,21 +4,19 @@
     <strong>${model.branch.name}</strong>
     · ${model.branch.hash.slice(0, 8)}
   </p>
-  <form class="grid gap-4" submit.trigger:prevent="save()">
-    <ui-input if.bind="model.action === 'rename'" label="New branch name" value.bind="name" disabled.bind="workspace.busy" required></ui-input>
-    <ui-select if.bind="model.action === 'upstream'" label="Upstream branch" items.bind="upstreams" value.bind="upstream" value-field="fullName" label-field="name" disabled.bind="workspace.busy">
+  <ui-form class="block" submit.trigger:prevent="save()">
+    <ui-input class="col-span-12" if.bind="model.action === 'rename'" label="New branch name" value.bind="name & validate" disabled.bind="workspace.busy" required></ui-input>
+    <ui-select class="col-span-12" if.bind="model.action === 'upstream'" label="Upstream branch" items.bind="upstreams" value.bind="upstream" value-field="fullName" label-field="name" disabled.bind="workspace.busy">
       <ui-list><ui-list-item repeat.for="branch of $host.items" value.bind="branch">${branch.name}</ui-list-item></ui-list>
+      <span au-slot="helper">Pull and push use this remote branch. Fetch first if it is missing from this list.</span>
     </ui-select>
-    <p if.bind="model.action === 'upstream'" class="text-sm text-ink-500">Pull and push use this remote branch. Fetch first if it is missing from this list.</p>
-    <div if.bind="model.action === 'delete'" class="grid gap-3">
+    <div if.bind="model.action === 'delete'" class="col-span-12 grid gap-3">
       <p class="text-sm">Delete this local branch? Branches checked out in any worktree cannot be deleted.</p>
       <ui-checkbox checked.bind="force" disabled.bind="workspace.busy">Delete even if the branch has unmerged commits</ui-checkbox>
       <p if.bind="force" class="text-sm text-warning-text">Unmerged commits may become unreachable. Keep another branch or tag if you need them.</p>
     </div>
-    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
-    <div class="flex justify-end gap-2">
-      <button ui-button type="button" click.trigger="cancel()" disabled.bind="workspace.busy">Cancel</button>
-      <button ui-button primary.bind="model.action !== 'delete'" danger.bind="model.action === 'delete'" type="submit" disabled.bind="workspace.busy || (model.action === 'rename' && (!name.trim() || name.trim() === model.branch.name))">${title}</button>
-    </div>
-  </form>
+    <ui-alert class="col-span-12" if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <button ui-button class="col-span-6" type="button" click.trigger="cancel()" disabled.bind="workspace.busy">Cancel</button>
+    <button ui-button class="col-span-6" primary.bind="model.action !== 'delete'" danger.bind="model.action === 'delete'" type="submit" formnovalidate disabled.bind="workspace.busy || (model.action === 'rename' && name.trim() === model.branch.name)">${title}</button>
+  </ui-form>
 </template>

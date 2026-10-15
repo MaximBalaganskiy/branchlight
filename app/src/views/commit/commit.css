@@ -14,9 +14,6 @@
     background: var(--color-selected);
     color: var(--color-on-selected);
   }
-  & .file-item {
-    flex: 1;
-  }
 }
 
 .unstaged-section {

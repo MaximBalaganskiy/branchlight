@@ -1,8 +1,16 @@
+import { ValidatedForm } from '../../../services/validated-form';
 import { resolve } from 'aurelia';
 import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
 
-export class RepositoryDialog {
+export class RepositoryDialog extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireText('url', 'Repository URL or local path');
+    this.requireText('directory', 'Destination folder');
+    this.requireRef('branch', 'Initial branch');
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private dialog = resolve(IDialogController);
   mode = 'clone';
@@ -25,6 +33,9 @@ export class RepositoryDialog {
   }
 
   async create() {
+    if (!(await this.validateFields('directory', ...(this.mode === 'clone' ? ['url' as const] : ['branch' as const])))) {
+      return;
+    }
     if (this.working || this.workspace.busy) {
       return;
     }

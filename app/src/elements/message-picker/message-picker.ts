@@ -2,8 +2,14 @@ import { bindable, INode, resolve } from 'aurelia';
 import type { MessageOptions } from '../../interfaces/message-options';
 import type { MessageTemplate } from '../../interfaces/message-template';
 import { WorkspaceService } from '../../services/workspace-service';
+import { ValidatedForm } from '../../services/validated-form';
 
-export class MessagePicker {
+export class MessagePicker extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireText('name', 'Template name');
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private element = resolve(INode) as HTMLElement;
   anchor!: HTMLElement;
@@ -41,7 +47,10 @@ export class MessagePicker {
     this.element.dispatchEvent(new CustomEvent('message-chosen', { detail: text, bubbles: true }));
   }
 
-  saveTemplate() {
+  async saveTemplate() {
+    if (!(await this.validateFields('name'))) {
+      return;
+    }
     const name = this.name.trim();
     if (!name || !this.message.trim()) {
       return;

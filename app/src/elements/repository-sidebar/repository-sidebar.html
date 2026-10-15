@@ -11,14 +11,14 @@
     Working directory
     <span class="count inline-block min-w-5 rounded bg-card-muted px-1.5 text-center text-[10px] leading-[18px] text-ink-500">${workspace.snapshot.files.length}</span>
   </button>
-  <div class="branch-search my-2">
-    <ui-input value.bind="branchSearch" placeholder="Find a branch…" label="Find a branch" class="search-field">
+  <ui-form class="branch-search block shrink-0">
+    <ui-input value.bind="branchSearch" placeholder="Find a branch…" label="Find a branch" class="search-field col-span-12">
       <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <circle cx="10" cy="10" r="6"></circle>
         <path d="m 15 15 5 5"></path>
       </svg>
     </ui-input>
-  </div>
+  </ui-form>
   <div class="branch-lists min-h-0 flex-1 overflow-auto">
     <worktree-sidebar></worktree-sidebar>
     <ui-tree class="border-0! rounded-none! p-0!" items.bind="nodes" value.bind="selectedNode" value-field="id" label-field="name" label="Repository references" toggle-on-parent-click tree-select.trigger="selectNode($event.detail)" tree-expand.trigger="rememberExpansion($event.detail, true)" tree-collapse.trigger="rememberExpansion($event.detail, false)">

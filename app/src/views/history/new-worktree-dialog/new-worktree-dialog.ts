@@ -1,8 +1,16 @@
+import { ValidatedForm } from '../../../services/validated-form';
 import { resolve } from 'aurelia';
 import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
 
-export class NewWorktreeDialog {
+export class NewWorktreeDialog extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireRef('name', 'New branch');
+    this.requireText('directory', 'Worktree folder');
+    this.requireText('reference', 'Start reference');
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private dialog = resolve(IDialogController);
   name = '';
@@ -11,6 +19,9 @@ export class NewWorktreeDialog {
   error = '';
 
   async create() {
+    if (!(await this.validateFields('name', 'directory', 'reference'))) {
+      return;
+    }
     this.error = '';
     if (
       await this.workspace.action(

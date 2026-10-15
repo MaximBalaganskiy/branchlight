@@ -1,3 +1,4 @@
+import { ValidatedForm } from '../../../services/validated-form';
 import { resolve } from 'aurelia';
 import { IDialogController, type DialogCloseResult } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
@@ -7,7 +8,13 @@ import { mergeConflicts } from '../../../services/merge-conflicts';
 import { MergeDrafts } from '../../../services/merge-drafts';
 import type { MergeDraft } from '../../../interfaces/merge-draft';
 
-export class ConflictDialog {
+export class ConflictDialog extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireText('destination', 'Resolved file path');
+    this.requireText('submoduleCommit', 'Resolved submodule commit');
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private dialog = resolve(IDialogController);
   private drafts = resolve(MergeDrafts);
@@ -58,6 +65,12 @@ export class ConflictDialog {
   }
 
   async resolve(choice: string) {
+    if (this.content?.kind === 'delete/rename' && choice !== 'delete' && !(await this.validateFields('destination'))) {
+      return;
+    }
+    if (choice === 'submodule' && !(await this.validateFields('submoduleCommit'))) {
+      return;
+    }
     this.error = '';
     if (choice === 'edit' && (!this.editor?.ready || this.editor.remaining)) {
       this.error = 'Resolve each conflict before saving. Accept a side or edit the result and choose Mark conflict resolved.';

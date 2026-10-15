@@ -1,6 +1,11 @@
 import { RepositoryToolDialog } from '../../history/repository-tool-dialog';
 
 export class RebaseEditDialog extends RepositoryToolDialog {
+  constructor() {
+    super();
+    this.requireText('message', 'Paused commit message');
+  }
+
   head = '';
   message = '';
 
@@ -11,6 +16,9 @@ export class RebaseEditDialog extends RepositoryToolDialog {
   }
 
   async amend() {
+    if (!(await this.validateFields('message'))) {
+      return;
+    }
     if (await this.workspace.action('rebase-amend', { expected_head: this.head, message: this.message }, false)) {
       await this.dialog.ok();
     } else {

@@ -165,7 +165,7 @@ const path = require('node:path');
     const worktrees = page.getByRole('dialog');
     const directory = path.join(root, 'linked');
     await worktrees.getByRole('textbox', { name: 'New branch', exact: true }).fill('main');
-    await worktrees.getByRole('textbox', { name: 'Worktree folder (absolute path)', exact: true }).fill(directory);
+    await worktrees.getByRole('textbox', { name: 'Worktree folder', exact: true }).fill(directory);
     await worktrees.getByRole('button', { name: 'Create worktree', exact: true }).click();
     await worktrees
       .getByRole('alert')

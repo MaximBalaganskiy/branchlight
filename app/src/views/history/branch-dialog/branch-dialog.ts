@@ -1,9 +1,15 @@
+import { ValidatedForm } from '../../../services/validated-form';
 import { resolve } from 'aurelia';
 import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
 import type { BranchOperation } from '../../../interfaces/branch-operation';
 
-export class BranchDialog {
+export class BranchDialog extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireRef('name', 'New branch name');
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private dialog = resolve(IDialogController);
   model!: BranchOperation;
@@ -30,6 +36,9 @@ export class BranchDialog {
   }
 
   async save() {
+    if (this.model.action === 'rename' && !(await this.validateFields('name'))) {
+      return;
+    }
     if (this.model.action === 'upstream' && this.upstream === ':none' && !this.model.branch.upstream) {
       await this.dialog.ok();
       return;

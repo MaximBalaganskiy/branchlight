@@ -14,18 +14,20 @@
     <button ui-button if.bind="!staleDraft" click.trigger="restoreDraft()">Restore draft</button>
     <button ui-button click.trigger="discardDraft()">Start again</button>
   </ui-alert>
-  <ui-input if.bind="staleDraft" textarea readonly rows="8" label="Previous draft — copy any edits you want to keep before starting again" value.bind="pendingDraft.value"></ui-input>
+  <ui-form if.bind="staleDraft" class="block shrink-0">
+    <ui-input class="col-span-12" textarea readonly rows="8" label="Previous draft" value.bind="pendingDraft.value"><span au-slot="helper">Copy any edits you want to keep before starting again.</span></ui-input>
+  </ui-form>
   <template if.bind="content">
     <div if.bind="content.kind !== 'text'" class="mb-3 grid shrink-0 gap-2 text-sm">
       <strong>${content.kind === 'submodule' ? 'Submodule commit conflict' : content.kind === 'delete/rename' ? 'File deletion or rename conflict' : 'Binary or large file conflict'}</strong>
       <div class="flex flex-wrap gap-4"><span repeat.for="side of sides">${side.label}: ${side.hash}</span></div>
-      <p if.bind="content.kind === 'delete/rename'">Choose which version to keep, delete this path, or save it under a new name. Resolve other renamed paths listed in the commit window separately.</p>
-      <ui-input if.bind="content.kind === 'delete/rename'" label="Resolved file path" value.bind="destination"></ui-input>
-      <template if.bind="content.kind === 'submodule'">
-        <p>Choosing a side stages that Git commit without changing the submodule checkout. To keep a merge made inside the submodule, enter its commit below.</p>
-        <ui-input label="Resolved submodule commit" value.bind="submoduleCommit"></ui-input>
-        <button ui-button click.trigger="resolve('submodule')" disabled.bind="workspace.busy">Stage submodule commit</button>
-      </template>
+      <ui-form if.bind="content.kind === 'delete/rename'" class="block">
+        <ui-input class="col-span-12" label="Resolved file path" value.bind="destination & validate"><span au-slot="helper">Choose which version to keep, delete this path, or save it under a new name. Resolve other renamed paths listed in the commit window separately.</span></ui-input>
+      </ui-form>
+      <ui-form if.bind="content.kind === 'submodule'" class="block">
+        <ui-input class="col-span-8" label="Resolved submodule commit" value.bind="submoduleCommit & validate"><span au-slot="helper">Choosing a side stages that Git commit without changing the submodule checkout. To keep a merge made inside the submodule, enter its commit here.</span></ui-input>
+        <button ui-button class="col-span-4" click.trigger="resolve('submodule')" disabled.bind="workspace.busy">Stage submodule commit</button>
+      </ui-form>
       <div class="flex gap-2">
         <button ui-button danger click.trigger="confirmDelete = true" disabled.bind="workspace.busy">Delete conflicted path…</button>
         <button ui-button danger if.bind="confirmDelete" click.trigger="resolve('delete')" disabled.bind="workspace.busy">Confirm deletion</button>

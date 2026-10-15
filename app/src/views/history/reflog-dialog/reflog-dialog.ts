@@ -3,6 +3,11 @@ import { observable } from 'aurelia';
 import type { ReflogEntry } from '../../../interfaces/reflog-entry';
 
 export class ReflogDialog extends RepositoryToolDialog {
+  constructor() {
+    super();
+    this.requireRef('name', 'Recovery branch name');
+  }
+
   entries: ReflogEntry[] = [];
   selected: ReflogEntry | null = null;
   name = '';
@@ -25,7 +30,10 @@ export class ReflogDialog extends RepositoryToolDialog {
     this.selected = this.entries.find(entry => entry.hash === this.selected?.hash) ?? this.entries[0] ?? null;
   }
 
-  recover() {
+  async recover() {
+    if (!(await this.validateFields('name'))) {
+      return;
+    }
     return this.act('reflog-recover', { name: this.name, reference: this.selected?.hash });
   }
 }

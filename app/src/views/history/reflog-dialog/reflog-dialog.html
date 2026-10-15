@@ -1,7 +1,9 @@
 <template class="repository-tool-dialog flex w-[850px] max-w-[90vw] max-h-[90vh] min-w-0 flex-col gap-3 overflow-hidden p-5">
   <h2 class="text-xl!">Reflog recovery</h2>
   <p class="text-sm text-ink-500">Recent local reference movements, including commits removed by resets and rebases. Recover a commit onto a new branch. Expired reflog entries are unavailable.</p>
-  <ui-input label="Search reflog" value.bind="query"><span au-slot="leading">⌕</span></ui-input>
+  <ui-form class="block shrink-0">
+    <ui-input class="col-span-12" label="Search reflog" value.bind="query"><span au-slot="leading">⌕</span></ui-input>
+  </ui-form>
   <div class="min-h-0 flex-1 overflow-auto">
     <ui-list items.bind="filtered" selected.bind="selected" typeahead-field="message" aria-label="Reflog entries">
       <ui-list-item repeat.for="entry of filtered" value.bind="entry">
@@ -13,11 +15,10 @@
     </ui-list>
     <p if.bind="!filtered.length">${loading ? 'Loading…' : 'No reflog entries found.'}</p>
   </div>
-  <form class="flex shrink-0 items-center gap-2" submit.trigger:prevent="recover()">
-    <ui-input class="min-w-0 flex-1" label="Recovery branch name" value.bind="name"></ui-input>
-    <button ui-button primary type="submit" disabled.bind="!selected || !name || workspace.busy || loading">Create recovery branch</button>
-  </form>
-  <p if.bind="selected" class="text-xs text-ink-500">Recover ${selected.hash}. Your current branch and files stay in place.</p>
+  <ui-form class="block shrink-0" submit.trigger:prevent="recover()">
+    <ui-input class="col-span-8 min-w-0" label="Recovery branch name" value.bind="name & validate"><span au-slot="helper" if.bind="selected">Recover ${selected.hash}. Your current branch and files stay in place.</span></ui-input>
+    <button ui-button class="col-span-4" primary type="submit" formnovalidate disabled.bind="!selected || workspace.busy || loading">Create recovery branch</button>
+  </ui-form>
   <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
   <p role="status" class="text-sm">${status}</p>
   <div class="flex justify-end gap-2">

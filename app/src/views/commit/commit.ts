@@ -1,3 +1,4 @@
+import { ValidatedForm } from '../../services/validated-form';
 import { observable, resolve } from 'aurelia';
 import { IDialogService } from '@aurelia/dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -8,7 +9,12 @@ import { WorkspaceService } from '../../services/workspace-service';
 import type { ChangedFile } from '../../interfaces/changed-file';
 import './commit.css';
 
-export class Commit {
+export class Commit extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireText('message', 'Commit message');
+  }
+
   editPausedCommit() {
     return this.dialogs.open({ component: RebaseEditDialog });
   }
@@ -236,6 +242,9 @@ export class Commit {
   }
 
   async commit() {
+    if (!(await this.validateFields('message'))) {
+      return;
+    }
     if (this.canCommit && this.amendHead) {
       const result = await this.dialogs.open({
         component: ActionDialog,

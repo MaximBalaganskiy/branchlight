@@ -15,11 +15,11 @@
     </div>
     <p if.bind="!modules.length">${loading ? 'Loading…' : 'No submodules.'}</p>
   </div>
-  <form class="grid shrink-0 gap-3 border-t border-card-border pt-3" submit.trigger:prevent="add()">
-    <ui-input label="Submodule URL" value.bind="url"></ui-input>
-    <ui-input label="Submodule path" value.bind="path"></ui-input>
-    <button ui-button primary type="submit" disabled.bind="!url || !path || workspace.busy || loading">Add submodule</button>
-  </form>
+  <ui-form class="block shrink-0 border-t border-card-border" submit.trigger:prevent="add()">
+    <ui-input class="col-span-12" label="Submodule URL" value.bind="url & validate"></ui-input>
+    <ui-input class="col-span-8" label="Submodule path" value.bind="path & validate"></ui-input>
+    <button ui-button class="col-span-4" primary type="submit" formnovalidate disabled.bind="workspace.busy || loading">Add submodule</button>
+  </ui-form>
   <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
   <p role="status" class="text-sm">${status}</p>
   <div class="flex justify-end gap-2">

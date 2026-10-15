@@ -1,12 +1,11 @@
 <template class="branch-dialog w-[430px] max-w-[90vw] p-6">
-  <form submit.trigger:prevent="save()">
-    <h2>Create branch</h2>
-    <ui-input label="Branch name" value.bind="name" placeholder="feature/my-change" required autofocus></ui-input>
-    <p class="muted text-ink-500">Create and check out a branch from ${reference || 'the current commit'}.</p>
-    <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
-    <div class="dialog-actions mt-5 flex justify-end gap-2.5">
-      <button ui-button type="button" click.trigger="cancel()">Cancel</button>
-      <button ui-button primary type="submit" disabled.bind="workspace.busy || !name.trim()">Create branch</button>
-    </div>
-  </form>
+  <h2>Create branch</h2>
+  <ui-form class="block" submit.trigger:prevent="save()">
+    <ui-input class="col-span-12" label="Branch name" value.bind="name & validate" placeholder="feature/my-change" required autofocus>
+      <span au-slot="helper">Create and check out a branch from ${reference || 'the current commit'}.</span>
+    </ui-input>
+    <ui-alert class="col-span-12" if.bind="error" tone="danger" role="alert">${error}</ui-alert>
+    <button ui-button class="col-span-6" type="button" click.trigger="cancel()">Cancel</button>
+    <button ui-button class="col-span-6" primary type="submit" formnovalidate disabled.bind="workspace.busy">Create branch</button>
+  </ui-form>
 </template>

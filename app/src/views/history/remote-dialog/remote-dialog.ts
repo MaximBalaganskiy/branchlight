@@ -1,9 +1,16 @@
+import { ValidatedForm } from '../../../services/validated-form';
 import { resolve } from 'aurelia';
 import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
 import type { Remote } from '../../../interfaces/remote';
 
-export class RemoteDialog {
+export class RemoteDialog extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireRef('name', 'Remote name');
+    this.requireText('url', 'Remote URL');
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private dialog = resolve(IDialogController);
   editing = false;
@@ -24,6 +31,9 @@ export class RemoteDialog {
   }
 
   async save() {
+    if (!(await this.validateFields('name', 'url'))) {
+      return;
+    }
     this.error = '';
     if (
       await this.workspace.action(

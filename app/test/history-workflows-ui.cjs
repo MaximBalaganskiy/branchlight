@@ -71,7 +71,7 @@ const os = require('node:os');
     await branchMenu('disposable', 'Rename branch…');
     await dialog.getByRole('textbox', { name: 'New branch name', exact: true }).fill('bad name');
     await dialog.getByRole('button', { name: 'Rename branch', exact: true }).click();
-    await dialog.getByRole('alert').waitFor();
+    await dialog.locator('.ui-input__error').filter({ hasText: 'must not contain spaces' }).waitFor();
     await dialog.getByRole('textbox', { name: 'New branch name', exact: true }).fill('renamed');
     await dialog.getByRole('textbox', { name: 'New branch name', exact: true }).press('Enter');
     await dialog.waitFor({ state: 'hidden' });

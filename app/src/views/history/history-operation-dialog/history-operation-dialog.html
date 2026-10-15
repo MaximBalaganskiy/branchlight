@@ -12,14 +12,18 @@
   <div class="grid min-w-0 gap-4">
     <p if.bind="model.action === 'cherry-pick'" class="text-sm text-ink-500">Apply this commit's changes as a new commit on ${branch}. Your working directory must be clean.</p>
     <p if.bind="model.action === 'revert'" class="text-sm text-ink-500">Create a new commit that reverses this commit's changes. Your working directory must be clean.</p>
-    <ui-select if.bind="parents.length > 1 && (model.action === 'cherry-pick' || model.action === 'revert')" label="Mainline parent" items.bind="parents" value.bind="mainline" value-field="value" label-field="label" disabled.bind="workspace.busy">
-      <ui-list><ui-list-item repeat.for="parent of $host.items" value.bind="parent">${parent.label}</ui-list-item></ui-list>
-    </ui-select>
-    <p if.bind="parents.length > 1 && (model.action === 'cherry-pick' || model.action === 'revert')" class="text-sm text-ink-500">Changes are calculated relative to the selected parent of this merge commit.</p>
-    <div if.bind="model.action === 'reset'" class="grid gap-4">
-      <ui-select label="Reset mode" items.bind="modes" value.bind="mode" value-field="value" label-field="label" disabled.bind="workspace.busy">
-        <ui-list><ui-list-item repeat.for="item of $host.items" value.bind="item">${item.label}</ui-list-item></ui-list>
+    <ui-form if.bind="parents.length > 1 && (model.action === 'cherry-pick' || model.action === 'revert')" class="block">
+      <ui-select class="col-span-12" label="Mainline parent" items.bind="parents" value.bind="mainline" value-field="value" label-field="label" disabled.bind="workspace.busy">
+        <ui-list><ui-list-item repeat.for="parent of $host.items" value.bind="parent">${parent.label}</ui-list-item></ui-list>
+        <span au-slot="helper">Changes are calculated relative to the selected parent of this merge commit.</span>
       </ui-select>
+    </ui-form>
+    <div if.bind="model.action === 'reset'" class="grid gap-4">
+      <ui-form class="block">
+        <ui-select class="col-span-12" label="Reset mode" items.bind="modes" value.bind="mode" value-field="value" label-field="label" disabled.bind="workspace.busy">
+          <ui-list><ui-list-item repeat.for="item of $host.items" value.bind="item">${item.label}</ui-list-item></ui-list>
+        </ui-select>
+      </ui-form>
       <p class="text-sm text-warning-text">Move ${branch} to the selected commit. Later commits leave this branch's history; other branches stay where they are.</p>
       <ui-checkbox if.bind="mode === 'hard'" checked.bind="discard" disabled.bind="workspace.busy">Discard all staged and unstaged tracked changes</ui-checkbox>
       <p if.bind="mode === 'hard'" class="text-sm text-warning-text">Uncommitted changes cannot be recovered from the reflog. Stash untracked files before a hard reset.</p>
@@ -31,19 +35,17 @@
       <p class="text-sm text-ink-500">Edit and reword pause at that commit. Use Edit paused commit in the commit window to amend the message and staged changes, then continue.</p>
       <button ui-button click.trigger="autosquash()" disabled.bind="workspace.busy || !plan.length">Arrange fixup! / squash! commits</button>
       <p if.bind="!plan.length" role="status">${loading ? 'Loading plan…' : 'No commits to replay.'}</p>
-      <div repeat.for="step of plan; key: hash" class="flex min-w-0 items-center gap-2 rounded border border-card-border p-2">
-        <div class="w-40 min-w-0 shrink-0">
-          <ui-select label="Action for ${step.hash.slice(0, 8)}" items.bind="actions" value.bind="step.action" disabled.bind="workspace.busy">
-            <ui-list><ui-list-item repeat.for="action of $host.items" value.bind="action">${action}</ui-list-item></ui-list>
-          </ui-select>
-        </div>
-        <div class="min-w-0 flex-1">
+      <ui-form repeat.for="step of plan; key: hash" class="block min-w-0 rounded border border-card-border p-2">
+        <ui-select class="col-span-4 min-w-0" label="Action for ${step.hash.slice(0, 8)}" items.bind="actions" value.bind="step.action" disabled.bind="workspace.busy">
+          <ui-list><ui-list-item repeat.for="action of $host.items" value.bind="action">${action}</ui-list-item></ui-list>
+        </ui-select>
+        <div class="col-span-4 min-w-0 self-center">
           <code class="text-xs text-ink-500">${step.hash.slice(0, 8)}</code>
           <div class="truncate" title.bind="step.subject">${step.subject}</div>
         </div>
-        <button ui-icon-button click.trigger="move($index, -1)" disabled.bind="workspace.busy || $first" aria-label="Move ${step.subject} earlier">↑</button>
-        <button ui-icon-button click.trigger="move($index, 1)" disabled.bind="workspace.busy || $last" aria-label="Move ${step.subject} later">↓</button>
-      </div>
+        <button ui-icon-button class="col-span-2" click.trigger="move($index, -1)" disabled.bind="workspace.busy || $first" aria-label="Move ${step.subject} earlier">↑</button>
+        <button ui-icon-button class="col-span-2" click.trigger="move($index, 1)" disabled.bind="workspace.busy || $last" aria-label="Move ${step.subject} later">↓</button>
+      </ui-form>
     </div>
     <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
     <div class="flex justify-end gap-2">

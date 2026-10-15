@@ -1,22 +1,22 @@
 <import from="../../../elements/diff-view/diff-view"></import>
 <template class="stash-manager flex w-[900px] max-w-[95vw] max-h-[90vh] flex-col gap-3 overflow-auto p-5">
   <h2 class="text-xl!">Stashes</h2>
-  <form class="grid gap-3 border-b border-card-border pb-3" submit.trigger:prevent="act('stash-save')">
-    <ui-input label="Stash message (optional)" value.bind="message" disabled.bind="workspace.busy"></ui-input>
-    <div class="flex items-center gap-3">
-      <ui-checkbox checked.bind="includeUntracked" disabled.bind="workspace.busy">Include untracked files</ui-checkbox>
-      <button ui-button class="ml-auto" type="submit" disabled.bind="workspace.busy || !workspace.snapshot.files.length || !!workspace.snapshot.operation">Save stash</button>
-    </div>
-  </form>
+  <ui-form class="block border-b border-card-border" submit.trigger:prevent="act('stash-save')">
+    <ui-input class="col-span-9" label="Stash message (optional)" value.bind="message" disabled.bind="workspace.busy"></ui-input>
+    <button ui-button class="col-span-3" type="submit" disabled.bind="workspace.busy || !workspace.snapshot.files.length || !!workspace.snapshot.operation">Save stash</button>
+    <ui-checkbox class="col-span-12" checked.bind="includeUntracked" disabled.bind="workspace.busy">Include untracked files</ui-checkbox>
+  </ui-form>
   <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
-  <ui-select if.bind="stashes.length" label="Saved stash" items.bind="stashes" value.bind="selectedHash" value-field="hash" label-field="message" disabled.bind="workspace.busy">
-    <ui-list>
-      <ui-list-item repeat.for="stash of $host.items" value.bind="stash">
-        ${stash.message}
-        <span au-slot="secondary">${stash.reference} · ${stash.date}</span>
-      </ui-list-item>
-    </ui-list>
-  </ui-select>
+  <ui-form if.bind="stashes.length" class="block">
+    <ui-select class="col-span-12" label="Saved stash" items.bind="stashes" value.bind="selectedHash" value-field="hash" label-field="message" disabled.bind="workspace.busy">
+      <ui-list>
+        <ui-list-item repeat.for="stash of $host.items" value.bind="stash">
+          ${stash.message}
+          <span au-slot="secondary">${stash.reference} · ${stash.date}</span>
+        </ui-list-item>
+      </ui-list>
+    </ui-select>
+  </ui-form>
   <p if.bind="!stashes.length" class="p-4 text-center text-ink-500">No saved stashes.</p>
   <div if.bind="selected" class="flex min-h-0 flex-col">
     <p class="mb-2 text-xs text-ink-500">${selected.reference} · ${selected.date}</p>

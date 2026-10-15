@@ -1,8 +1,9 @@
 import { resolve } from 'aurelia';
 import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../services/workspace-service';
+import { ValidatedForm } from '../../services/validated-form';
 
-export abstract class RepositoryToolDialog {
+export abstract class RepositoryToolDialog extends ValidatedForm {
   readonly workspace = resolve(WorkspaceService);
   protected dialog = resolve(IDialogController);
   error = '';

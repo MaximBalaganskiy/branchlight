@@ -1,9 +1,16 @@
+import { ValidatedForm } from '../../../services/validated-form';
 import { resolve } from 'aurelia';
 import { IDialogController } from '@aurelia/dialog';
 import { WorkspaceService } from '../../../services/workspace-service';
 import type { Remote } from '../../../interfaces/remote';
 
-export class PublishDialog {
+export class PublishDialog extends ValidatedForm {
+  constructor() {
+    super();
+    this.requireText('remote', 'Remote');
+    this.requireRef('branch', 'Remote branch');
+  }
+
   readonly workspace = resolve(WorkspaceService);
   private dialog = resolve(IDialogController);
   remotes: Remote[] = [];
@@ -24,6 +31,9 @@ export class PublishDialog {
   }
 
   async publish() {
+    if (!(await this.validateFields('remote', 'branch'))) {
+      return;
+    }
     if (await this.workspace.action('publish', { name: this.remote, text: this.branch.trim(), reference: this.source }, false)) {
       await this.dialog.ok();
     } else {

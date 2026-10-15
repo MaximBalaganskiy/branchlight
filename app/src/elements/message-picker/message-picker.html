@@ -3,11 +3,11 @@
     <button ui-button ref="anchor" click.trigger="show()" aria-haspopup="menu" aria-expanded.bind="open" disabled.bind="workspace.busy">Previous messages &amp; templates ▾</button>
     <button ui-button click.trigger="saving = !saving" disabled.bind="workspace.busy || !message.trim()">Save as template</button>
   </div>
-  <form if.bind="saving" class="mb-2 flex items-center gap-2" submit.trigger:prevent="saveTemplate()">
-    <ui-input label="Template name" value.bind="name" required></ui-input>
-    <button ui-button type="submit" disabled.bind="!name.trim()">Save template</button>
-    <button ui-button type="button" click.trigger="saving = false">Cancel</button>
-  </form>
+  <ui-form if.bind="saving" class="mb-2 block" submit.trigger:prevent="saveTemplate()">
+    <ui-input class="col-span-6" label="Template name" value.bind="name & validate" required></ui-input>
+    <button ui-button class="col-span-3" type="submit" formnovalidate>Save template</button>
+    <button ui-button class="col-span-3" type="button" click.trigger="saving = false">Cancel</button>
+  </ui-form>
   <ui-menu open.bind="open" anchor.bind="anchor" tab-reference.bind="anchor" close-on-select menu-select.trigger="choose($event.detail)">
     <ui-list class="max-h-[50vh] w-[480px] max-w-[80vw] overflow-auto" aria-label="Commit messages and templates">
       <ui-list-item if.bind="options.suggested" value.bind="options.suggested">Suggested merge message</ui-list-item>

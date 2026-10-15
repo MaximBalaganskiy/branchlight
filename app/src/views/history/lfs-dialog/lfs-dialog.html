@@ -14,22 +14,17 @@
       <h3 class="mt-3">Transfer status</h3>
       <pre class="whitespace-pre-wrap break-all text-sm">${info.status}</pre>
     </div>
-    <div class="flex shrink-0 items-center gap-2">
-      <ui-input class="min-w-0 flex-1" label="LFS file pattern" placeholder="*.psd" value.bind="pattern"></ui-input>
-      <button ui-button click.trigger="track('lfs-track')" disabled.bind="!pattern || workspace.busy">Track pattern</button>
-      <button ui-button click.trigger="track('lfs-untrack')" disabled.bind="!pattern || workspace.busy">Untrack pattern</button>
-    </div>
-    <p class="text-xs text-ink-500">Commit .gitattributes and re-stage matching files to apply tracking. Existing history is not rewritten.</p>
-    <div class="flex shrink-0 items-center gap-2">
-      <div class="w-48 min-w-0 shrink-0">
-        <ui-select label="LFS remote" items.bind="remotes" value.bind="remote" value-field="name" label-field="name">
-          <ui-list><ui-list-item repeat.for="remote of $host.items; key: name" value.bind="remote">${remote.name}</ui-list-item></ui-list>
-        </ui-select>
-      </div>
-      <button ui-button click.trigger="transfer('lfs-fetch')" disabled.bind="!remote || workspace.busy">Fetch LFS objects</button>
-      <button ui-button click.trigger="transfer('lfs-pull')" disabled.bind="!remote || workspace.busy">Download into checkout</button>
-      <button ui-button click.trigger="transfer('lfs-push')" disabled.bind="!remote || workspace.busy">Push LFS objects</button>
-    </div>
+    <ui-form class="block shrink-0">
+      <ui-input class="col-span-6 min-w-0" label="LFS file pattern" placeholder="*.psd" value.bind="pattern & validate"><span au-slot="helper">Commit .gitattributes and re-stage matching files to apply tracking. Existing history is not rewritten.</span></ui-input>
+      <button ui-button class="col-span-3" click.trigger="track('lfs-track')" disabled.bind="workspace.busy">Track pattern</button>
+      <button ui-button class="col-span-3" click.trigger="track('lfs-untrack')" disabled.bind="workspace.busy">Untrack pattern</button>
+      <ui-select class="col-span-3 min-w-0" label="LFS remote" items.bind="remotes" value.bind="remote & validate" value-field="name" label-field="name">
+        <ui-list><ui-list-item repeat.for="remote of $host.items; key: name" value.bind="remote">${remote.name}</ui-list-item></ui-list>
+      </ui-select>
+      <button ui-button class="col-span-3" click.trigger="transfer('lfs-fetch')" disabled.bind="!remote || workspace.busy">Fetch LFS objects</button>
+      <button ui-button class="col-span-3" click.trigger="transfer('lfs-pull')" disabled.bind="!remote || workspace.busy">Download into checkout</button>
+      <button ui-button class="col-span-3" click.trigger="transfer('lfs-push')" disabled.bind="!remote || workspace.busy">Push LFS objects</button>
+    </ui-form>
   </template>
   <ui-alert if.bind="error" tone="danger" role="alert">${error}</ui-alert>
   <p role="status" class="text-sm">${status}</p>

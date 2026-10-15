@@ -27,6 +27,26 @@ function inspect(directory) {
       if (/<(?:input|textarea|select)\b/.test(source)) {
         failures.push(`${file}: raw input control`);
       }
+      if (/<form\b/.test(source)) {
+        failures.push(`${file}: use ui-form for input groups`);
+      }
+      const ancestors = [];
+      for (const match of source.matchAll(/<(\/?)([a-z][\w-]*)(?:[^>"']|"[^"]*"|'[^']*')*>/g)) {
+        const [tag, closing, name] = match;
+        if (closing) {
+          ancestors.splice(ancestors.lastIndexOf(name));
+          continue;
+        }
+        if (['ui-input', 'ui-select'].includes(name) && !ancestors.includes('ui-form')) {
+          failures.push(`${file}: ${name} must reside in ui-form`);
+        }
+        if (name === 'button' && ancestors.includes('ui-form') && ancestors.at(-1) !== 'ui-form') {
+          failures.push(`${file}: form buttons must be direct children of ui-form`);
+        }
+        if (!tag.endsWith('/>') && !['br', 'hr', 'img', 'input', 'meta', 'link'].includes(name)) {
+          ancestors.push(name);
+        }
+      }
       if (/as-element=/.test(source)) {
         failures.push(`${file}: use the headless attribute or element syntax`);
       }
