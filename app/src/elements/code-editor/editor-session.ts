@@ -1,4 +1,4 @@
-import { Compartment, EditorState, Transaction } from '@codemirror/state';
+import { Compartment, EditorState, Transaction, type Extension } from '@codemirror/state';
 import { Decoration, EditorView, drawSelection, highlightActiveLine, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, isolateHistory, redo, undo } from '@codemirror/commands';
 import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/language';
@@ -7,7 +7,7 @@ import { editorHighlight } from './editor-theme';
 import { mergeConflicts } from '../../services/merge-conflicts';
 
 export class EditorSession {
-  private view?: EditorView;
+  readonly view: EditorView;
   private editable = new Compartment();
   private language = new Compartment();
   private generation = 0;
@@ -30,8 +30,9 @@ export class EditorSession {
     value: string,
     label: string,
     readOnly: boolean,
-    onChange: (value: string) => void,
-    onCursor: (position: number) => void
+    onChange?: (value: string) => void,
+    onCursor?: (position: number) => void,
+    extensions: Extension = []
   ) {
     this.view = new EditorView({
       parent: host,
@@ -60,12 +61,13 @@ export class EditorSession {
               )
             )
           ),
+          extensions,
           EditorView.updateListener.of(update => {
             if (update.docChanged) {
-              onChange(update.state.doc.toString());
+              onChange?.(update.state.doc.toString());
             }
             if (update.selectionSet) {
-              onCursor(update.state.selection.main.head);
+              onCursor?.(update.state.selection.main.head);
             }
           })
         ]
@@ -76,7 +78,6 @@ export class EditorSession {
   destroy() {
     ++this.generation;
     this.view?.destroy();
-    this.view = undefined;
   }
 
   replace(from: number, to: number, text: string) {

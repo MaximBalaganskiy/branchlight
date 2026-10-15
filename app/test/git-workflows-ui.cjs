@@ -77,8 +77,12 @@ const path = require('node:path');
     );
     await commit.screenshot({ path: path.resolve('test-results/conflict-editor.png') });
     await resolver.getByRole('button', { name: 'Save result and stage', exact: true }).click();
-    await resolver.getByRole('alert').getByText('Remove conflict markers before marking the file resolved.', { exact: true }).waitFor();
+    await resolver
+      .getByRole('alert')
+      .getByText(/Resolve each conflict before saving/)
+      .waitFor();
     await resolver.getByRole('textbox', { name: 'Resolved content', exact: true }).fill('export const choice = "resolved";\n');
+    await resolver.getByRole('button', { name: 'Mark conflict resolved', exact: true }).click();
     await resolver.getByRole('button', { name: 'Save result and stage', exact: true }).click();
     await resolver.waitFor({ state: 'hidden' });
     for (const close of await commit.locator('.ui-toast-host button').all()) {

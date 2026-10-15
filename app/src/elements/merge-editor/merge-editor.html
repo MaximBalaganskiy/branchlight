@@ -1,0 +1,53 @@
+<template class="flex min-h-0 min-w-0 flex-1 flex-col" keydown.trigger="onKey($event)">
+  <ui-alert if.bind="error" tone="danger" role="alert" class="mb-2 shrink-0">${error}</ui-alert>
+  <div class="mb-2 flex shrink-0 flex-wrap items-center gap-2">
+    <strong class="mr-auto text-sm" aria-live="polite">${status}</strong>
+    <button ui-icon-button click.trigger="navigate(-1)" disabled.bind="!remaining" aria-label="Previous conflict" title="Previous conflict · Shift+F7">↑</button>
+    <button ui-icon-button click.trigger="navigate(1)" disabled.bind="!remaining" aria-label="Next conflict" title="Next conflict · F7">↓</button>
+    <button ui-button click.trigger="toggleBase()" aria-pressed.bind="showBase">Common ancestor</button>
+    <button ui-button click.trigger="toggleSync()" aria-pressed.bind="syncScroll" title="Keep corresponding code in view when scrolling any pane">Sync scrolling</button>
+    <button ui-button click.trigger="undo()" disabled.bind="busy || !ready" title="Undo · Ctrl+Z">Undo</button>
+    <button ui-button click.trigger="redo()" disabled.bind="busy || !ready" title="Redo · Ctrl+Shift+Z">Redo</button>
+  </div>
+  <div class="mb-2 flex shrink-0 flex-wrap items-center gap-2">
+    <button ui-button click.trigger="accept('ours')" disabled.bind="!remaining || busy">Accept ours</button>
+    <button ui-button click.trigger="accept('theirs')" disabled.bind="!remaining || busy">Accept theirs</button>
+    <button ui-button click.trigger="accept('both')" disabled.bind="!remaining || busy" title="Keep ours followed by theirs for this conflict">Both: ours first</button>
+    <button ui-button click.trigger="accept('both-reversed')" disabled.bind="!remaining || busy" title="Keep theirs followed by ours for this conflict">Both: theirs first</button>
+    <button ui-button click.trigger="accept('manual')" disabled.bind="!remaining || busy" title="Confirm the result you edited for the current conflict">Mark conflict resolved</button>
+  </div>
+  <div class="merge-panes flex min-h-0 min-w-0 flex-1 overflow-hidden rounded border border-card-border">
+    <section class="merge-pane merge-side">
+      <h3 title="Read only · differences from the result">
+        Ours
+        <span>Compared with result</span>
+      </h3>
+      <div class="code-editor" ref="oursHost"></div>
+    </section>
+    <ui-splitter size.bind="oursSize" min="140" max="650" storage-key="merge-ours" aria-label="Resize ours pane"></ui-splitter>
+    <section class="merge-pane merge-result flex-1">
+      <h3>
+        Result
+        <span>Editable · compared with ancestor</span>
+      </h3>
+      <div class="code-editor" ref="resultHost"></div>
+    </section>
+    <ui-splitter target="next" size.bind="theirsSize" min="140" max="650" storage-key="merge-theirs" aria-label="Resize theirs pane"></ui-splitter>
+    <section class="merge-pane merge-side">
+      <h3 title="Read only · differences from the result">
+        Theirs
+        <span>Compared with result</span>
+      </h3>
+      <div class="code-editor" ref="theirsHost"></div>
+    </section>
+  </div>
+  <ui-splitter show.bind="showBase" direction="vertical" target="next" size="160" min="80" max="350" storage-key="merge-ancestor" aria-label="Resize ancestor pane"></ui-splitter>
+  <section show.bind="showBase" class="merge-pane merge-ancestor shrink-0 overflow-hidden rounded border border-card-border">
+    <h3>
+      Common ancestor
+      <span>Read only · entire file</span>
+    </h3>
+    <div class="code-editor" ref="baseHost"></div>
+  </section>
+  <p class="mt-2 shrink-0 text-xs text-ink-500">Amber: unresolved · Green edge: resolved · Highlighted words: differences. Unresolved regions initially show ours; accept a side or edit and mark resolved.</p>
+</template>

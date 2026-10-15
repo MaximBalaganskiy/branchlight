@@ -1,0 +1,131 @@
+import { bindable, INode, resolve } from 'aurelia';
+import type { ConflictContent } from '../../interfaces/conflict-content';
+import type { MergeSession } from './merge-session';
+import { hasConflictMarkers } from '../../services/merge-conflicts';
+import '../code-editor/code-editor.css';
+import '../diff-view/syntax.css';
+import './merge-editor.css';
+
+export class MergeEditor {
+  private host = resolve(INode) as HTMLElement;
+
+  @bindable
+  content!: ConflictContent;
+
+  @bindable
+  filePath = '';
+
+  @bindable
+  busy = false;
+  busyChanged() {
+    this.session?.result.setReadOnly(this.busy);
+  }
+
+  resultHost!: HTMLElement;
+  oursHost!: HTMLElement;
+  theirsHost!: HTMLElement;
+  baseHost!: HTMLElement;
+  private session?: MergeSession;
+  private generation = 0;
+  value = '';
+  remaining = 0;
+  active = 0;
+  dirty = false;
+  ready = false;
+  showBase = false;
+  syncScroll = true;
+  error = '';
+  oursSize = Math.max(180, Math.min(420, Math.round(window.innerWidth * 0.27)));
+  theirsSize = this.oursSize;
+
+  get status() {
+    if (!this.ready) {
+      return 'Loading merge editor…';
+    }
+    if (this.remaining) {
+      return `Conflict ${this.active + 1} of ${this.remaining} remaining`;
+    }
+    return hasConflictMarkers(this.value)
+      ? 'Unmatched conflict markers remain — edit the result'
+      : 'All conflicts resolved — review the result';
+  }
+
+  async attached() {
+    const generation = ++this.generation;
+    try {
+      const { MergeSession } = await import('./merge-session');
+      if (generation !== this.generation) {
+        return;
+      }
+      this.session = new MergeSession([this.resultHost, this.oursHost, this.theirsHost, this.baseHost], this.content, this.filePath, () =>
+        this.update()
+      );
+      this.ready = true;
+      this.busyChanged();
+      this.update();
+      this.session.revealCurrent();
+    } catch (error) {
+      this.error = `Could not load the merge editor: ${String(error)}`;
+    }
+  }
+
+  private update() {
+    if (this.session) {
+      const changed = this.value !== this.session.value || this.remaining !== this.session.remaining.length;
+      this.value = this.session.value;
+      this.remaining = this.session.remaining.length;
+      this.active = this.session.remaining.findIndex(region => region.id === this.session?.current?.id);
+      this.dirty = this.session.dirty;
+      if (changed) {
+        this.host.dispatchEvent(new CustomEvent('resolution-changed', { bubbles: true }));
+      }
+    }
+  }
+
+  accept(choice: 'ours' | 'theirs' | 'both' | 'both-reversed' | 'manual') {
+    if (!this.busy) {
+      this.session?.accept(choice);
+    }
+  }
+
+  navigate(direction: number) {
+    this.session?.navigate(direction);
+  }
+
+  undo() {
+    this.session?.result.undo();
+  }
+
+  redo() {
+    this.session?.result.redo();
+  }
+
+  toggleSync() {
+    this.syncScroll = !this.syncScroll;
+    if (this.session) {
+      this.session.syncScroll = this.syncScroll;
+      if (this.syncScroll) {
+        this.session.syncFromResult();
+      }
+    }
+  }
+
+  toggleBase() {
+    this.showBase = !this.showBase;
+    requestAnimationFrame(() => this.session?.syncFromResult());
+  }
+
+  onKey(event: KeyboardEvent) {
+    if (event.key === 'F7') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.navigate(event.shiftKey ? -1 : 1);
+    }
+  }
+
+  detaching() {
+    ++this.generation;
+    this.session?.destroy();
+    this.session = undefined;
+  }
+}
