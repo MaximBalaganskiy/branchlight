@@ -17,6 +17,6 @@ test('multiline comments retain highlighting across changed lines', () => {
 
 test('file contents are escaped and unknown extensions remain plain text', () => {
   const lines = parseDiff('@@ -0,0 +1,1 @@\n+<img src=x onerror=alert(1)>\n', 'example.unknown');
-  assert.equal(lines[1].html, '+&lt;img src=x onerror=alert(1)&gt;');
+  assert.equal(lines[1].html, '&lt;img src=x onerror=alert(1)&gt;');
   assert.doesNotMatch(lines[1].html, /<img/);
 });

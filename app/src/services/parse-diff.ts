@@ -40,11 +40,11 @@ export function parseDiff(text: string, filePath: string): DiffLine[] {
     const newHtml = highlightCode(after.map(line => line.text.slice(1)).join('\n'), filePath);
     before.forEach((line, index) => {
       if (line.kind === 'removed') {
-        line.html = '-' + oldHtml[index];
+        line.html = oldHtml[index];
       }
     });
     after.forEach((line, index) => {
-      line.html = escapeCode(line.text[0]) + newHtml[index];
+      line.html = newHtml[index];
     });
     hunk = [];
   };

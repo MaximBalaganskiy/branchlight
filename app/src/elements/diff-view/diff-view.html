@@ -6,14 +6,15 @@
   </div>
   <div class="diff-empty grid h-full min-h-40 place-items-center text-xs text-ink-500" if.bind="isLoading">Loading diff…</div>
   <div class="diff-empty grid h-full min-h-40 place-items-center text-xs text-ink-500" if.bind="!isLoading && !text">Select a file to inspect its changes.</div>
-  <div class="diff-code min-w-max pt-2 pb-5 text-xs leading-[21px]" if.bind="!isLoading && text" tabindex="0" aria-label="File diff">
+  <div class="diff-code min-w-max pt-2 pb-5 text-xs leading-[21px]" if.bind="!isLoading && text" tabindex="0" aria-label="File diff" keydown.trigger="selectAll($event)" copy.trigger="copy($event)">
     <div repeat.for="line of lines" class="diff-line flex min-h-[21px] whitespace-pre ${line.kind}">
       <div if.bind="selectable && !truncated" class="flex w-8 shrink-0 items-center justify-center">
         <button ui-icon-button size="small" if.bind="line.kind === 'added' || line.kind === 'removed'" aria-label="Select change at diff line ${$index + 1}" aria-pressed.bind="selected.includes($index)" disabled.bind="disabled" click.trigger="toggle($index)">${selected.includes($index) ? '✓' : '+'}</button>
       </div>
       <span class="line-number w-[43px] shrink-0 pr-2.5 text-right font-mono text-[10px] text-ink-500 opacity-70 select-none">${line.old}</span>
       <span class="line-number w-[43px] shrink-0 pr-2.5 text-right font-mono text-[10px] text-ink-500 opacity-70 select-none">${line.next}</span>
-      <code innerhtml.bind="line.html"></code>
+      <!-- prettier-ignore -->
+      <code><span if.bind="line.kind === 'added' || line.kind === 'removed' || line.kind === 'context'" class="diff-marker select-none" aria-hidden="true">${line.text[0]}</span><span class="diff-content" innerhtml.bind="line.html"></span></code>
       <button ui-button if.bind="selectable && !truncated && line.kind === 'hunk'" class="mx-2 text-xs!" disabled.bind="disabled" click.trigger="applyHunk($index)">${staged ? 'Unstage hunk' : 'Stage hunk'}</button>
     </div>
     <div if.bind="truncated" class="diff-limit p-4 text-ink-500">Preview limited to 12,000 lines.</div>
