@@ -18,16 +18,16 @@
         <span au-slot="helper">Changes are calculated relative to the selected parent of this merge commit.</span>
       </ui-select>
     </ui-form>
-    <div if.bind="model.action === 'reset'" class="grid gap-4">
-      <ui-form class="block">
-        <ui-select class="col-span-12" label="Reset mode" items.bind="modes" value.bind="mode" value-field="value" label-field="label" disabled.bind="workspace.busy">
-          <ui-list><ui-list-item repeat.for="item of $host.items" value.bind="item">${item.label}</ui-list-item></ui-list>
-        </ui-select>
-      </ui-form>
-      <p class="text-sm text-warning-text">Move ${branch} to the selected commit. Later commits leave this branch's history; other branches stay where they are.</p>
-      <ui-checkbox if.bind="mode === 'hard'" checked.bind="discard" disabled.bind="workspace.busy">Discard all staged and unstaged tracked changes</ui-checkbox>
-      <p if.bind="mode === 'hard'" class="text-sm text-warning-text">Uncommitted changes cannot be recovered from the reflog. Stash untracked files before a hard reset.</p>
-    </div>
+    <ui-form if.bind="model.action === 'reset'" class="block">
+      <ui-select class="col-span-12" label="Reset mode" items.bind="modes" value.bind="mode" value-field="value" label-field="label" disabled.bind="workspace.busy">
+        <ui-list><ui-list-item repeat.for="item of $host.items" value.bind="item">${item.label}</ui-list-item></ui-list>
+        <span au-slot="helper" class="text-warning-text">Move ${branch} to the selected commit. Later commits leave this branch's history; other branches stay where they are.</span>
+      </ui-select>
+      <ui-checkbox class="col-span-12" if.bind="mode === 'hard'" checked.bind="discard" disabled.bind="workspace.busy">
+        Discard all staged and unstaged tracked changes
+        <span au-slot="helper" class="text-warning-text">Uncommitted changes cannot be recovered from the reflog. Stash untracked files before a hard reset.</span>
+      </ui-checkbox>
+    </ui-form>
     <p if.bind="model.action === 'rebase' || model.action === 'rebase-plan'" class="text-sm text-warning-text">Replay ${branch}'s commits onto the selected base. Commit hashes change; coordinate before rewriting published history. The working directory must be clean.</p>
     <p if.bind="model.action === 'rebase'" class="text-sm text-ink-500">Merge commits are preserved.</p>
     <div if.bind="model.action === 'rebase-plan'" class="grid gap-2">

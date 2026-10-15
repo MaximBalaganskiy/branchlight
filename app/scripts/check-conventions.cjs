@@ -37,7 +37,7 @@ function inspect(directory) {
           ancestors.splice(ancestors.lastIndexOf(name));
           continue;
         }
-        if (['ui-input', 'ui-select'].includes(name) && !ancestors.includes('ui-form')) {
+        if (['ui-input', 'ui-select', 'ui-checkbox', 'ui-combobox', 'ui-datepicker'].includes(name) && !ancestors.includes('ui-form')) {
           failures.push(`${file}: ${name} must reside in ui-form`);
         }
         if (name === 'button' && ancestors.includes('ui-form') && ancestors.at(-1) !== 'ui-form') {
