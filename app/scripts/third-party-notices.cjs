@@ -38,7 +38,7 @@ function licenseTexts(directory, id) {
   if (override)
     texts.push(`License source: ${override.source}\n\n${fs.readFileSync(path.join(root, 'licenses/upstream', override.file), 'utf8')}`);
   if (!texts.length) throw new Error(`Missing license text: ${id}`);
-  return texts.map(text => text.replaceAll('\r\n', '\n').trim()).join('\n\n');
+  return texts.map(text => text.replaceAll('\r\n', '\n').trim());
 }
 
 const records = [];
@@ -127,11 +127,18 @@ records.push({
 records.sort((a, b) => a.id.localeCompare(b.id, 'en'));
 
 const header = `Branchlight third-party notices\n\nLockfile SHA-256: ${fingerprint}\n\nBranchlight's own source is MIT licensed. Third-party components retain their\nown licenses below. This inventory includes the renderer dependencies and\nthe Windows/Linux native dependency graph, including build-time Rust crates;\nnot every listed component is present in every executable.\n\nSource archives for the exact unmodified dependency versions are linked in\neach entry. MPL-2.0 portions remain available in source form under MPL-2.0\nat those links. No third-party dependency source has been modified.\n\nThe Rider Dark Plus palette is adapted to Headless and Lowlight tokens.\nGitExtensions inspired the workflow; its application code is not bundled.\nGit, Git LFS and Windows WebView2 are separately installed components.\nLinux AppImage runtime libraries have additional notices and source links\nin LINUX_RUNTIME_NOTICES.txt supplied alongside Linux releases.\n\n`;
-fs.writeFileSync(
-  output,
-  header +
-    records
-      .map(record => `${'='.repeat(78)}\n${record.id}\nLicense: ${record.license}\nSource: ${record.source}\n\n${record.text.trim()}\n`)
-      .join('\n')
-);
+const texts = new Map();
+const inventory = records.map(record => {
+  const ids = (Array.isArray(record.text) ? record.text : [record.text]).map(value => {
+    const text = value
+      .trim()
+      .replaceAll('\r\n', '\n')
+      .replace(/[\t ]+$/gm, '');
+    if (!texts.has(text)) texts.set(text, texts.size + 1);
+    return texts.get(text);
+  });
+  return `${record.id}\nLicense: ${record.license}\nSource: ${record.source}\nFull notices: ${ids.join(', ')}\n`;
+});
+const notices = [...texts].map(([text, id]) => `${'='.repeat(78)}\nNOTICE ${id}\n\n${text}\n`);
+fs.writeFileSync(output, header + inventory.join('\n') + '\n' + notices.join('\n'));
 console.log(`Wrote notices for ${records.length} components.`);

@@ -1,7 +1,7 @@
 param(
   [int]$AppProcessId,
   [ValidateSet('main', 'commit')][string]$Window = 'main',
-  [ValidateSet('inspect', 'resize', 'maximize', 'minimize', 'restore', 'close', 'gesture', 'snap-left')][string]$Action = 'inspect',
+  [ValidateSet('inspect', 'resize', 'maximize', 'minimize', 'restore', 'close', 'gesture', 'resize-edge', 'snap-left')][string]$Action = 'inspect',
   [int]$X = 100,
   [int]$Y = 100,
   [int]$Width = 1600,
@@ -36,6 +36,7 @@ public static class NativeWindow {
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr window);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr window, uint message, IntPtr w, IntPtr l);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
   [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr window, ref Point point);
   [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
@@ -69,7 +70,7 @@ if ($script:targetWindow -eq [IntPtr]::Zero) {
   throw "No $Window test window found."
 }
 
-if ($Action -in @('gesture', 'snap-left')) {
+if ($Action -in @('gesture', 'resize-edge', 'snap-left')) {
   [void][NativeWindow]::SetForegroundWindow($script:targetWindow)
   Start-Sleep -Milliseconds 150
   if ([NativeWindow]::GetForegroundWindow() -ne $script:targetWindow) {
@@ -87,11 +88,27 @@ switch ($Action) {
   'maximize' { [void][NativeWindow]::ShowWindow($script:targetWindow, 3) }
   'minimize' { [void][NativeWindow]::ShowWindow($script:targetWindow, 6) }
   'restore' { [void][NativeWindow]::ShowWindow($script:targetWindow, 9) }
-  'gesture' {
+  { $_ -in @('gesture', 'resize-edge') } {
     $origin = New-Object NativeWindow+Point
-    $origin.X = $StartX
-    $origin.Y = $StartY
-    [void][NativeWindow]::ClientToScreen($script:targetWindow, [ref]$origin)
+    if ($Action -eq 'resize-edge') {
+      $edgeBounds = New-Object int[] 4
+      [void][NativeWindow]::GetWindowRect($script:targetWindow, $edgeBounds)
+      $origin.Y = [int](($edgeBounds[1] + $edgeBounds[3]) / 2)
+      $foundEdge = $false
+      for ($offset = 1; $offset -le 24; $offset++) {
+        $origin.X = $edgeBounds[2] - $offset
+        $pointValue = (($origin.Y -band 0xFFFF) -shl 16) -bor ($origin.X -band 0xFFFF)
+        if ([NativeWindow]::SendMessage($script:targetWindow, 0x84, [IntPtr]::Zero, [IntPtr]$pointValue).ToInt64() -eq 11) {
+          $foundEdge = $true
+          break
+        }
+      }
+      if (-not $foundEdge) { throw 'No native right resize edge was found on the test window.' }
+    } else {
+      $origin.X = $StartX
+      $origin.Y = $StartY
+      [void][NativeWindow]::ClientToScreen($script:targetWindow, [ref]$origin)
+    }
     $hit = [NativeWindow]::WindowFromPoint($origin)
     if ([NativeWindow]::GetAncestor($hit, 2) -ne $script:targetWindow) {
       throw 'Refusing to drag outside the test application.'

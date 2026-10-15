@@ -4,6 +4,17 @@ A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, its s
 
 **Preview software — Windows x64 and Linux x64.** Branchlight is MIT licensed. It uses your installed Git and authentication configuration. Windows binaries are unsigned; Linux GNOME/KDE desktop validation is still pending. See [platform coverage](docs/platform-testing.md), [known limitations](#preview-scope), and [security reporting](SECURITY.md).
 
+![Commit graph and highlighted file changes](docs/images/history.png)
+
+<details>
+<summary>Separate staging and commit window</summary>
+
+![Staging and commit window](docs/images/commit.png)
+
+</details>
+
+Screenshots use a synthetic demonstration repository.
+
 ## Run
 
 Download the Windows executable or installer, or the Linux AppImage or Debian package, from [GitHub Releases](https://github.com/MaximBalaganskiy/branchlight/releases). Download visibility follows repository access. Keep the accompanying license and third-party notices when redistributing binaries.
@@ -126,6 +137,8 @@ Source layout: `app/src/views/` contains folder-based views; `elements/` contain
 Build caches (`app/src-tauri/target/`), `node_modules`, and optional workspace toolchains (`.toolchains/`) are development files, not distribution contents. `scripts/native.cjs` uses the workspace Rust/compiler fallback when present and otherwise uses the installed toolchain. Packaging copies the executable into `app/release/windows/` or `app/release/linux/` and installer packages directly into `app/release/`. Only these collected artifacts need distributing.
 
 Headless supplies buttons, inputs, tabs, splitters, dialogs, and service-created toast notifications. The app imports `@aurelia-ui-toolkits/headless-tailwind` and uses its Normal and Compact density tokens, with inset field labels enabled globally. Templates use inline Tailwind layout utilities; reusable app selectors use nested CSS. `AGENTS.md` and the formatter record these conventions.
+
+Forms use Aurelia Validation with the Headless validation-controller factory. Field messages and accessible invalid states are rendered by the inputs; Git-operation errors are displayed separately. Search and optional free-text fields do not require arbitrary validation rules.
 
 Dark mode uses the UI and editor palette from Alexander Makarov's [Visual Studio Code Dark Plus theme](https://github.com/samdark/intellij-visual-studio-code-dark-plus/tree/v2.9.0) for Rider (plugin 2.9.0, BSD-3-Clause). The colours override headless semantic tokens in `app/src/styles/dark-plus.css`; the diff styles map the editor palette to Lowlight's token categories. Syntax classification remains Lowlight's, so it does not reproduce Rider's language-aware semantic highlighting exactly. Light mode retains its separate palette.
 

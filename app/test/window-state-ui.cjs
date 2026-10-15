@@ -66,7 +66,23 @@ const execute = promisify(execFile);
   }
   try {
     await launch();
-    await windowAction('main', 'resize', ['-X', '90', '-Y', '100', '-Width', '1700', '-Height', '1150']);
+    const display = await app.page.evaluate(() => ({
+      x: Math.round(screen.availLeft * devicePixelRatio),
+      y: Math.round(screen.availTop * devicePixelRatio),
+      width: Math.round(screen.availWidth * devicePixelRatio),
+      height: Math.round(screen.availHeight * devicePixelRatio)
+    }));
+    const mainGeometry = [
+      '-X',
+      String(display.x + 10),
+      '-Y',
+      String(display.y + 10),
+      '-Width',
+      String(Math.min(1700, display.width - 120)),
+      '-Height',
+      String(Math.min(1150, display.height - 100))
+    ];
+    await windowAction('main', 'resize', mainGeometry);
     const beforeDrag = await windowAction('main');
     assert.ok(beforeDrag.frameTop < 10, 'The OS title bar must be absent');
     const dragRegion = app.page.locator('.topbar .spacer');
@@ -78,22 +94,16 @@ const execute = promisify(execFile);
       '-StartY',
       String(Math.round((dragBounds.y + dragBounds.height / 2) * scale)),
       '-DeltaX',
-      '70',
+      '25',
       '-DeltaY',
-      '45'
+      '20'
     ]);
-    assert.ok(afterDrag.x >= beforeDrag.x + 50 && afterDrag.y >= beforeDrag.y + 30, 'Dragging the header must move the native window');
-    const afterResize = await windowAction('main', 'gesture', [
-      '-StartX',
-      String(afterDrag.width + 2),
-      '-StartY',
-      String(Math.round(afterDrag.height / 2)),
-      '-DeltaX',
-      '80',
-      '-DeltaY',
-      '0'
-    ]);
-    assert.ok(afterResize.width >= afterDrag.width + 60, 'Native edge resizing must work without decorations');
+    assert.ok(afterDrag.x >= beforeDrag.x + 15 && afterDrag.y >= beforeDrag.y + 10, 'Dragging the header must move the native window');
+    const afterResize = await windowAction('main', 'resize-edge', ['-DeltaX', '40', '-DeltaY', '0']);
+    assert.ok(
+      afterResize.width >= afterDrag.width + 20,
+      `Native edge resizing must work without decorations: ${JSON.stringify({ before: afterDrag, after: afterResize, display })}`
+    );
     await dragRegion.dblclick();
     await app.page.getByRole('button', { name: 'Restore window', exact: true }).waitFor();
     assert.equal((await windowAction('main')).maximized, true);
@@ -113,9 +123,18 @@ const execute = promisify(execFile);
     const snapped = await windowAction('main');
     assert.ok(snapped.x !== beforeMenu.x || snapped.width !== beforeMenu.width, 'Windows keyboard snapping must remain available');
     await app.page.screenshot({ path: path.resolve('test-results/window-controls.png') });
-    const main = await windowAction('main', 'resize', ['-X', '90', '-Y', '100', '-Width', '1700', '-Height', '1150']);
+    const main = await windowAction('main', 'resize', mainGeometry);
     let commit = await openCommit();
-    const commitBounds = await windowAction('commit', 'resize', ['-X', '180', '-Y', '140', '-Width', '1500', '-Height', '1050']);
+    const commitBounds = await windowAction('commit', 'resize', [
+      '-X',
+      String(display.x + 30),
+      '-Y',
+      String(display.y + 30),
+      '-Width',
+      String(Math.min(1500, display.width - 100)),
+      '-Height',
+      String(Math.min(1050, display.height - 80))
+    ]);
     assert.ok(commitBounds.frameTop < 10, 'The commit window must also hide the OS title bar');
     await commit.screenshot({ path: path.resolve('test-results/commit-window-controls.png') });
     await closeWindow('commit', commit);

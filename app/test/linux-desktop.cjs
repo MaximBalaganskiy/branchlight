@@ -88,7 +88,7 @@ const { git } = require('./support/git.cjs');
     await waitFor(() => execute('return document.querySelectorAll(".commit-row").length === 1'), 'history');
     assert.equal(await execute('return document.documentElement.dataset.density'), 'normal');
     await type('repository-sidebar input', 'feature/search');
-    await waitFor(() => execute('return !!document.querySelector("[title=\"feature/search\"]")'), 'branch search');
+    await waitFor(() => execute('return !!document.querySelector(arguments[0])', ['[title="feature/search"]']), 'branch search');
     await screenshot('history');
     await click('button[title="Open commit window · Ctrl+K"]');
     let commitHandle;
@@ -105,7 +105,7 @@ const { git } = require('./support/git.cjs');
     }, 'separate commit window');
     assert.ok(commitHandle);
     await click('button[aria-label="Stage sample.ts"]');
-    await waitFor(() => execute('return !!document.querySelector("button[aria-label=\"Unstage sample.ts\"]")'), 'staging');
+    await waitFor(() => execute('return !!document.querySelector(arguments[0])', ['button[aria-label="Unstage sample.ts"]']), 'staging');
     await type('#commit-message', 'Validate Linux desktop');
     await screenshot('commit');
     // Real WebDriver keyboard events exercise the Ctrl+Enter commit shortcut.
@@ -132,6 +132,13 @@ const { git } = require('./support/git.cjs');
     console.log(
       `PASS: Linux ${process.env.GDK_BACKEND}: native history, branch search, separate window, staging, keyboard commit, window closure.`
     );
+  } catch (error) {
+    if (session) {
+      await screenshot('failure').catch(() => {});
+      const body = await execute('return document.body.innerText').catch(() => 'Window unavailable');
+      await fs.writeFile(`test-results/linux-${process.env.GDK_BACKEND}-failure.txt`, `${error.stack}\n\n${body}`);
+    }
+    throw error;
   } finally {
     if (session) await request('DELETE', `/session/${session}`).catch(() => {});
     driver.kill();
