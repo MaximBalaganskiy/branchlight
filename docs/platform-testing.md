@@ -10,6 +10,8 @@ Linux: `npm --prefix app run test:linux` drives the native WebKitGTK application
 
 These Linux smoke tests are narrower than the Windows suite. They do not establish compatibility with every desktop, GPU, or compositor.
 
+Both native Linux smoke tests passed on 16 October 2026 before the privacy rewrite. The old Actions run and its logs were deleted during that cleanup; this historical result is not retained as independently accessible CI evidence. The Windows desktop cases also passed locally after updating validation assertions and measuring splitter limits against the Headless form height. Release jobs rerun these checks for the tagged commit.
+
 ## Before claiming GNOME/KDE desktop validation
 
 Run the downloaded AppImage and Debian package on actual GNOME and KDE sessions. Record OS, compositor/version, GPU, scale factor, package, and release SHA. Use disposable repositories.
