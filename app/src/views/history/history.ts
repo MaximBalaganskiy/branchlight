@@ -60,6 +60,20 @@ export class History {
   diffLoading = false;
   fullFile = false;
   query = '';
+  fileQuery = '';
+
+  get changedFiles() {
+    const query = this.fileQuery.trim().toLowerCase();
+    return this.detail?.files.filter(file => file.path.toLowerCase().includes(query)) ?? [];
+  }
+
+  selectFirstChangedFile() {
+    const file = this.changedFiles[0];
+    if (file) {
+      return this.selectFile(file.path);
+    }
+  }
+
   commandLog: CommandEntry[] = [];
   commitMenu!: UiMenu;
   contextCommit: Commit | null = null;
@@ -229,9 +243,7 @@ export class History {
       }
 
       this.detail = detail;
-      if (detail.files[0]) {
-        await this.selectFile(detail.files[0].path);
-      }
+      await this.selectFirstChangedFile();
     } catch (error) {
       if (generation === this.detailGeneration) {
         this.workspace.fail(error);

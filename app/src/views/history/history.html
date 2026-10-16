@@ -88,16 +88,27 @@
         <code if.bind="selected">${short(selected.hash)}</code>
       </div>
       <div class="detail-body flex min-h-0 flex-1" if.bind="tab === 'diff'">
-        <div class="file-list w-[280px] shrink-0 overflow-auto">
-          <div class="list-caption px-3 py-2 text-[9px] tracking-widest text-ink-500">
+        <div class="file-list flex w-[280px] min-h-0 min-w-0 shrink-0 flex-col overflow-hidden">
+          <div class="list-caption shrink-0 px-3 py-2 text-[9px] tracking-widest text-ink-500">
             CHANGED FILES
             <small if.bind="selected && selected.parents.length > 1">Compared with first parent</small>
           </div>
-          <button ui-button repeat.for="file of detail.files; key: path" class="file-item flex! min-h-[26px] min-w-0 w-full items-center justify-start! gap-2 rounded-none! border-0! px-2.5! py-1.5! text-left text-[11px]! font-normal! ${selectedFile === file.path ? 'selected' : ''}" click.trigger="selectFile(file.path)" title.bind="file.path">
-            <span class="file-status min-w-4 text-center font-mono text-[10px] font-bold text-warning-text ${file.status}">${file.status}</span>
-            <span>${file.path}</span>
-          </button>
-          <p class="empty-small px-4 py-6 text-center text-[11px] leading-relaxed text-ink-500" if.bind="detail && !detail.files.length">No changed files.</p>
+          <ui-form class="search-form block min-w-0 shrink-0 px-2" submit.trigger:prevent="selectFirstChangedFile()">
+            <ui-input class="col-span-12 min-w-0" label="Find changed files" value.bind="fileQuery">
+              <svg au-slot="leading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="10" cy="10" r="6"></circle>
+                <path d="m 15 15 5 5"></path>
+              </svg>
+            </ui-input>
+          </ui-form>
+          <div class="changed-files-scroll min-h-0 flex-1 overflow-auto">
+            <button ui-button repeat.for="file of changedFiles; key: path" class="file-item flex! min-h-[26px] min-w-0 w-full items-center justify-start! gap-2 rounded-none! border-0! px-2.5! py-1.5! text-left text-[11px]! leading-normal! font-normal! ${selectedFile === file.path ? 'selected' : ''}" click.trigger="selectFile(file.path)" title.bind="file.path">
+              <span class="file-status min-w-4 shrink-0 text-center font-mono text-[10px] font-bold text-warning-text ${file.status}">${file.status}</span>
+              <span class="min-w-0">${file.path}</span>
+            </button>
+            <p class="empty-small px-4 py-6 text-center text-[11px] leading-relaxed text-ink-500" if.bind="detail && !detail.files.length">No changed files.</p>
+            <p class="px-4 py-6 text-center text-[11px] text-ink-500" if.bind="detail.files.length && !changedFiles.length" role="status">No matching changed files.</p>
+          </div>
         </div>
         <ui-splitter direction="horizontal" size="280" min.bind="150" max.bind="650" storage-key="changed-files" aria-label="Resize changed files"></ui-splitter>
         <div class="diff-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

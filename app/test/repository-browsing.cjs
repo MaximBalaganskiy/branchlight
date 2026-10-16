@@ -25,6 +25,7 @@ const path = require('node:path');
     await git(directory, ['tag', 'release/v1']);
   }
   await fs.writeFile(path.join(repo, 'src', 'sample.ts'), 'export const version = 2;\n');
+  await fs.writeFile(path.join(repo, 'src', 'typography-gypq.ts'), 'export const typography = true;\n');
   await git(repo, ['rm', 'removed.txt']);
   await git(repo, ['add', '--all']);
   await git(repo, ['commit', '-m', 'Updated snapshot']);
@@ -48,6 +49,48 @@ const path = require('node:path');
       .filter({ has: page.locator(`[data-reference-id="${id}"]`) });
   try {
     await page.locator('.commit-row').first().waitFor();
+    const changesSearch = page.getByRole('textbox', { name: 'Find changed files', exact: true });
+    const changes = page.locator('.file-list');
+    await changes.locator('.file-item').nth(2).waitFor();
+    for (const density of ['normal', 'compact']) {
+      if (density === 'compact') await page.getByRole('button', { name: 'Toggle density', exact: true }).click();
+      await page.waitForFunction(value => document.documentElement.dataset.density === value, density);
+      for (const selected of [false, true]) {
+        if (selected) await changes.locator('[title="src/typography-gypq.ts"]').click();
+        const clipped = await changes.locator('.file-item > span:last-child').evaluateAll(labels =>
+          labels
+            .filter(label => {
+              const range = document.createRange();
+              range.selectNodeContents(label);
+              const text = range.getBoundingClientRect();
+              const bounds = label.getBoundingClientRect();
+              return text.top < bounds.top - 0.5 || text.bottom > bounds.bottom + 0.5;
+            })
+            .map(label => label.textContent)
+        );
+        assert.deepEqual(clipped, [], `Filename glyphs must fit vertically at ${density} density, selected=${selected}`);
+      }
+      await changes.screenshot({ path: path.resolve(`test-results/changed-files-${density}.png`) });
+      await changes.locator('[title="src/sample.ts"]').click();
+    }
+    await page.getByRole('button', { name: 'Toggle density', exact: true }).click();
+    await changesSearch.fill('  TYPOGRAPHY  ');
+    await page.waitForFunction(() => document.querySelectorAll('.file-list .file-item').length === 1);
+    await changesSearch.press('Enter');
+    await changes.locator('.file-item.selected[title="src/typography-gypq.ts"]').waitFor();
+    await page.locator('.diff-line').filter({ hasText: 'export const typography = true;' }).waitFor();
+    await changesSearch.fill('no-such-file');
+    await changes.getByText('No matching changed files.', { exact: true }).waitFor();
+    await changesSearch.press('Enter');
+    assert.equal(await changes.locator('.file-item').count(), 0);
+    await changesSearch.fill('src/');
+    await page.waitForFunction(() => document.querySelectorAll('.file-list .file-item').length === 2);
+    await page.getByRole('button', { name: 'Original snapshot', exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll('.file-list .file-item').length === 1);
+    await page.getByRole('button', { name: 'Updated snapshot', exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll('.file-list .file-item').length === 2);
+    await changesSearch.fill('');
+    await changes.locator('.file-item').nth(2).waitFor();
     await page.getByRole('tab', { name: 'Files', exact: true }).click();
     const files = page.getByRole('tree', { name: 'Commit files', exact: true });
     const source = files.getByRole('treeitem').filter({ has: page.locator('[title="src/"]') });
