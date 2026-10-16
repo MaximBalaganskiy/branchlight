@@ -1,4 +1,4 @@
-# Branchlight conventions
+# Gitaur conventions
 
 Follow the Aurelia 2 and desktop UI conventions below.
 

@@ -9,12 +9,12 @@ const { git } = require('./support/git.cjs');
 (async () => {
   assert.equal(process.platform, 'linux');
   assert.ok(['x11', 'wayland'].includes(process.env.GDK_BACKEND), 'Select the display backend explicitly.');
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'branchlight-desktop-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gitaur-desktop-'));
   const repo = path.join(root, 'demo');
   await fs.mkdir(repo);
   await fs.mkdir('test-results', { recursive: true });
   await git(repo, ['init', '-b', 'main']);
-  await git(repo, ['config', 'user.name', 'Branchlight Demo']);
+  await git(repo, ['config', 'user.name', 'Gitaur Demo']);
   await git(repo, ['config', 'user.email', 'demo@example.invalid']);
   await git(repo, ['config', 'commit.gpgsign', 'false']);
   await fs.writeFile(path.join(repo, 'sample.ts'), 'export const message = "Hello";\n');
@@ -80,7 +80,7 @@ const { git } = require('./support/git.cjs');
     const created = await request('POST', '/session', {
       capabilities: {
         alwaysMatch: {
-          'tauri:options': { application: path.resolve(process.env.BRANCHLIGHT_EXE || 'src-tauri/target/release/branchlight') }
+          'tauri:options': { application: path.resolve(process.env.BRANCHLIGHT_EXE || 'src-tauri/target/release/gitaur') }
         }
       }
     });

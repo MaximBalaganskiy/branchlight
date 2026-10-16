@@ -1,4 +1,4 @@
-use branchlight_lib::{
+use gitaur_lib::{
   git::{parsers, service::GitService, validation},
   models::{diff_request::DiffRequest, mutation::Mutation},
 };
@@ -10,7 +10,7 @@ fn repository() -> (TempDir, GitService) {
   let service = GitService::default();
   for args in [
     vec!["init", "-b", "main"],
-    vec!["config", "user.name", "Branchlight Test"],
+    vec!["config", "user.name", "Gitaur Test"],
     vec!["config", "user.email", "test@example.invalid"],
     vec!["config", "commit.gpgsign", "false"],
     vec!["config", "core.autocrlf", "false"],

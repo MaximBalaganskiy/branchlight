@@ -28,7 +28,7 @@ jobs:
             runner: windows-2022
             bundles: nsis
             files: |
-              app/release/windows/Branchlight.exe
+              app/release/windows/Gitaur.exe
               app/release/*-setup.exe
               app/release/LICENSE
               app/release/THIRD_PARTY_NOTICES.txt
@@ -119,15 +119,15 @@ jobs:
           set -euo pipefail
           export XDG_RUNTIME_DIR="$(mktemp -d)"
           chmod 700 "$XDG_RUNTIME_DIR"
-          weston --backend=headless-backend.so --socket=branchlight-test --idle-time=0 --width=1600 --height=1000 > test-results/weston.log 2>&1 &
+          weston --backend=headless-backend.so --socket=gitaur-test --idle-time=0 --width=1600 --height=1000 > test-results/weston.log 2>&1 &
           compositor_pid=$!
           trap 'kill "$compositor_pid" 2>/dev/null || true' EXIT
           for attempt in {1..50}; do
-            test -S "$XDG_RUNTIME_DIR/branchlight-test" && break
+            test -S "$XDG_RUNTIME_DIR/gitaur-test" && break
             sleep 0.1
           done
-          test -S "$XDG_RUNTIME_DIR/branchlight-test"
-          dbus-run-session -- env -u DISPLAY WAYLAND_DISPLAY=branchlight-test GDK_BACKEND=wayland npm run test:linux
+          test -S "$XDG_RUNTIME_DIR/gitaur-test"
+          dbus-run-session -- env -u DISPLAY WAYLAND_DISPLAY=gitaur-test GDK_BACKEND=wayland npm run test:linux
 
       - name: Collect Linux runtime notices
         if: runner.os == 'Linux'
@@ -139,7 +139,7 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: branchlight-${{ matrix.platform }}-x64
+          name: gitaur-${{ matrix.platform }}-x64
           path: ${{ matrix.files }}
           if-no-files-found: error
           retention-days: 14
@@ -194,7 +194,7 @@ jobs:
       - name: Download binaries from both builds
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: branchlight-*-x64
+          pattern: gitaur-*-x64
           merge-multiple: true
           path: artifacts
 
@@ -226,5 +226,5 @@ jobs:
             if [[ "$RELEASE_TAG" == *-* ]]; then
               flags+=(--prerelease)
             fi
-            gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --title "Branchlight $RELEASE_TAG" --generate-notes "${flags[@]}"
+            gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --title "Gitaur $RELEASE_TAG" --generate-notes "${flags[@]}"
           fi

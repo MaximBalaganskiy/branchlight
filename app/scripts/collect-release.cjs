@@ -3,9 +3,11 @@ const path = require('node:path');
 
 const windows = process.platform === 'win32';
 const platform = windows ? 'windows' : process.platform;
-const filename = windows ? 'Branchlight.exe' : 'branchlight';
-const source = path.resolve('src-tauri/target/release', windows ? 'branchlight.exe' : 'branchlight');
+const filename = windows ? 'Gitaur.exe' : 'gitaur';
+const source = path.resolve('src-tauri/target/release', windows ? 'gitaur.exe' : 'gitaur');
 const directory = path.resolve('release', platform);
+const { productName, version } = JSON.parse(fs.readFileSync(path.resolve('src-tauri/tauri.conf.json'), 'utf8'));
+const bundlePrefix = `${productName}_${version}_`.toLowerCase();
 fs.mkdirSync(directory, { recursive: true });
 const destination = path.join(directory, filename);
 fs.copyFileSync(source, destination);
@@ -24,7 +26,7 @@ for (const kind of process.argv.includes('--bundles') ? kinds : []) {
   }
 
   for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
-    if (!entry.isFile() || !/\.(exe|deb|AppImage)$/.test(entry.name)) {
+    if (!entry.isFile() || !entry.name.toLowerCase().startsWith(bundlePrefix) || !/\.(exe|deb|AppImage)$/.test(entry.name)) {
       continue;
     }
 

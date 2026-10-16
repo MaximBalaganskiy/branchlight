@@ -6,7 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 
 (async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'branchlight-history-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gitaur-history-'));
   const repo = path.join(root, 'repo');
   await fs.mkdir(repo);
   await git(repo, ['init', '-b', 'main']);

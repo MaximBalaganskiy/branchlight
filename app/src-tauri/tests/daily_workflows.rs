@@ -1,4 +1,4 @@
-use branchlight_lib::{
+use gitaur_lib::{
   git::service::GitService,
   models::{diff_request::DiffRequest, mutation::Mutation},
 };

@@ -1,4 +1,4 @@
-use branchlight_lib::{
+use gitaur_lib::{
   git::{process, service::GitService},
   models::mutation::Mutation,
 };

@@ -149,21 +149,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "branchlight"
-version = "0.4.0-beta.2"
-dependencies = [
- "chrono",
- "dunce",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-window-state",
- "tempfile",
-]
-
-[[package]]
 name = "brotli"
 version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1079,6 +1064,21 @@ dependencies = [
  "libc",
  "system-deps",
  "winapi",
+]
+
+[[package]]
+name = "gitaur"
+version = "0.4.0-beta.3"
+dependencies = [
+ "chrono",
+ "dunce",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-window-state",
+ "tempfile",
 ]
 
 [[package]]

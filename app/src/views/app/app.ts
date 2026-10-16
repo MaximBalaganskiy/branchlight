@@ -3,9 +3,11 @@ import { AlertService } from '@aurelia-ui-toolkits/headless';
 import { distinctUntilChanged, type Subscription } from 'rxjs';
 import { WorkspaceService } from '../../services/workspace-service';
 import { AppearanceService } from '../../services/appearance-service';
+import logo from '../../assets/gitaur.svg?url';
 import './app.css';
 
 export class App {
+  readonly logo = logo;
   readonly workspace = resolve(WorkspaceService);
   readonly appearance = resolve(AppearanceService);
   private alerts = resolve(AlertService);

@@ -12,7 +12,8 @@ pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
     .setup(|app| {
-      let data_dir = std::env::var_os("BRANCHLIGHT_USER_DATA")
+      let data_dir = std::env::var_os("GITAUR_USER_DATA")
+        .or_else(|| std::env::var_os("BRANCHLIGHT_USER_DATA"))
         .map(std::path::PathBuf::from)
         .unwrap_or(app.path().app_data_dir()?);
       std::fs::create_dir_all(&data_dir)?;
@@ -24,7 +25,8 @@ pub fn run() {
           .build(),
       )?;
       let state = AppState::new(&data_dir);
-      let repo = std::env::var_os("BRANCHLIGHT_REPO")
+      let repo = std::env::var_os("GITAUR_REPO")
+        .or_else(|| std::env::var_os("BRANCHLIGHT_REPO"))
         .and_then(|path| state.git.open(std::path::Path::new(&path)).ok())
         .map(|path| path.to_string_lossy().into_owned())
         .unwrap_or_default();
@@ -58,5 +60,5 @@ pub fn run() {
       commands::commit_window
     ])
     .run(tauri::generate_context!())
-    .expect("Could not start Branchlight");
+    .expect("Could not start Gitaur");
 }

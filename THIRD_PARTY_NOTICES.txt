@@ -1,8 +1,8 @@
-Branchlight third-party notices
+Gitaur third-party notices
 
-Lockfile SHA-256: 9c7dbffee7a263e0fbeb6e387569672bef932283714271af4963b61dcd67f748
+Lockfile SHA-256: 354c0758003f2e4c45d819d242d7dd195af552b98f3c33454cd925d76119a7ee
 
-Branchlight's own source is MIT licensed. Third-party components retain their
+Gitaur's own source is MIT licensed. Third-party components retain their
 own licenses below. This inventory includes the renderer dependencies and
 the Windows/Linux native dependency graph, including build-time Rust crates;
 not every listed component is present in every executable.

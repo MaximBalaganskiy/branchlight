@@ -1,6 +1,6 @@
 {
-  "name": "branchlight",
-  "version": "0.4.0-beta.2",
+  "name": "gitaur",
+  "version": "0.4.0-beta.3",
   "license": "MIT",
   "private": true,
   "description": "A local Git client with a graph workspace and dedicated commit window.",
@@ -9,6 +9,7 @@
     "esbuild@0.28.2": true
   },
   "scripts": {
+    "icons": "node scripts/generate-icons.cjs",
     "notices": "node scripts/third-party-notices.cjs",
     "check:notices": "node scripts/third-party-notices.cjs --check",
     "test:linux": "node test/linux-desktop.cjs",
