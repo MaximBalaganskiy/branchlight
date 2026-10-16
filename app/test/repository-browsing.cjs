@@ -26,6 +26,9 @@ const path = require('node:path');
   }
   await fs.writeFile(path.join(repo, 'src', 'sample.ts'), 'export const version = 2;\n');
   await fs.writeFile(path.join(repo, 'src', 'typography-gypq.ts'), 'export const typography = true;\n');
+  for (let index = 0; index < 30; index++) {
+    await fs.writeFile(path.join(repo, `changed-${String(index).padStart(2, '0')}.txt`), `Changed file ${index}\n`);
+  }
   await git(repo, ['rm', 'removed.txt']);
   await git(repo, ['add', '--all']);
   await git(repo, ['commit', '-m', 'Updated snapshot']);
@@ -49,9 +52,51 @@ const path = require('node:path');
       .filter({ has: page.locator(`[data-reference-id="${id}"]`) });
   try {
     await page.locator('.commit-row').first().waitFor();
+    await page.setViewportSize({ width: 2200, height: 1600 });
+    await page.evaluate(() => {
+      for (const [key, size] of Object.entries({ sidebar: 900, history: 1100, 'changed-files': 900, 'commit-files': 900 })) {
+        localStorage.setItem(`ui-splitter:${key}:size`, JSON.stringify({ size }));
+      }
+    });
+    await page.reload();
+    await page.locator('.commit-row').first().waitFor();
+    assert.equal(Math.round((await page.locator('repository-sidebar').boundingBox()).width), 900);
+    assert.equal(Math.round((await page.locator('.history-panel').boundingBox()).height), 1100);
+    assert.equal(Math.round((await page.locator('.file-list').boundingBox()).width), 900);
+    const historySplitter = page.getByRole('separator', { name: 'Resize commit history', exact: true });
+    await historySplitter.press('Home');
+    assert.equal(await page.locator('.history-panel').isVisible(), false, 'History can collapse to give files the full height');
+    await historySplitter.press('Shift+ArrowDown');
+    assert.equal(Math.round((await page.locator('.history-panel').boundingBox()).height), 50);
+    await page.getByRole('tab', { name: 'Files', exact: true }).click();
+    const treeSplitter = page.getByRole('separator', { name: 'Resize commit file tree', exact: true });
+    assert.equal(Number(await treeSplitter.getAttribute('aria-valuenow')), 900, 'File tree restores beyond the old 650px cap');
+    const divider = await treeSplitter.boundingBox();
+    await page.mouse.move(divider.x + divider.width / 2, divider.y + divider.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(divider.x + divider.width / 2 + 60, divider.y + divider.height / 2, { steps: 8 });
+    await page.mouse.up();
+    assert.equal(Number(await treeSplitter.getAttribute('aria-valuenow')), 960);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('ui-splitter')].every(element => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.right <= innerWidth + 1 && bounds.bottom <= innerHeight + 1;
+      })
+    );
+    await page.evaluate(() => {
+      for (const [key, size] of Object.entries({ sidebar: 220, history: 410, 'changed-files': 280, 'commit-files': 280 })) {
+        localStorage.setItem(`ui-splitter:${key}:size`, JSON.stringify({ size }));
+      }
+    });
+    await page.reload();
+    await page.locator('.commit-row').first().waitFor();
     const changesSearch = page.getByRole('textbox', { name: 'Find changed files', exact: true });
     const changes = page.locator('.file-list');
     await changes.locator('.file-item').nth(2).waitFor();
+    await changes.locator('.file-item').last().scrollIntoViewIfNeeded();
+    assert.ok(await changes.locator('.changed-files-scroll').evaluate(element => element.scrollTop > 0));
+    assert.equal(await changesSearch.isVisible(), true, 'Search stays visible while scrolling to the last changed file');
     for (const density of ['normal', 'compact']) {
       if (density === 'compact') await page.getByRole('button', { name: 'Toggle density', exact: true }).click();
       await page.waitForFunction(value => document.documentElement.dataset.density === value, density);

@@ -1,6 +1,7 @@
 <import from="../../elements/diff-view/diff-view"></import>
 <import from="../../elements/repository-sidebar/repository-sidebar"></import>
 <import from="./commit-files/commit-files"></import>
+<import from="../../attributes/splitter-bounds"></import>
 <div class="toolbar flex min-h-10 shrink-0 items-center gap-2 border-b border-card-border bg-card px-2.5">
   <div class="toolbar-group flex gap-1">
     <button ui-button click.trigger="workspace.action('fetch')" disabled.bind="workspace.busy">↓ Fetch</button>
@@ -24,9 +25,9 @@
 </div>
 <div class="workspace flex min-h-0 flex-1">
   <repository-sidebar branch-action.trigger="branchAction($event.detail)" branch-selected.trigger="focusBranch($event.detail)" remote-action.trigger="remoteAction($event.detail)" add-worktree.trigger="createWorktree()" remove-worktree.trigger="removeWorktree($event.detail)"></repository-sidebar>
-  <ui-splitter direction="horizontal" size="220" min.bind="160" max.bind="400" storage-key="sidebar" aria-label="Resize branches sidebar"></ui-splitter>
-  <section class="repository-content flex min-h-0 min-w-0 flex-1 flex-col bg-card">
-    <section class="history-panel flex h-[410px] max-h-[calc(100%-180px)] min-h-0 flex-col">
+  <ui-splitter splitter-bounds direction="horizontal" size="220" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="sidebar" aria-label="Resize branches sidebar"></ui-splitter>
+  <section class="repository-content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-card">
+    <section class="history-panel flex h-[410px] min-h-0 flex-col overflow-hidden">
       <div class="panel-toolbar flex min-h-12 shrink-0 py-1 items-center gap-4 px-3">
         <h2>
           History
@@ -72,7 +73,7 @@
         <button ui-button class="load-more block! w-full rounded-none! p-3! text-[11px]! text-accent!" if.bind="workspace.canLoadMore" click.trigger="workspace.loadMore()" disabled.bind="workspace.refreshing">${workspace.refreshing ? 'Loading…' : 'Load 300 more commits'}</button>
       </div>
     </section>
-    <ui-splitter direction="vertical" size="410" min.bind="150" max.bind="1000" storage-key="history" aria-label="Resize commit history"></ui-splitter>
+    <ui-splitter splitter-bounds direction="vertical" size="410" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="history" aria-label="Resize commit history"></ui-splitter>
     <section class="detail-panel flex min-h-0 flex-1 flex-col overflow-hidden">
       <div class="detail-tabs flex shrink-0 items-center gap-1.5 border-b border-card-border bg-card-muted px-2">
         <ui-tabs value.bind="tab" class="border-0! rounded-none!">
@@ -110,7 +111,7 @@
             <p class="px-4 py-6 text-center text-[11px] text-ink-500" if.bind="detail.files.length && !changedFiles.length" role="status">No matching changed files.</p>
           </div>
         </div>
-        <ui-splitter direction="horizontal" size="280" min.bind="150" max.bind="650" storage-key="changed-files" aria-label="Resize changed files"></ui-splitter>
+        <ui-splitter splitter-bounds direction="horizontal" size="280" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="changed-files" aria-label="Resize changed files"></ui-splitter>
         <div class="diff-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div class="diff-heading flex min-h-8 shrink-0 items-center justify-between gap-2.5 border-b border-card-border px-3.5 text-[11px]">
             <span>${selectedFile || 'File preview'}</span>
