@@ -19,15 +19,15 @@ Review the complete Git history, commit metadata, old release attachments, scree
 
 The source license is [MIT](../LICENSE). Third-party code retains the notices in [THIRD_PARTY_NOTICES.txt](../THIRD_PARTY_NOTICES.txt). The app icon is project-owned; the Rider Dark Plus palette retains its BSD-3-Clause notice. GitExtensions is a workflow inspiration, not a bundled dependency.
 
-## GitHub settings after visibility changes
+## Public repository settings
 
-The current private repository plan does not support branch protection, and its private vulnerability reporting endpoint is unavailable. These are GitHub availability restrictions, not completed settings.
+The repository became public on 16 October 2026. Private vulnerability reporting, secret scanning, push protection, Dependabot alerts, and automated security updates are enabled.
 
-After an explicitly authorized visibility change (or a plan upgrade), enable:
+Maintain these settings:
 
 - Main-branch protection: require the three checks above, require up-to-date branches, block force pushes and deletion. Use pull requests for subsequent work.
-- Private vulnerability reporting under Security; until enabled, the email in SECURITY.md is the reporting channel.
-- Secret scanning and push protection where available. Dependabot alerts and security updates are already enabled; the repository configuration also schedules npm, Cargo, and Actions updates.
+- Private vulnerability reporting under Security; see SECURITY.md for the reporting channel.
+- Secret scanning, push protection, Dependabot alerts, and security updates. The repository configuration also schedules npm, Cargo, and Actions updates.
 - Keep Actions default token permissions read-only and PR approval permissions disabled. Workflow actions are pinned to full commit SHAs.
 
 Windows signing needs a publisher certificate or signing-service account. No certificate is configured; binaries remain unsigned. Do not claim checksum files provide publisher authentication.

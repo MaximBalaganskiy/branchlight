@@ -4,7 +4,7 @@ Security fixes target the latest preview release. Older previews are not maintai
 
 ## Reporting a vulnerability
 
-Use the repository's **Security → Report a vulnerability** page when private vulnerability reporting is available. If that option is unavailable, ask for a private reporting channel without including vulnerability details in the public request.
+Use [Security → Report a vulnerability](https://github.com/MaximBalaganskiy/branchlight/security/advisories/new) to submit a private report. If that option is unavailable, ask for a private reporting channel without including vulnerability details in the public request.
 
 Include the version, operating system, reproduction steps using a disposable repository, expected impact, and a minimal example where possible. Remove credentials and private repository contents. Do not open a public issue for an undisclosed vulnerability. There is no guaranteed response time or paid bounty program.
 

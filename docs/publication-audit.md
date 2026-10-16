@@ -16,4 +16,6 @@ The npm audit reported zero advisories. Cargo audit 0.22.2 reported zero vulnera
 
 ## Remaining external checks
 
-Actual GNOME/KDE, GPU/scaling, cross-application clipboard, and native chooser validation remain pending; see [platform testing](platform-testing.md). GitHub branch protection and private vulnerability reporting require a supported plan/visibility. Windows signing requires publisher credentials. Repository visibility is deliberately unchanged.
+Actual GNOME/KDE, GPU/scaling, cross-application clipboard, and native chooser validation remain pending; see [platform testing](platform-testing.md). Windows signing requires publisher credentials.
+
+The repository became public on 16 October 2026 after rechecking the cleaned history and passing the release candidate's security job. Private vulnerability reporting, secret scanning, push protection, Dependabot alerts, and automated security updates are enabled. Dependency copyright notices remain intact.
