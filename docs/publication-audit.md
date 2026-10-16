@@ -6,7 +6,7 @@ The initial scan covered all 38 commits reachable from local branches/tags, incl
 
 Current tracked files consist of application source, tests, build configuration, documentation, lockfiles, and project icons. Dependency caches, private test repositories, webview profiles, and development screenshots are ignored. Public documentation screenshots must come from disposable synthetic fixtures, not real repositories.
 
-History was rewritten to use the Branchlight contributors project identity and remove personal contact details and private development references. Published dependency copyright notices are preserved. The GitHub account name and repository URL still identify the owner. Old pull-request records, cached commit links, and existing clones can retain the previous history.
+History was rewritten to use the Branchlight contributors project identity and remove personal contact details and private development references. Published dependency copyright notices are preserved. The GitHub account name and repository URL still identify the owner. All four branch tips and five release tags were replaced, and the five old releases were deleted. GitHub regenerated the three open pull requests against the rewritten history, but an old commit remained retrievable by its SHA after the push. Server-side removal requires GitHub's assistance; rewriting reachable history alone does not guarantee erasure. Existing clones and the ignored local recovery backup also retain the previous history.
 
 ## Dependency review
 
