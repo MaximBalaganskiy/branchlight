@@ -50,14 +50,36 @@ const path = require('node:path');
       .getByRole('tree', { name: 'Repository references', exact: true })
       .getByRole('treeitem')
       .filter({ has: page.locator(`[data-reference-id="${id}"]`) });
+  const layoutNames = ['Resize branches sidebar', 'Resize commit history', 'Resize changed files', 'Resize commit file tree'];
+  async function layout(sizes) {
+    const values = [];
+    for (const [index, name] of layoutNames.entries()) {
+      if (index === 2) await page.getByRole('tab', { name: /^Changes/ }).click();
+      if (index === 3) await page.getByRole('tab', { name: 'Files', exact: true }).click();
+      const splitter = page.getByRole('separator', { name, exact: true });
+      if (sizes) {
+        await splitter.press('Home');
+        for (let step = 0; step < sizes[index] / 50; step++) {
+          await splitter.press(index === 1 ? 'Shift+ArrowDown' : 'Shift+ArrowRight');
+        }
+      }
+      values.push(Number(await splitter.getAttribute('aria-valuenow')));
+    }
+    return values;
+  }
+  const firstLayout = [250, 300, 350, 0];
+  const secondLayout = [300, 450, 400, 350];
   try {
     await page.locator('.commit-row').first().waitFor();
     await page.setViewportSize({ width: 2200, height: 1600 });
-    await page.evaluate(() => {
+    await page.evaluate(directory => {
       for (const [key, size] of Object.entries({ sidebar: 900, history: 1100, 'changed-files': 900, 'commit-files': 900 })) {
-        localStorage.setItem(`ui-splitter:${key}:size`, JSON.stringify({ size }));
+        localStorage.setItem(
+          `ui-splitter:branchlight:${encodeURIComponent(directory.replaceAll('\\', '/'))}:${key}:size`,
+          JSON.stringify({ size })
+        );
       }
-    });
+    }, repo);
     await page.reload();
     await page.locator('.commit-row').first().waitFor();
     assert.equal(Math.round((await page.locator('repository-sidebar').boundingBox()).width), 900);
@@ -84,11 +106,14 @@ const path = require('node:path');
         return bounds.right <= innerWidth + 1 && bounds.bottom <= innerHeight + 1;
       })
     );
-    await page.evaluate(() => {
+    await page.evaluate(directory => {
       for (const [key, size] of Object.entries({ sidebar: 220, history: 410, 'changed-files': 280, 'commit-files': 280 })) {
-        localStorage.setItem(`ui-splitter:${key}:size`, JSON.stringify({ size }));
+        localStorage.setItem(
+          `ui-splitter:branchlight:${encodeURIComponent(directory.replaceAll('\\', '/'))}:${key}:size`,
+          JSON.stringify({ size })
+        );
       }
-    });
+    }, repo);
     await page.reload();
     await page.locator('.commit-row').first().waitFor();
     const changesSearch = page.getByRole('textbox', { name: 'Find changed files', exact: true });
@@ -172,6 +197,7 @@ const path = require('node:path');
     await search.fill('');
     assert.equal(await authFolder.getAttribute('aria-expanded'), 'false');
     const dropdown = page.getByRole('button', { name: 'Repository menu', exact: true });
+    assert.deepEqual(await layout(firstLayout), firstLayout);
     assert.equal(
       await page
         .locator('.topbar')
@@ -184,6 +210,8 @@ const path = require('node:path');
     await page.screenshot({ path: path.resolve('test-results/repository-menu.png') });
     await page.getByText(other, { exact: true }).click();
     await page.getByRole('button', { name: 'Other repository', exact: true }).waitFor();
+    assert.deepEqual(await layout(), [220, 410, 280, 280], 'Another repository starts with its own layout');
+    assert.deepEqual(await layout(secondLayout), secondLayout);
     assert.equal(await authFolder.getAttribute('aria-expanded'), 'true', 'Repositories with the same basename have independent state');
     assert.equal(await branchRow('section:tag').getAttribute('aria-expanded'), 'false');
     await branchRow('section:local').click();
@@ -195,6 +223,7 @@ const path = require('node:path');
     await dropdown.click();
     await page.getByText(repo, { exact: true }).click();
     await page.getByRole('button', { name: 'Updated snapshot', exact: true }).waitFor();
+    assert.deepEqual(await layout(), firstLayout, 'Returning restores all splitter sizes, including collapsed panes');
     assert.equal(await authFolder.getAttribute('aria-expanded'), 'false');
     assert.equal(await branchRow('section:tag').getAttribute('aria-expanded'), 'true');
     assert.equal(await branchRow('section:remote').getAttribute('aria-expanded'), 'false');
@@ -260,6 +289,7 @@ const path = require('node:path');
     page.on('pageerror', error => errors.push(error.message));
     await page.locator('.commit-row').first().waitFor();
     assert.equal(await branchRow('folder:local:feat/auth/').getAttribute('aria-expanded'), 'false');
+    assert.deepEqual(await layout(), firstLayout, 'Repository layout survives application restart');
     assert.equal(await branchRow('section:tag').getAttribute('aria-expanded'), 'true');
     await page.getByRole('button', { name: 'Repository menu', exact: true }).click();
     await page.getByText(other, { exact: true }).click();
@@ -271,6 +301,7 @@ const path = require('node:path');
     );
     await page.getByRole('button', { name: 'Other repository', exact: true }).waitFor();
     assert.equal(await branchRow('section:local').getAttribute('aria-expanded'), 'false');
+    assert.deepEqual(await layout(), secondLayout, 'The other repository layout also survives restart');
     await page.evaluate(directory => {
       localStorage.setItem(`branchlight:branch-tree:${directory.replaceAll('\\', '/').toLowerCase()}`, '{invalid');
     }, other);

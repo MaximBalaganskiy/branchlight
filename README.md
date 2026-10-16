@@ -72,7 +72,7 @@ Measured Windows x64 release (14 October 2026): **3.64 MiB** executable, **1.44 
 - Create and switch local branches, add/edit/remove remotes, fetch, fast-forward pull, and push to the configured upstream. Push opens a publishing dialog when no upstream exists; choose the remote and destination branch. Remote removal confirms the name and removes its local tracking references without deleting the server repository.
 - Compact repository-name menu in the top bar switches between recent repositories and opens new ones. Full paths distinguish identical folder names.
 - Resizable panes, light/dark themes, Normal/Compact density, recent repositories, and keyboard shortcuts. Normal density is the default; appearance choices are saved and synchronized between windows.
-- Main and commit windows remember their size, position, and maximized state separately across launches. Commit windows share their layout across repositories; unavailable monitors fall back to OS placement.
+- Main and commit windows remember their size, position, and maximized state separately across launches; unavailable monitors fall back to OS placement. All splitter positions, including collapsed panes, are saved separately for each repository in both windows.
 - Integrated title bar on main and commit windows, with headless minimize, maximize/restore, and close buttons. Drag the header's empty space or title to move the window; double-click to maximize/restore. Repository and appearance controls remain interactive. Resizing uses Tauri's native undecorated-window support; Linux compositor behavior still needs desktop validation.
 
 | Shortcut | Action |

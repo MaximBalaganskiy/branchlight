@@ -46,7 +46,7 @@
           </div>
         </div>
       </section>
-      <ui-splitter splitter-bounds direction="vertical" size="300" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="commit-unstaged" aria-label="Resize unstaged and staged files"></ui-splitter>
+      <ui-splitter splitter-bounds direction="vertical" size="300" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="${workspace.splitterStoragePrefix}:commit-unstaged" aria-label="Resize unstaged and staged files"></ui-splitter>
       <section class="stage-section flex min-h-0 flex-1 flex-col overflow-hidden">
         <div class="stage-heading flex shrink-0 items-center justify-between gap-2 px-2.5 py-2">
           <h2>
@@ -67,7 +67,7 @@
       </section>
     </div>
   </aside>
-  <ui-splitter splitter-bounds direction="horizontal" size="330" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="staging-files" aria-label="Resize staging lists"></ui-splitter>
+  <ui-splitter splitter-bounds direction="horizontal" size="330" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="${workspace.splitterStoragePrefix}:staging-files" aria-label="Resize staging lists"></ui-splitter>
   <section class="commit-editor flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
     <div class="diff-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <div class="diff-heading flex min-h-8 shrink-0 items-center justify-between gap-2.5 border-b border-card-border px-3.5 text-[11px]">
@@ -80,7 +80,7 @@
       </div>
       <diff-view file-path.bind="workingFile ? workingFile.path : ''" text.bind="diff" is-loading.bind="diffLoading" selectable.bind="canStageSelection" staged.bind="workingStaged" disabled.bind="workspace.busy" stage-selection.trigger="stageSelection($event.detail)"></diff-view>
     </div>
-    <ui-splitter splitter-bounds show.bind="!replaying" direction="vertical" target="next" size="300" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="commit-message" aria-label="Resize diff and commit message"></ui-splitter>
+    <ui-splitter splitter-bounds show.bind="!replaying" direction="vertical" target="next" size="300" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="${workspace.splitterStoragePrefix}:commit-message" aria-label="Resize diff and commit message"></ui-splitter>
     <section show.bind="!replaying" class="message-composer flex min-h-0 shrink-0 flex-col overflow-auto bg-card p-3">
       <message-picker class="shrink-0" message.bind="message" message-chosen.trigger="message = $event.detail"></message-picker>
       <div class="flex shrink-0 flex-wrap items-center gap-2">

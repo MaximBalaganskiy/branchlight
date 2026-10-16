@@ -6,7 +6,7 @@ import type { FileTreeNode } from '../../../interfaces/file-tree-node';
 import '../../../elements/diff-view/syntax.css';
 
 export class CommitFiles {
-  private workspace = resolve(WorkspaceService);
+  readonly workspace = resolve(WorkspaceService);
   private element = resolve(INode) as HTMLElement;
   private entries: TreeEntry[] = [];
   private treeGeneration = 0;

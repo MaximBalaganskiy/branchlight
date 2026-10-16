@@ -33,8 +33,10 @@
     <p>Could not load this repository.</p>
     <button ui-button click.trigger="workspace.refresh()">Retry</button>
   </main>
-  <history if.bind="workspace.snapshot && workspace.mode === 'browse'"></history>
-  <commit if.bind="workspace.snapshot && workspace.mode === 'commit'"></commit>
+  <template repeat.for="repository of workspace.snapshot ? [workspace.repo] : []; key.bind: repository">
+    <history if.bind="workspace.mode === 'browse'"></history>
+    <commit if.bind="workspace.mode === 'commit'"></commit>
+  </template>
 
   <footer class="statusbar flex h-[27px] shrink-0 items-center gap-2.5 border-t border-card-border bg-card-muted px-4 text-[10px] text-ink-500">
     <span class="status-dot mr-1 inline-block size-[5px] shrink-0 rounded-full bg-success-border ${workspace.busy || workspace.refreshing ? 'pulsing' : ''}"></span>

@@ -26,6 +26,10 @@ export class WorkspaceService {
     return !!this.snapshot?.hasMore && this.limit < 100000;
   }
 
+  get splitterStoragePrefix() {
+    return `branchlight:${encodeURIComponent(this.repo.replaceAll('\\', '/'))}`;
+  }
+
   async initialize() {
     if (!isTauri()) {
       this.fail(new Error('Launch the desktop app to access local repositories.'));

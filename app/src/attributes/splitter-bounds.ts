@@ -16,7 +16,6 @@ export class SplitterBounds {
     this.observer = new ResizeObserver(() => this.updateBounds());
     this.observer.observe(parent);
     this.observer.observe(this.element);
-    this.updateBounds();
   }
 
   detaching() {

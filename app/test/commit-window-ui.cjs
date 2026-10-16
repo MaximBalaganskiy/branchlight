@@ -19,7 +19,14 @@ const path = require('node:path');
   await git(repo, ['add', '.']);
   await git(repo, ['commit', '-m', 'Initial files']);
   await fs.writeFile(path.join(repo, 'file.txt'), changed);
-  const app = await launchTauri(repo, path.join(root, 'profile'));
+  const other = path.join(root, 'other', 'repo');
+  await fs.mkdir(path.dirname(other));
+  await git(root, ['clone', repo, other]);
+  await fs.writeFile(path.join(other, 'file.txt'), changed);
+  const profile = path.join(root, 'profile');
+  await fs.mkdir(profile);
+  await fs.writeFile(path.join(profile, 'repositories.json'), JSON.stringify([repo, other]));
+  const app = await launchTauri(repo, profile);
   const errors = [];
   app.context.on('page', window => window.on('pageerror', error => errors.push(error.message)));
   await app.context.addInitScript(() => {
@@ -40,6 +47,21 @@ const path = require('node:path');
     commit.setDefaultTimeout(15000);
     await commit.locator('.diff-line.added').first().waitFor();
     assert.equal(await commit.evaluate(() => window.welcomeSeen), false, 'Commit startup must never mount the welcome page');
+  }
+  async function commitLayout(window) {
+    return Promise.all(
+      ['Resize staging lists', 'Resize unstaged and staged files', 'Resize diff and commit message'].map(async name =>
+        Number(await window.getByRole('separator', { name, exact: true }).getAttribute('aria-valuenow'))
+      )
+    );
+  }
+  async function closeCommit(window) {
+    await Promise.all([
+      window.waitForEvent('close'),
+      window.evaluate(() => {
+        void window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: window.__TAURI_INTERNALS__.metadata.currentWindow.label });
+      })
+    ]);
   }
   try {
     await openCommit();
@@ -135,6 +157,38 @@ const path = require('node:path');
       await commit.getByRole('separator', { name: 'Resize diff and commit message', exact: true }).getAttribute('aria-valuenow'),
       saved.message
     );
+    const firstCommit = commit;
+    const firstLayout = await commitLayout(firstCommit);
+    await app.page.getByRole('button', { name: 'Repository menu', exact: true }).click();
+    await app.page.getByText(other, { exact: true }).click();
+    await app.page.waitForFunction(
+      directory =>
+        document.querySelector('repository-switcher button')?.getAttribute('title')?.replaceAll('\\', '/') ===
+        directory.replaceAll('\\', '/'),
+      other
+    );
+    await openCommit();
+    assert.deepEqual(await commitLayout(commit), [330, 300, 300], 'Another repository starts with its own commit layout');
+    await commit.getByRole('separator', { name: 'Resize staging lists', exact: true }).press('Shift+ArrowRight');
+    await commit.getByRole('separator', { name: 'Resize unstaged and staged files', exact: true }).press('Shift+ArrowUp');
+    await commit.getByRole('separator', { name: 'Resize diff and commit message', exact: true }).press('Shift+ArrowDown');
+    assert.deepEqual(await commitLayout(commit), [380, 250, 250]);
+    assert.deepEqual(await commitLayout(firstCommit), firstLayout, 'An open commit window keeps its repository layout');
+    await closeCommit(commit);
+    await openCommit();
+    assert.deepEqual(await commitLayout(commit), [380, 250, 250], 'The second commit layout survives reopening');
+    await closeCommit(commit);
+    await app.page.getByRole('button', { name: 'Repository menu', exact: true }).click();
+    await app.page.getByText(repo, { exact: true }).click();
+    await app.page.waitForFunction(
+      directory =>
+        document.querySelector('repository-switcher button')?.getAttribute('title')?.replaceAll('\\', '/') ===
+        directory.replaceAll('\\', '/'),
+      repo
+    );
+    commit = firstCommit;
+    await app.page.getByRole('button', { name: /Commit changes/ }).click();
+    assert.deepEqual(await commitLayout(commit), firstLayout);
     await commit.setViewportSize({ width: 900, height: 640 });
     for (const name of ['Resize unstaged and staged files', 'Resize diff and commit message']) {
       await commit.getByRole('separator', { name, exact: true }).press('End');

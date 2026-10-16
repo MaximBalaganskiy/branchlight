@@ -21,7 +21,7 @@
     <div if.bind="!treeLoading && !error && !fileCount" class="p-4 text-sm text-ink-500">This commit has no files.</div>
     <div if.bind="fileQuery && fileCount && !nodes.length" class="p-4 text-sm text-ink-500">No matching files.</div>
   </div>
-  <ui-splitter splitter-bounds direction="horizontal" size="280" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="commit-files" aria-label="Resize commit file tree"></ui-splitter>
+  <ui-splitter splitter-bounds direction="horizontal" size="280" min.bind="0" max.bind="Number.MAX_SAFE_INTEGER" storage-key="${workspace.splitterStoragePrefix}:commit-files" aria-label="Resize commit file tree"></ui-splitter>
   <section class="flex min-h-0 min-w-0 flex-1 flex-col bg-canvas">
     <div class="min-h-8 shrink-0 truncate border-b border-card-border px-3 py-1 text-sm" title.bind="selectedPath">${selectedPath || 'File contents'}</div>
     <ui-form if.bind="lines.length" class="search-form block w-80 max-w-full shrink-0 px-3" submit.trigger:prevent="findInFile()">
