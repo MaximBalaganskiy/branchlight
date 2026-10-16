@@ -192,7 +192,7 @@ pub async fn open_repository(
     let repo = state.git.open(&directory)?;
     let name = repo.file_name().unwrap_or_default().to_string_lossy();
     window
-      .set_title(&format!("{name} — Branchlight"))
+      .set_title(&format!("{name} — Gitaur"))
       .map_err(|error| error.to_string())?;
     let repo = repo.to_string_lossy().into_owned();
     state.remember(&repo)?;

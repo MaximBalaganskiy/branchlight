@@ -134,7 +134,7 @@ impl GitService {
       todo.push_str(&format!("{action} {}\n", step.hash));
     }
     let directory = self.text(repo, &["rev-parse", "--absolute-git-dir"])?;
-    let plan_path = Path::new(directory.trim()).join("branchlight-rebase-plan");
+    let plan_path = Path::new(directory.trim()).join("gitaur-rebase-plan");
     // Create exclusively; never follow or overwrite an existing file/symlink in the Git directory.
     use std::io::Write;
     let mut file = fs::OpenOptions::new()
@@ -144,7 +144,8 @@ impl GitService {
       .map_err(|error| error.to_string())?;
     file.write_all(todo.as_bytes()).map_err(|error| error.to_string())?;
     drop(file);
-    let executable = std::env::var_os("BRANCHLIGHT_EDITOR_EXE")
+    let executable = std::env::var_os("GITAUR_EDITOR_EXE")
+      .or_else(|| std::env::var_os("BRANCHLIGHT_EDITOR_EXE"))
       .map(std::path::PathBuf::from)
       .map(Ok)
       .unwrap_or_else(std::env::current_exe)

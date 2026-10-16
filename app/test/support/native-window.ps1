@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $appProcess = Get-Process -Id $AppProcessId
-$expectedPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../src-tauri/target/release/branchlight.exe'))
+$expectedPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../src-tauri/target/release/gitaur.exe'))
 if ($appProcess.Path -ne $expectedPath) {
   throw 'Window tests may only control the test executable.'
 }
@@ -59,7 +59,7 @@ $script:targetWindow = [IntPtr]::Zero
   if ($owner -eq $AppProcessId) {
     $title = New-Object Text.StringBuilder 512
     [void][NativeWindow]::GetWindowText($handle, $title, 512)
-    if ($title.Length -gt 0 -and $title.ToString().Contains('Branchlight') -and ($title.ToString().StartsWith('Commit') -eq ($Window -eq 'commit'))) {
+    if ($title.Length -gt 0 -and $title.ToString().Contains('Gitaur') -and ($title.ToString().StartsWith('Commit') -eq ($Window -eq 'commit'))) {
       $script:targetWindow = $handle
       return $false
     }

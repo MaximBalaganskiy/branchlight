@@ -9,7 +9,10 @@ pub fn execute(repo: &Path, args: &[&str]) -> Result<Output, String> {
 }
 
 pub fn execute_with_input(repo: &Path, args: &[&str], input: Option<&[u8]>) -> Result<Output, String> {
-  let mut command = Command::new(std::env::var_os("BRANCHLIGHT_GIT").unwrap_or_else(|| "git".into()));
+  let executable = std::env::var_os("GITAUR_GIT")
+    .or_else(|| std::env::var_os("BRANCHLIGHT_GIT"))
+    .unwrap_or_else(|| "git".into());
+  let mut command = Command::new(executable);
   command
     .current_dir(repo)
     .args(["--no-pager", "--literal-pathspecs", "-c", "color.ui=false"])

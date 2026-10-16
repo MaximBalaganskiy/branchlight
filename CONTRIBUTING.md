@@ -1,6 +1,6 @@
-# Contributing to Branchlight
+# Contributing to Gitaur
 
-Branchlight is a preview Git client. Changes that protect repository data, improve platform compatibility, or make daily workflows reliable are especially useful.
+Gitaur is a preview Git client. Changes that protect repository data, improve platform compatibility, or make daily workflows reliable are especially useful.
 
 Discuss substantial changes in an issue before implementing them. For bugs, include a minimal disposable repository and reproducible steps. Never attach a private repository or unredacted credentials. Follow [SECURITY.md](SECURITY.md) for security reports.
 

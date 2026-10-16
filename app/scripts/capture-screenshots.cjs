@@ -7,16 +7,16 @@ const { git } = require('../test/support/git.cjs');
   const parent = path.resolve('../.test-repos');
   await fs.mkdir(parent, { recursive: true });
   const root = await fs.mkdtemp(path.join(parent, 'documentation-'));
-  const repo = path.join(root, 'branchlight-demo');
+  const repo = path.join(root, 'gitaur-demo');
   const output = path.resolve('../docs/images');
   await fs.mkdir(repo);
   await fs.mkdir(output, { recursive: true });
   await git(repo, ['init', '-b', 'main']);
-  await git(repo, ['config', 'user.name', 'Branchlight Demo']);
+  await git(repo, ['config', 'user.name', 'Gitaur Demo']);
   await git(repo, ['config', 'user.email', 'demo@example.invalid']);
   await git(repo, ['config', 'commit.gpgsign', 'false']);
   await git(repo, ['config', 'core.autocrlf', 'false']);
-  await fs.writeFile(path.join(repo, 'README.md'), '# Branchlight demo\n\nA synthetic repository for screenshots.\n');
+  await fs.writeFile(path.join(repo, 'README.md'), '# Gitaur demo\n\nA synthetic repository for screenshots.\n');
   await git(repo, ['add', '.']);
   await git(repo, ['commit', '-m', 'Start the workspace']);
   for (const [branch, title, content] of [
@@ -46,7 +46,7 @@ const { git } = require('../test/support/git.cjs');
   await git(repo, ['tag', 'v0.4.0-preview']);
   await fs.writeFile(
     path.join(repo, 'README.md'),
-    '# Branchlight demo\n\nA synthetic repository for screenshots.\n\nReview changes, then commit only what is ready.\n'
+    '# Gitaur demo\n\nA synthetic repository for screenshots.\n\nReview changes, then commit only what is ready.\n'
   );
   await fs.writeFile(path.join(repo, 'notes.md'), '# Next steps\n\nTry the merge editor.\n');
   const app = await launchTauri(repo, path.join(root, 'profile'));

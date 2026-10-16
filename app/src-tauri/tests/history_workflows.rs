@@ -1,4 +1,4 @@
-use branchlight_lib::{
+use gitaur_lib::{
   git::service::GitService,
   models::{mutation::Mutation, repository_request::RepositoryRequest},
 };
@@ -227,7 +227,7 @@ fn rebase_conflict_can_abort_or_continue() {
 
 #[test]
 fn editable_rebase_applies_validated_reordering_fixups_squashes_and_drops() {
-  std::env::set_var("BRANCHLIGHT_EDITOR_EXE", env!("CARGO_BIN_EXE_branchlight"));
+  std::env::set_var("BRANCHLIGHT_EDITOR_EXE", env!("CARGO_BIN_EXE_gitaur"));
   let (temp, git) = repo();
   let repo = temp.path();
   let base = commit(&git, repo, "base", "base");
@@ -355,7 +355,7 @@ fn branch_delete_rejects_unmerged_and_other_worktree_branches() {
 
 #[test]
 fn edit_and_reword_pause_for_review_and_reject_stale_amends() {
-  std::env::set_var("BRANCHLIGHT_EDITOR_EXE", env!("CARGO_BIN_EXE_branchlight"));
+  std::env::set_var("BRANCHLIGHT_EDITOR_EXE", env!("CARGO_BIN_EXE_gitaur"));
   let (temp, git) = repo();
   let repo = temp.path();
   let base = commit(&git, repo, "base", "Base");

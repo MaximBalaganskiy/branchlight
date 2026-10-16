@@ -19,16 +19,17 @@ pub fn create(app: &AppHandle, label: &str, mode: &str, repo: String) -> Result<
         repo,
       },
     );
-  let data_dir = std::env::var_os("BRANCHLIGHT_USER_DATA")
+  let data_dir = std::env::var_os("GITAUR_USER_DATA")
+    .or_else(|| std::env::var_os("BRANCHLIGHT_USER_DATA"))
     .map(std::path::PathBuf::from)
     .unwrap_or(app.path().app_data_dir().map_err(|error| error.to_string())?);
   let result = WebviewWindowBuilder::new(app, label, WebviewUrl::App("index.html".into()))
     .data_directory(data_dir.join("webview"))
     .decorations(false)
     .title(if mode == "commit" {
-      "Commit — Branchlight"
+      "Commit — Gitaur"
     } else {
-      "Branchlight"
+      "Gitaur"
     })
     .inner_size(if mode == "commit" { 1220.0 } else { 1480.0 }, 920.0)
     .min_inner_size(900.0, 640.0)

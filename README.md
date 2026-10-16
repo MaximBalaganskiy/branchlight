@@ -1,8 +1,10 @@
-# Branchlight
+# Gitaur
+
+![Gitaur: a gold guitar pick with a Git branch cutout](docs/images/gitaur-logo.png)
 
 A local desktop Git client built with **Aurelia 2**, **aurelia-headless**, its shipped Tailwind theme, and **Tauri 2**. Inspired by GitExtensions' commit graph and separate staging window.
 
-**Preview software — Windows x64 and Linux x64.** Branchlight is MIT licensed. It uses your installed Git and authentication configuration. Windows binaries are unsigned; Linux GNOME/KDE desktop validation is still pending. See [platform coverage](docs/platform-testing.md), [known limitations](#preview-scope), and [security reporting](SECURITY.md).
+**Preview software — Windows x64 and Linux x64.** Gitaur is MIT licensed. It uses your installed Git and authentication configuration. Windows binaries are unsigned; Linux GNOME/KDE desktop validation is still pending. See [platform coverage](docs/platform-testing.md), [known limitations](#preview-scope), and [security reporting](SECURITY.md).
 
 ![Commit graph and highlighted file changes](docs/images/history.png)
 
@@ -17,32 +19,32 @@ Screenshots use a synthetic demonstration repository.
 
 ## Run
 
-Download the Windows executable or installer, or the Linux AppImage or Debian package, from [GitHub Releases](https://github.com/MaximBalaganskiy/branchlight/releases). Download visibility follows repository access. Keep the accompanying license and third-party notices when redistributing binaries.
+Download the Windows executable or installer, or the Linux AppImage or Debian package, from [GitHub Releases](https://github.com/MaximBalaganskiy/gitaur/releases). Download visibility follows repository access. Keep the accompanying license and third-party notices when redistributing binaries.
 
-Open `app/release/windows/Branchlight.exe` after packaging, or run from source:
+Open `app/release/windows/Gitaur.exe` after packaging, or run from source:
 
 ```powershell
 npm --prefix app ci
 npm start
 ```
 
-Development requires Node 24+, Rust, and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/). On Windows, install the Visual Studio C++ build tools and Windows SDK. Install Git on PATH (or set `BRANCHLIGHT_GIT` to its executable). The desktop app uses your installed Git, identity, SSH configuration, and credential helpers. Remote authentication must already be configured. This preview does not provide a login wizard.
+Development requires Node 24+, Rust, and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/). On Windows, install the Visual Studio C++ build tools and Windows SDK. Install Git on PATH (or set `GITAUR_GIT` to its executable). The desktop app uses your installed Git, identity, SSH configuration, and credential helpers. Remote authentication must already be configured. This preview does not provide a login wizard.
 
 The Windows executable embeds the bundled, minified UI and uses the shared WebView2 runtime. The NSIS installer downloads WebView2 if it is missing. Neither Node nor Git is bundled. Linux uses WebKitGTK; build Linux packages on Linux with `npm --prefix app run pack:linux`. Linux packaging and native Git integration tests are validated in GitHub Actions; interactive Linux desktop behavior has not yet been validated.
 
 ### Linux display servers
 
-The GTK/WebKitGTK shell supports native Wayland and X11. GTK selects the available display backend; Branchlight does not force X11. The locked Tauri CLI includes the AppImage bundler's native Wayland fixes. The same Aurelia UI and separate commit window are used on both backends.
+The GTK/WebKitGTK shell supports native Wayland and X11. GTK selects the available display backend; Gitaur does not force X11. The locked Tauri CLI includes the AppImage bundler's native Wayland fixes. The same Aurelia UI and separate commit window are used on both backends.
 
 To explicitly select native Wayland when launching an AppImage from your Wayland session:
 
 ```bash
-GDK_BACKEND=wayland ./Branchlight_0.4.0-beta.2_amd64.AppImage
+GDK_BACKEND=wayland ./Gitaur_0.4.0-beta.2_amd64.AppImage
 ```
 
-Use the filename of your downloaded AppImage. For a Debian installation, run `GDK_BACKEND=wayland branchlight`. `GDK_BACKEND=x11` selects X11 instead (requiring XWayland in a Wayland session). Wayland compositors control window placement; restoring exact screen coordinates is not guaranteed, while size and maximized state remain saved.
+Use the filename of your downloaded AppImage. For a Debian installation, run `GDK_BACKEND=wayland gitaur`. `GDK_BACKEND=x11` selects X11 instead (requiring XWayland in a Wayland session). Wayland compositors control window placement; restoring exact screen coordinates is not guaranteed, while size and maximized state remain saved.
 
-Native Wayland desktop testing on GNOME/KDE, including clipboard, file dialogs, scaling, and multiple windows, is still pending. For driver-specific rendering problems, consult [Tauri's Linux graphics troubleshooting](https://v2.tauri.app/develop/debug/linux-graphics/); Branchlight does not disable hardware acceleration globally.
+Native Wayland desktop testing on GNOME/KDE, including clipboard, file dialogs, scaling, and multiple windows, is still pending. For driver-specific rendering problems, consult [Tauri's Linux graphics troubleshooting](https://v2.tauri.app/develop/debug/linux-graphics/); Gitaur does not disable hardware acceleration globally.
 
 Measured Windows x64 release (14 October 2026): **3.64 MiB** executable, **1.44 MiB** installer. Loading 300 commits and the initial diff from the headless repository took approximately **1.5 seconds** on this development machine, using both fresh and existing WebView2 profiles. These artifact sizes exclude the shared WebView2 runtime and installed Git.
 
@@ -105,8 +107,8 @@ The **Build desktop binaries** GitHub Actions workflow builds Windows x64 and Li
 
 Push a version tag such as `v0.1.0` to publish a GitHub Release after both platforms pass. The tag must match the versions in `app/package.json`, `app/src-tauri/tauri.conf.json`, and `app/src-tauri/Cargo.toml`. Tags containing a suffix such as `-beta.1` create prereleases. Releases contain:
 
-- `Branchlight.exe`: Windows executable.
-- `Branchlight_<version>_x64-setup.exe`: Windows NSIS installer.
+- `Gitaur.exe`: Windows executable.
+- `Gitaur_<version>_x64-setup.exe`: Windows NSIS installer.
 - Linux `.AppImage` and `.deb` packages.
 - `SHA256SUMS.txt`: checksums for all four downloads.
 - `LICENSE`, `THIRD_PARTY_NOTICES.txt`, and `LINUX_RUNTIME_NOTICES.txt`: redistribution notices and dependency source links.
@@ -144,4 +146,4 @@ Dark mode uses the UI and editor palette from Alexander Makarov's [Visual Studio
 
 ## Contributing and licensing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [release guide](docs/releasing.md). Branchlight's source is [MIT licensed](LICENSE); third-party components retain their own licenses and attribution in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). GitExtensions inspired the workflow; its application code is not bundled. The [publication review](docs/publication-audit.md) records audit scope, dependency warnings, and remaining platform checks.
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [release guide](docs/releasing.md). Gitaur's source is [MIT licensed](LICENSE); third-party components retain their own licenses and attribution in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). GitExtensions inspired the workflow; its application code is not bundled. The [publication review](docs/publication-audit.md) records audit scope, dependency warnings, and remaining platform checks.

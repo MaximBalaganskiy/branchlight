@@ -14,7 +14,7 @@ async function launchTauri(repo, profile) {
   await once(server, 'listening');
   const port = server.address().port;
   await new Promise(resolve => server.close(resolve));
-  const executable = path.resolve(process.env.BRANCHLIGHT_EXE || 'src-tauri/target/release/branchlight.exe');
+  const executable = path.resolve(process.env.BRANCHLIGHT_EXE || 'src-tauri/target/release/gitaur.exe');
   const child = spawn(executable, [], {
     windowsHide: true,
     env: {
