@@ -17,8 +17,6 @@
 }
 
 .message-composer {
-  max-height: calc(100% - 140px);
-
   & textarea.ui-input__native {
     resize: none;
   }

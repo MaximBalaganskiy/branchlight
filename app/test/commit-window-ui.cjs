@@ -46,6 +46,29 @@ const path = require('node:path');
     assert.equal(await commit.locator('#commit-message').evaluate(element => getComputedStyle(element).resize), 'none');
     const files = commit.getByRole('separator', { name: 'Resize unstaged and staged files', exact: true });
     const message = commit.getByRole('separator', { name: 'Resize diff and commit message', exact: true });
+    const staging = commit.getByRole('separator', { name: 'Resize staging lists', exact: true });
+    await staging.press('Home');
+    assert.equal(await commit.locator('.staging-sidebar').isVisible(), false);
+    for (let index = 0; index < 14; index++) {
+      await staging.press('Shift+ArrowRight');
+    }
+    assert.equal(Math.round((await commit.locator('.staging-sidebar').boundingBox()).width), 700, 'Staging lists resize beyond 600px');
+    await files.press('Home');
+    assert.equal(await commit.locator('.unstaged-section').isVisible(), false);
+    await files.press('Shift+ArrowDown');
+    assert.equal(Math.round((await commit.locator('.unstaged-section').boundingBox()).height), 50, 'Unstaged pane can shrink below 80px');
+    await message.press('Home');
+    assert.equal(await commit.locator('.message-composer').isVisible(), false);
+    await message.press('Shift+ArrowUp');
+    assert.equal(Math.round((await commit.locator('.message-composer').boundingBox()).height), 50, 'Message pane can shrink below 180px');
+    for (let index = 0; index < 5; index++) {
+      await files.press('Shift+ArrowDown');
+      await message.press('Shift+ArrowUp');
+    }
+    await staging.press('Home');
+    for (let index = 0; index < 7; index++) {
+      await staging.press('Shift+ArrowRight');
+    }
     const beforeFiles = await commit.locator('.unstaged-section').boundingBox();
     await files.focus();
     await commit.keyboard.press('Shift+ArrowDown');
@@ -116,13 +139,20 @@ const path = require('node:path');
     for (const name of ['Resize unstaged and staged files', 'Resize diff and commit message']) {
       await commit.getByRole('separator', { name, exact: true }).press('End');
     }
-    // Native viewport changes and the ResizeObserver's bound splitter limits settle on later frames.
+    // Only available window space constrains the dividers; the opposite panes may collapse.
     await commit.waitForFunction(() =>
-      [...document.querySelectorAll('.stage-section, .diff-panel, .message-composer')].every(element => {
+      [...document.querySelectorAll('.stage-section, .diff-panel, .message-composer, ui-splitter')].every(element => {
         const rect = element.getBoundingClientRect();
-        return rect.height >= 80 && rect.bottom <= innerHeight;
+        return rect.top >= 0 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1;
       })
     );
+    const fullUnstaged = await commit.locator('.unstaged-section').boundingBox();
+    const fileSpace = await commit.locator('.staging-panes').boundingBox();
+    assert.ok(fileSpace.height - fullUnstaged.height < 20, 'No space is reserved for the staged pane at the end stop');
+    const fullMessage = await commit.locator('.message-composer').boundingBox();
+    const editorSpace = await commit.locator('.commit-editor').boundingBox();
+    assert.ok(editorSpace.height - fullMessage.height < 20, 'No 140px space is reserved for the diff at the end stop');
+    await commit.screenshot({ path: path.resolve('test-results/commit-splitters-full-range.png') });
     assert.deepEqual(errors, []);
     console.log(
       'PASS: no welcome flash; background diff refresh preserves DOM, scroll and selection; external edits refresh; splitters drag, keyboard resize, persist and fit small windows.'
