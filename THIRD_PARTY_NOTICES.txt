@@ -1,6 +1,6 @@
 Branchlight third-party notices
 
-Lockfile SHA-256: 94422e16d3ad561426de211729a379c282f04524391bdc4d4ac22c0e561fde3f
+Lockfile SHA-256: 9c7dbffee7a263e0fbeb6e387569672bef932283714271af4963b61dcd67f748
 
 Branchlight's own source is MIT licensed. Third-party components retain their
 own licenses below. This inventory includes the renderer dependencies and

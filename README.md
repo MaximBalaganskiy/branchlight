@@ -37,7 +37,7 @@ The GTK/WebKitGTK shell supports native Wayland and X11. GTK selects the availab
 To explicitly select native Wayland when launching an AppImage from your Wayland session:
 
 ```bash
-GDK_BACKEND=wayland ./Branchlight_0.4.0-beta.1_amd64.AppImage
+GDK_BACKEND=wayland ./Branchlight_0.4.0-beta.2_amd64.AppImage
 ```
 
 Use the filename of your downloaded AppImage. For a Debian installation, run `GDK_BACKEND=wayland branchlight`. `GDK_BACKEND=x11` selects X11 instead (requiring XWayland in a Wayland session). Wayland compositors control window placement; restoring exact screen coordinates is not guaranteed, while size and maximized state remain saved.
